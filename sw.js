@@ -1,7 +1,7 @@
 /* 100% 星占い — Service Worker
    使い方: ルートに sw.js を置き、index.html 側は ./sw.js?v=20 のようにクエリでバージョン付与
 */
-const CACHE_VERSION = 'v22';                  // ← index.html の ?v=20 と合わせると分かりやすい
+const CACHE_VERSION = 'v23';                  // ← index.html の ?v=20 と合わせると分かりやすい
 const CACHE_NAME = `horoscope-cache-${CACHE_VERSION}`;
 
 // 同一オリジンのみ事前キャッシュ（CDNはランタイムで取得：CORS/opaque絡みを避けるため）
@@ -104,4 +104,5 @@ self.addEventListener('fetch', (event) => {
     }
   })());
 });
+
 

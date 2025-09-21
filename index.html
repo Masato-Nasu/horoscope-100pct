@@ -3,18 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>100% 星占い｜絶対評価（GitHub Pages 版）</title>
-  <meta name="description" content="出生情報と現在の星の配置から、全体運・恋愛・仕事・金運・健康のスコアと読み物を自動生成します。GitHub Pagesで動作する単一HTML。">
+  <title>100% 星占い｜絶対評価（GitHub Pages 版・安定）</title>
   <style>
     :root{--bg:#fbfbfc;--card:#fff;--accent:#6b46c1;--muted:#666}
     html,body{margin:0;padding:0;height:100%}
     body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;background:var(--bg);color:#111}
-    .wrap{max-width:980px;margin:0 auto;padding:18px;position:relative;z-index:1}
-    header{display:flex;align-items:center;gap:12px;position:relative;z-index:2}
+    .wrap{max-width:980px;margin:0 auto;padding:18px;}
+    header{display:flex;align-items:center;gap:12px}
     h1{margin:8px 0;font-size:20px;color:#6b46c1}
-    .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 20px rgba(16,24,40,0.06);margin-top:12px;position:relative;z-index:2}
+    .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 20px rgba(16,24,40,0.06);margin-top:12px}
     label{display:block;font-weight:600;margin-top:8px}
-    .row{display:flex;gap:12px;position:relative;z-index:2}
+    .row{display:flex;gap:12px}
     .col{flex:1}
     input,select,button{width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9ee;box-sizing:border-box;font-size:14px;background:#fff}
     button{background:#6b46c1;color:#fff;border:0;cursor:pointer;padding:10px;min-height:44px}
@@ -23,7 +22,6 @@
     .bar>i{height:100%;display:block;background:linear-gradient(90deg,#ffd166,#ef476f)}
     table{width:100%;border-collapse:collapse;margin-top:8px}
     th,td{padding:6px;border-bottom:1px solid #f0f0f0;text-align:left}
-    .explain p{margin:8px 0}
     .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
     .chip{background:#f3f0ff;color:#473592;font-size:12px;border-radius:999px;padding:4px 8px}
     #status{margin-left:auto;font-size:12px;color:#666}
@@ -31,9 +29,8 @@
     details{border:1px solid #eee;border-radius:10px;padding:8px;margin:8px 0;background:#fff}
     details>summary{cursor:pointer;font-weight:600}
     @media(max-width:700px){.row{flex-direction:column}}
-    #tzSelect,#tzInput,#geocodeBtn,#calcBtn,#fillBtn{pointer-events:auto;position:relative;z-index:10}
-    *[style*="pointer-events: none"]{pointer-events:auto !important}
     .muted{color:#666}
+    .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:8px;z-index:9999;opacity:0.95}
   </style>
 </head>
 <body>
@@ -41,7 +38,7 @@
 
 <div class="wrap">
   <header>
-    <h1>100パーセント星占い（GitHub Pages 版）</h1>
+    <h1>100パーセント星占い（安定ビルド）</h1>
     <div id="status">起動準備中…</div>
   </header>
 
@@ -55,7 +52,7 @@
       <div class="col"><label>出生地（都市名）</label><input type="text" id="placeName" placeholder="Tokyo, Japan" /></div>
       <div class="col">
         <label>タイムゾーン</label>
-        <select id="tzSelect" tabindex="0" onchange="toggleTzInput(this.value)">
+        <select id="tzSelect">
           <option value="Asia/Tokyo">Asia/Tokyo (日本)</option>
           <option value="UTC">UTC</option>
           <option value="Europe/London">Europe/London</option>
@@ -72,7 +69,7 @@
     <div class="row">
       <div class="col">
         <label>緯度</label>
-        <select id="latSelect" onchange="toggleLatInput(this.value)">
+        <select id="latSelect">
           <option value="35.6895">東京 (35.6895)</option>
           <option value="34.6937">大阪 (34.6937)</option>
           <option value="43.0621">札幌 (43.0621)</option>
@@ -99,7 +96,7 @@
 
       <div class="col">
         <label>経度</label>
-        <select id="lonSelect" onchange="toggleLonInput(this.value)">
+        <select id="lonSelect">
           <option value="139.6917">東京 (139.6917)</option>
           <option value="135.5023">大阪 (135.5023)</option>
           <option value="141.3544">札幌 (141.3544)</option>
@@ -127,30 +124,30 @@
 
     <label>解析日時（空なら今）</label><input type="datetime-local" id="targetDatetime" />
 
-    <div class="row" id="btnRow" style="margin-top:12px; position:relative; z-index:20">
-      <div style="flex:1"><button id="geocodeBtn" type="button" onclick="onGeocodeClick()">都市名から緯度経度を取得</button></div>
-      <div style="flex:1"><button id="calcBtn" type="button" onclick="onCalcClick()">本格解析を実行</button></div>
-      <div style="flex:1"><button id="fillBtn" type="button" onclick="onFillClick()">デモ値を入力</button></div>
+    <div class="row" id="btnRow" style="margin-top:12px">
+      <div style="flex:1"><button id="geocodeBtn" type="button">都市名から緯度経度を取得</button></div>
+      <div style="flex:1"><button id="calcBtn" type="button">本格解析を実行</button></div>
+      <div style="flex:1"><button id="fillBtn" type="button">デモ値を入力</button></div>
     </div>
   </div>
 
   <div id="output" class="card" style="display:none"></div>
   <div class="card" id="logCard" style="margin-top:12px"><div><strong>ログ</strong> <span class="muted">（問題が出たらここを開いてスクショください）</span></div><pre id="log"></pre></div>
 
-  <footer><small>astronomy-engine（CDN）/ 太陽〜冥王星＋ASC/MC対応。TZ・入力は自動保存。文章テンプレ 強化パック1（女性向き）統合版。</small></footer>
+  <footer><small>astronomy-engine（CDN）/ 太陽〜冥王星＋ASC/MC対応。</small></footer>
 </div>
 
-<!-- マルチCDNローダ（GitHub Pages で動作） -->
 <script>
   const $status = document.getElementById('status');
   const $log = document.getElementById('log');
   function log(msg){ try{ const t=new Date().toLocaleTimeString(); $log.textContent += `[${t}] ${msg}\n`; }catch(e){} }
   function setStatus(s){ try{ $status.textContent = s; }catch(e){} }
+  function toast(text){ try{ const n=document.createElement('div'); n.className='toast'; n.textContent=text; document.body.appendChild(n); setTimeout(()=>n.remove(),1300);}catch(_){ } }
 
+  // Use only UMD browser bundle (works in plain <script> environments)
   const CDN_CANDIDATES = [
     "https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js",
-    "https://unpkg.com/astronomy-engine@2.1.19/astronomy.browser.min.js",
-    "https://esm.sh/astronomy-engine@2.1.19?bundle&target=es2018"
+    "https://unpkg.com/astronomy-engine@2.1.19/astronomy.browser.min.js"
   ];
   async function loadAstronomyEngine(){
     if (window.Astronomy) return;
@@ -162,7 +159,7 @@
           const s=document.createElement('script');
           s.src=url; s.async=true;
           let done=false;
-          const timer=setTimeout(()=>{ if(done) return; done=true; rej(new Error("timeout")); }, 7000);
+          const timer=setTimeout(()=>{ if(done) return; done=true; rej(new Error("timeout")); }, 10000);
           s.onload=()=>{ if(done) return; done=true; clearTimeout(timer); res(); };
           s.onerror=()=>{ if(done) return; done=true; clearTimeout(timer); rej(new Error("script error")); };
           document.head.appendChild(s);
@@ -172,7 +169,7 @@
         lastErr=e; log("読み込み失敗: "+url+" / "+(e && e.message));
       }
     }
-    throw lastErr || new Error("全CDN失敗");
+    throw lastErr || new Error("全CDN失敗（ネット遮断やCDNブロックの可能性）");
   }
   setStatus("天体計算ライブラリ取得中…");
   loadAstronomyEngine().then(()=>{
@@ -184,24 +181,12 @@
 </script>
 
 <script>
-/* ====== 基本ユーティリティとRNG ====== */
-let __booted = false;
+/* ===== Util & state ===== */
 window.onerror = function(message, source, lineno, colno, error){
   log(`JSエラー: ${message} @ ${source}:${lineno}:${colno}`);
-  const out=document.getElementById('output');
-  out.innerHTML = `<div style="padding:10px;border:1px solid #f3c;background:#fff0fb;border-radius:8px;">
-  <strong>スクリプトエラー</strong><br><code>${String(message).replace(/</g,'&lt;')}</code></div>`;
-  out.style.display='block';
 };
 window.addEventListener('unhandledrejection', e=>{
   log('Promise未捕捉: '+ (e.reason && e.reason.message ? e.reason.message : String(e.reason)));
-});
-log('ブート開始');
-setStatus('ブート中…');
-document.addEventListener('DOMContentLoaded', ()=>{
-  __booted = true;
-  log('DOMContentLoaded OK');
-  setStatus('準備OK（ボタン押せます）');
 });
 
 function toggleTzInput(val){
@@ -253,23 +238,6 @@ function loadInputs(){
     log('入力を復元しました。');
   }catch(e){ log('復元エラー: '+(e.message||e)); }
 }
-function syncSelectsFromInputs(){
-  const lat = document.getElementById('lat').value;
-  const lon = document.getElementById('lon').value;
-  const latSel = document.getElementById('latSelect');
-  const lonSel = document.getElementById('lonSelect');
-  function setOrOther(selectEl, val, toggleFn){
-    if(!selectEl) return;
-    const found = [...selectEl.options].some(opt => opt.value === String(val));
-    if(found && val!==""){ selectEl.value=String(val); toggleFn(String(val)); }
-    else{ selectEl.value="0"; toggleFn("0"); const target=(selectEl.id==='latSelect')?document.getElementById('lat'):document.getElementById('lon'); if(val) target.value=val; }
-  }
-  setOrOther(latSel, lat || "35.6895", toggleLatInput);
-  setOrOther(lonSel, lon || "139.6917", toggleLonInput);
-}
-window.addEventListener('beforeunload', saveInputs);
-document.addEventListener('change', (e)=>{ if(e.target && (PERSIST_KEYS.includes(e.target.id))) saveInputs(); });
-loadInputs();
 
 /* TZ初期化 */
 (function tzInit(){
@@ -289,7 +257,7 @@ loadInputs();
   log('TZ: 初期設定 → '+(saved||deviceTz));
 })();
 
-/* 決定的RNG（日×3時間枠） */
+/* RNG bucket */
 let __rng = Math.random;
 function seedRngFrom(dateUTC, tz){
   try{
@@ -315,7 +283,7 @@ function seedRngFrom(dateUTC, tz){
   }
 }
 
-/* 天文ユーティリティ */
+/* Astro helpers */
 function normalizeDeg(d){d=d%360; if(d<0)d+=360; return d;}
 function toJulianDate(date){return(date.getTime()/86400000.0)+2440587.5;}
 function gmstDegrees(date){const JD=toJulianDate(date);const T=(JD-2451545.0)/36525.0;let GMST=280.46061837+360.98564736629*(JD-2451545.0)+0.000387933*T*T-(T*T*T)/38710000.0;GMST=((GMST%360)+360)%360;return GMST;}
@@ -339,7 +307,6 @@ function roundLocalIsoTo3hNearest(localIso, tz){
   return { roundedLocalIso, originalHM: `${String(H).padStart(2,'0')}:${String(M).padStart(2,'0')}`, roundedHM: `${hh}:00` };
 }
 
-/* アスペクト/スコア */
 const ASPECTS=[{name:'Conjunction',deg:0,orb:8,weight:1.4},{name:'Sextile',deg:60,orb:6,weight:0.9},{name:'Square',deg:90,orb:8,weight:-1.2},{name:'Trine',deg:120,orb:8,weight:1.2},{name:'Opposition',deg:180,orb:8,weight:-1.5}];
 const CATEGORY_MAP={"総合":['Sun','Moon','Jupiter','Saturn'],"恋愛":['Venus','Moon','Mars'],"仕事":['Sun','Mars','Saturn'],"金運":['Jupiter','Venus'],"健康":['Moon','Saturn','Mars']};
 function angleDiff(a,b){let d=Math.abs(a-b)%360;if(d>180)d=360-d;return d;}
@@ -353,16 +320,9 @@ function planetEclipticLongitude(body,dateUTC){
   try{ return normalizeDeg(Astronomy.EclipticLongitude(body,dateUTC)); }catch(e){ try{ const ecl=Astronomy.Ecliptic(body,dateUTC); return normalizeDeg(ecl.lon);}catch(err){ return NaN; } }
 }
 
-/* ====== ★テンプレ 強化パック1（女性向き） ★ ====== */
+/* Templates */
 const _recentLines=new Set();
 function _markRecent(line){ if(!line) return; _recentLines.add(line); if(_recentLines.size>180){ const it=_recentLines.values().next().value; _recentLines.delete(it);} }
-function pick(arr){ if(!arr||!arr.length) return ""; return arr[Math.floor(__rng()*arr.length)]; }
-function pickUnique(list){
-  if(!list||!list.length) return "";
-  const shuffled=[...list].sort(()=>__rng()-0.5);
-  for(const s of shuffled){ if(!_recentLines.has(s)){ _markRecent(s); return s; } }
-  const fb=shuffled[0]; _markRecent(fb); return fb;
-}
 let RUN_USED = new Set();
 function beginRun(){ RUN_USED = new Set(); }
 function pickNoDup(arr){
@@ -398,183 +358,16 @@ function sampleUnique(arr, n){
   return out;
 }
 
-/* 文章テンプレ（抜粋＆統合：FINAL-3とindex-7の同等ブロック） */
 const TPL={
-  "全体運":{
-    "好調":[
-      "追い風がふんわり吹いています。いまのリズムを大切に。",
-      "小さな決断が大きな前進に。気持ちの“素直さ”を信じて。",
-      "流れは軽やか。段取りより“まず着手”が吉。",
-      "助けが自然と集まりやすい日。感謝を言葉にして循環を。",
-      "良い偶然とタイミングが重なる予感。余白を残して動こう。",
-      "持ち味が伝わりやすいとき。等身大で十分に魅力的。",
-      "積み上げの実感が得やすい一日。小さな完了を積み重ねて。",
-      "迷ったら“軽いほう”。身体が楽な選択が進むサイン。",
-      "気持ちの輪郭がやわらかく整います。笑顔が最強のお守り。",
-      "“今の私”に合うサイズ感でOK。無理せず軽やかに。"
-    ],
-    "普通":[
-      "ほどよいペースで進めば十分。丁寧さが味方になります。",
-      "焦らず、基本を整えるほど安定。チェックリストが役立ちます。",
-      "やることを三つに絞ると、心の余裕が戻ってきます。",
-      "休む・食べる・整えるの基礎を丁寧に。中庸の良さが活きる日。",
-      "完璧より継続。60点で提出して次へ進もう。"
-    ],
-    "注意":[
-      "がんばり過ぎのサイン。深呼吸して心をゆるめて。",
-      "判断は明日に回してもOK。まずは睡眠と栄養を。",
-      "“やらないこと”を三つ決めて、負荷を軽くしましょう。",
-      "感情は波立ちやすいとき。言葉はひと呼吸置いてから。",
-      "一人で抱え込まないで。頼ることも前進の一部です。"
-    ]
-  },
-  "恋愛":{
-    "好調":[
-      "素直な言葉が届きやすいとき。ちいさな優しさを添えて。",
-      "笑顔とあいづちで距離が縮まります。背伸びは不要。",
-      "共有より共感を大切に。短い一言が想像以上に響きます。",
-      "予定を一つだけ一緒に決めると、関係が前に進みます。",
-      "身だしなみのワンポイントで印象UP。香りやアクセが吉。"
-    ],
-    "普通":[
-      "自然体のあなたが一番魅力的。焦らず、心地よいテンポで。",
-      "相手のペースを尊重して、今日は“広げすぎない”が正解。",
-      "話題は軽めに。共通の小ネタが距離を縮めます。",
-      "返信は短くてもOK。丁寧さが伝われば十分です。",
-      "予定は曖昧にせず“いつ”で締めると安心感が増します。"
-    ],
-    "注意":[
-      "言い過ぎ・受け取り違いに注意。言葉選びはやさしく。",
-      "不安は事実と分けてメモ。感情が整うと会話も整います。",
-      "返信は一旦保留でもOK。今は休むのが最善です。",
-      "白黒を急がない。グレーを丁寧に確認するほど安心に。",
-      "沈黙は悪ではありません。相手のスペースを尊重して。"
-    ]
-  },
-  "仕事":{
-    "好調":[
-      "段取りがすっとハマる日。先回りの気配りが好印象に。",
-      "最初の30分を全力で。勢いがそのまま成果に。",
-      "小さな完了を積み重ねるほど評価がついてきます。",
-      "“今日のゴールを一行”で決めると進みが加速。",
-      "得意領域に寄せるとスムーズ。分からない所は早めに相談。"
-    ],
-    "普通":[
-      "基本に立ち返るほど安定します。チェックリストが頼もしい味方。",
-      "TODOを3個に絞ると集中が戻ります。通知は切ってOK。",
-      "進捗が見えなくなったら“分ける・並べる・捨てる”。",
-      "一番軽い作業から着手。手が温まると難所も進みます。",
-      "5分だけのドラフトで良いので、まず提出して会話を始める。"
-    ],
-    "注意":[
-      "がんばりどころを選んで。抱え込み過ぎにブレーキを。",
-      "判断は短く、作業は長く。悩みすぎは生産性を下げます。",
-      "寝不足・空腹は集中の敵。まずは身体を整えて。",
-      "期限と品質はトレードオフ。“必要十分”を確認しましょう。",
-      "怒りのメールは“下書き”へ。明朝見直してから送信。"
-    ]
-  },
-  "金運":{
-    "好調":[
-      "よい選択眼。必要なものを必要な分だけ賢く。",
-      "小さな投資が将来の安心に。まずは固定費の改善から。",
-      "値札より“使用回数”で考えると満足度が上がります。",
-      "ポイントより現金の可視化が効果的。家計をシンプルに。",
-      "ご褒美は上質を少量。満足感と節度のバランス◎。"
-    ],
-    "普通":[
-      "見直しと整え直しのタイミング。サブスク点検が◎。",
-      "週次予算を決めると、ブレが減って気持ちも楽に。",
-      "食費は“固定の定番”を作ると安定します。",
-      "レシートを撮るだけ家計簿で十分。続けやすさ優先。",
-      "買い替えは“修理できるか”を先に確認。長持ちが節約。"
-    ],
-    "注意":[
-      "気分買いに注意。カートは一度閉じて。",
-      "勧誘や限定表示は深呼吸してから。必要性で判断を。",
-      "大きな契約は先送りでもOK。情報を整理してから。",
-      "“安いから買う”はコスト増の芽。使う予定を確認。",
-      "ローンや分割は総額で見る。手数料の影響に注意。"
-    ]
-  },
-  "健康":{
-    "好調":[
-      "回復力が高め。軽い運動とたっぷりの水分を。",
-      "姿勢と呼吸を整えるだけで体感が変わる日。",
-      "朝の光を浴びるとリズムが整い、集中力もアップ。",
-      "温かい飲み物が身体を内側からサポート。",
-      "散歩やストレッチで血の巡りを良くして。"
-    ],
-    "普通":[
-      "姿勢と呼吸を意識して、疲れをためない工夫を。",
-      "水分・たんぱく質・睡眠の三本柱を丁寧に。",
-      "間食は“ナッツ＋水”などシンプルに。",
-      "画面から目を離して、遠くを見る休憩を。",
-      "体調メモを一行。傾向が見えると対策が立てやすい。"
-    ],
-    "注意":[
-      "無理は禁物。今日は短時間で切り上げてOK。",
-      "冷え・だるさを感じたら温かい飲み物でケアを。",
-      "睡眠最優先。深夜のスマホはお休みしましょう。",
-      "頑張り過ぎのサイン。軽いストレッチでリセットを。",
-      "人混みは短時間に。静かな時間を作って。"
-    ]
-  }
+  "全体運":{"好調":["追い風がふんわり吹いています。いまのリズムを大切に。","小さな決断が大きな前進に。気持ちの“素直さ”を信じて。","流れは軽やか。段取りより“まず着手”が吉。","助けが自然と集まりやすい日。感謝を言葉にして循環を。","良い偶然とタイミングが重なる予感。余白を残して動こう。","持ち味が伝わりやすいとき。等身大で十分に魅力的。","積み上げの実感が得やすい一日。小さな完了を積み重ねて。","迷ったら“軽いほう”。身体が楽な選択が進むサイン。","気持ちの輪郭がやわらかく整います。笑顔が最強のお守り。","“今の私”に合うサイズ感でOK。無理せず軽やかに。"],"普通":["ほどよいペースで進めば十分。丁寧さが味方になります。","焦らず、基本を整えるほど安定。チェックリストが役立ちます。","やることを三つに絞ると、心の余裕が戻ってきます。","休む・食べる・整えるの基礎を丁寧に。中庸の良さが活きる日。","完璧より継続。60点で提出して次へ進もう。"],"注意":["がんばり過ぎのサイン。深呼吸して心をゆるめて。","判断は明日に回してもOK。まずは睡眠と栄養を。","“やらないこと”を三つ決めて、負荷を軽くしましょう。","感情は波立ちやすいとき。言葉はひと呼吸置いてから。","一人で抱え込まないで。頼ることも前進の一部です。"]},
+  "恋愛":{"好調":["素直な言葉が届きやすいとき。ちいさな優しさを添えて。","笑顔とあいづちで距離が縮まります。背伸びは不要。","共有より共感を大切に。短い一言が想像以上に響きます。","予定を一つだけ一緒に決めると、関係が前に進みます。","身だしなみのワンポイントで印象UP。香りやアクセが吉。"],"普通":["自然体のあなたが一番魅力的。焦らず、心地よいテンポで。","相手のペースを尊重して、今日は“広げすぎない”が正解。","話題は軽めに。共通の小ネタが距離を縮めます。","返信は短くてもOK。丁寧さが伝われば十分です。","予定は曖昧にせず“いつ”で締めると安心感が増します。"],"注意":["言い過ぎ・受け取り違いに注意。言葉選びはやさしく。","不安は事実と分けてメモ。感情が整うと会話も整います。","返信は一旦保留でもOK。今は休むのが最善です。","白黒を急がない。グレーを丁寧に確認するほど安心に。","沈黙は悪ではありません。相手のスペースを尊重して。"]},
+  "仕事":{"好調":["段取りがすっとハマる日。先回りの気配りが好印象に。","最初の30分を全力で。勢いがそのまま成果に。","小さな完了を積み重ねるほど評価がついてきます。","“今日のゴールを一行”で決めると進みが加速。","得意領域に寄せるとスムーズ。分からない所は早めに相談。"],"普通":["基本に立ち返るほど安定します。チェックリストが頼もしい味方。","TODOを3個に絞ると集中が戻ります。通知は切ってOK。","進捗が見えなくなったら“分ける・並べる・捨てる”。","一番軽い作業から着手。手が温まると難所も進みます。","5分だけのドラフトで良いので、まず提出して会話を始める。"],"注意":["がんばりどころを選んで。抱え込み過ぎにブレーキを。","判断は短く、作業は長く。悩みすぎは生産性を下げます。","寝不足・空腹は集中の敵。まずは身体を整えて。","期限と品質はトレードオフ。“必要十分”を確認しましょう。","怒りのメールは“下書き”へ。明朝見直してから送信。"]},
+  "金運":{"好調":["よい選択眼。必要なものを必要な分だけ賢く。","小さな投資が将来の安心に。まずは固定費の改善から。","値札より“使用回数”で考えると満足度が上がります。","ポイントより現金の可視化が効果的。家計をシンプルに。","ご褒美は上質を少量。満足感と節度のバランス◎。"],"普通":["見直しと整え直しのタイミング。サブスク点検が◎。","週次予算を決めると、ブレが減って気持ちも楽に。","食費は“固定の定番”を作ると安定します。","レシートを撮るだけ家計簿で十分。続けやすさ優先。","買い替えは“修理できるか”を先に確認。長持ちが節約。"],"注意":["気分買いに注意。カートは一度閉じて。","勧誘や限定表示は深呼吸してから。必要性で判断を。","大きな契約は先送りでもOK。情報を整理してから。","“安いから買う”はコスト増の芽。使う予定を確認。","ローンや分割は総額で見る。手数料の影響に注意。"]},
+  "健康":{"好調":["回復力が高め。軽い運動とたっぷりの水分を。","姿勢と呼吸を整えるだけで体感が変わる日。","朝の光を浴びるとリズムが整い、集中力もアップ。","温かい飲み物が身体を内側からサポート。","散歩やストレッチで血の巡りを良くして。"],"普通":["姿勢と呼吸を意識して、疲れをためない工夫を。","水分・たんぱく質・睡眠の三本柱を丁寧に。","間食は“ナッツ＋水”などシンプルに。","画面から目を離して、遠くを見る休憩を。","体調メモを一行。傾向が見えると対策が立てやすい。"],"注意":["無理は禁物。今日は短時間で切り上げてOK。","冷え・だるさを感じたら温かい飲み物でケアを。","睡眠最優先。深夜のスマホはお休みしましょう。","頑張り過ぎのサイン。軽いストレッチでリセットを。","人混みは短時間に。静かな時間を作って。"]}
 };
 
-/* ===== 実装：UIハンドラ ===== */
-function warn(msg){ log(msg); alert(msg); }
-
-function getTZ(){
-  const sel = document.getElementById('tzSelect').value;
-  if(sel==='OTHER'){
-    const custom = document.getElementById('tzInput').value.trim();
-    return custom || 'UTC';
-  }
-  return sel || 'UTC';
-}
-
-async function onGeocodeClick(){
-  const q = (document.getElementById('placeName').value||'').trim();
-  if(!q){ warn('都市名を入力してください。'); return; }
-  try{
-    setStatus('位置検索中…');
-    log('Geocode: '+q);
-    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q);
-    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const data = await res.json();
-    if(!data || !data.length){ warn('見つかりませんでした。別の表記でお試しください。'); setStatus('準備OK'); return; }
-    const pt = data[0];
-    document.getElementById('lat').value = String(pt.lat);
-    document.getElementById('lon').value = String(pt.lon);
-    document.getElementById('latSelect').value = "0"; document.getElementById('lat').style.display='block';
-    document.getElementById('lonSelect').value = "0"; document.getElementById('lon').style.display='block';
-    saveInputs();
-    setStatus('位置取得OK');
-    log(`→ lat=${pt.lat}, lon=${pt.lon}`);
-  }catch(e){
-    setStatus('準備OK');
-    warn('位置取得に失敗しました: '+(e && e.message));
-  }
-}
-
-function planetList(){ return ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto']; }
-
-function computeLongitudes(dateUTC, lat, lon){
-  const out={};
-  for(const b of planetList()){
-    const L = planetEclipticLongitude(b, dateUTC);
-    if(!isFinite(L)) log('計算失敗: '+b);
-    out[b]=isFinite(L)?L:NaN;
-  }
-  out['ASC'] = calcAscendant(dateUTC, lat, lon);
-  out['MC']  = calcMC(dateUTC, lon);
-  return out;
-}
-
+/* Rendering */
 function bucketFromScore(s){ if(s>=67) return '好調'; if(s>=34) return '普通'; return '注意'; }
-
 
 function renderOutput({natal, transit, aspects, scores, meta}){
   const out = document.getElementById('output');
@@ -586,7 +379,7 @@ function renderOutput({natal, transit, aspects, scores, meta}){
     {key:'健康', label:'健康', tplKey:'健康'}
   ];
   const bars = cats.map(c=>{
-    const v = scores[c.key] ?? (c.key==='総合' ? (scores['総合'] ?? 50) : 50);
+    const v = scores[c.key] ?? 50;
     return `<div style="margin:6px 0">
       <div style="display:flex;justify-content:space-between"><strong>${c.label}</strong><span>${v}%</span></div>
       <div class="bar"><i style="width:${v}%"></i></div>
@@ -599,7 +392,7 @@ function renderOutput({natal, transit, aspects, scores, meta}){
 
   beginRun();
   const readings = cats.map(c=>{
-    const score = scores[c.key] ?? (c.key==='総合' ? (scores['総合'] ?? 50) : 50);
+    const score = scores[c.key] ?? 50;
     const bucket = bucketFromScore(score);
     const tplKey = c.tplKey || c.key;
     const lines = sampleUnique(TPL[tplKey]?.[bucket]||[], 3).map(s=>`<li>${s}</li>`).join('');
@@ -624,25 +417,21 @@ function renderOutput({natal, transit, aspects, scores, meta}){
     <div class="explain" style="margin-top:12px">
       <h3 style="margin:6px 0">今日の読み</h3>
       ${readings}
-      <p class="muted">※ 本ツールは天体位置をastronomy-engineで近似計算し、アスペクトから各カテゴリのスコアを算出のうえテンプレート文を動的生成します。医療/投資等の助言ではありません。</p>
+      <p class="muted">※ 本ツールはastronomy-engineで算出した天体位置とアスペクトを用い、カテゴリ別にスコア化しテンプレ文章を自動生成します。</p>
     </div>
   `;
   out.style.display='block';
 }
 
-    <div style="margin-top:10px">${bars}</div>
-    <details style="margin-top:10px"><summary>アスペクト一覧（最大24件）</summary>
-      <table><thead><tr><th>天体</th><th>種別</th><th>角度</th><th>近さ</th></tr></thead><tbody>${aspRows}</tbody></table>
-    </details>
-    <div class="explain" style="margin-top:12px">
-      <h3 style="margin:6px 0">今日の読み</h3>
-      ${readings}
-      <p class="muted">※ 本ツールは天体位置をastronomy-engineで近似計算し、アスペクトから各カテゴリのスコアを算出のうえテンプレート文を動的生成します。医療/投資等の助言ではありません。</p>
-    </div>
-  `;
-  out.style.display='block';
+/* Compute */
+function getTZ(){
+  const sel = document.getElementById('tzSelect').value;
+  if(sel==='OTHER'){
+    const custom = document.getElementById('tzInput').value.trim();
+    return custom || 'UTC';
+  }
+  return sel || 'UTC';
 }
-
 function validateInputs(){
   const birthDate = document.getElementById('birthDate').value;
   const birthTime = document.getElementById('birthTime').value;
@@ -653,10 +442,16 @@ function validateInputs(){
   if(!isFinite(lat) || !isFinite(lon)) throw new Error('緯度・経度が不正です。都市名から取得するか手入力してください。');
   return { birthLocal: `${birthDate}T${birthTime}`, tz, lat, lon };
 }
-
-function planetNameJP(k){
-  const map = {Sun:'太陽', Moon:'月', Mercury:'水星', Venus:'金星', Mars:'火星', Jupiter:'木星', Saturn:'土星', Uranus:'天王星', Neptune:'海王星', Pluto:'冥王星', ASC:'ASC', MC:'MC'};
-  return map[k] || k;
+function planetList(){ return ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto']; }
+function computeLongitudes(dateUTC, lat, lon){
+  const out={};
+  for(const b of planetList()){
+    const L = planetEclipticLongitude(b, dateUTC);
+    out[b]=isFinite(L)?L:NaN;
+  }
+  out['ASC'] = calcAscendant(dateUTC, lat, lon);
+  out['MC']  = calcMC(dateUTC, lon);
+  return out;
 }
 
 async function onCalcClick(){
@@ -673,7 +468,7 @@ async function onCalcClick(){
     seedRngFrom(targetUTC, tz);
 
     if(!window.Astronomy){ await loadAstronomyEngine(); }
-    if(!window.Astronomy) throw new Error('astronomy-engine が読み込めませんでした。ネットワークをご確認ください。');
+    if(!window.Astronomy) throw new Error('astronomy-engine が読み込めませんでした。');
 
     const natal   = computeLongitudes(birthUTC,  lat, lon);
     const transit = computeLongitudes(targetUTC, lat, lon);
@@ -692,10 +487,35 @@ async function onCalcClick(){
       }
     });
     setStatus('計算完了');
-    log('計算完了');
   }catch(e){
     setStatus('準備OK');
-    warn(e.message || String(e));
+    alert(e.message || String(e));
+    log(e.stack || (e.message || String(e)));
+  }
+}
+
+async function onGeocodeClick(){
+  const q = (document.getElementById('placeName').value||'').trim();
+  if(!q){ alert('都市名を入力してください。'); return; }
+  try{
+    setStatus('位置検索中…');
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q);
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    if(!data || !data.length){ alert('見つかりませんでした。表記を変えて再試行してください。'); setStatus('準備OK'); return; }
+    const pt = data[0];
+    document.getElementById('lat').value = String(pt.lat);
+    document.getElementById('lon').value = String(pt.lon);
+    document.getElementById('latSelect').value = "0"; document.getElementById('lat').style.display='block';
+    document.getElementById('lonSelect').value = "0"; document.getElementById('lon').style.display='block';
+    saveInputs();
+    setStatus('位置取得OK');
+    log(`→ lat=${pt.lat}, lon=${pt.lon}`);
+  }catch(e){
+    setStatus('準備OK');
+    alert('位置取得に失敗: '+(e && e.message));
+    log(e.stack || (e.message || String(e)));
   }
 }
 
@@ -708,9 +528,24 @@ function onFillClick(){
   document.getElementById('tzSelect').value = 'Asia/Tokyo'; toggleTzInput('Asia/Tokyo');
   document.getElementById('targetDatetime').value = new Date().toISOString().slice(0,16);
   saveInputs();
+  toast('デモ値を入力しました');
   log('デモ値を入力しました。');
 }
 
+/* Bind after DOM ready */
+document.addEventListener('DOMContentLoaded', ()=>{
+  const geocodeBtn = document.getElementById('geocodeBtn');
+  const calcBtn = document.getElementById('calcBtn');
+  const fillBtn = document.getElementById('fillBtn');
+  geocodeBtn?.addEventListener('click', onGeocodeClick);
+  calcBtn?.addEventListener('click', onCalcClick);
+  fillBtn?.addEventListener('click', onFillClick);
+  document.getElementById('latSelect')?.addEventListener('change', e=>toggleLatInput(e.target.value));
+  document.getElementById('lonSelect')?.addEventListener('change', e=>toggleLonInput(e.target.value));
+  document.getElementById('tzSelect')?.addEventListener('change', e=>toggleTzInput(e.target.value));
+  loadInputs();
+  setStatus('準備OK');
+});
 </script>
 </body>
 </html>

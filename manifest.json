@@ -1,24 +1,15 @@
 {
   "name": "100% 星占い",
   "short_name": "星占い100%",
-  "start_url": "./",
-  "scope": "./",
+  "id": "/horoscope-100pct/",
+  "start_url": "/horoscope-100pct/",
+  "scope": "/horoscope-100pct/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#6b46c1",
   "lang": "ja",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ]
 }

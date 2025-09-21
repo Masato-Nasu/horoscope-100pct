@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>100% 星占い｜絶対評価（GitHub Pages 版・安定）</title>
+  <title>100% 星占い｜GitHub Pages 安定版</title>
   <style>
     :root{--bg:#fbfbfc;--card:#fff;--accent:#6b46c1;--muted:#666}
     html,body{margin:0;padding:0;height:100%}
     body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;background:var(--bg);color:#111}
-    .wrap{max-width:980px;margin:0 auto;padding:18px;}
+    .wrap{max-width:980px;margin:0 auto;padding:18px}
     header{display:flex;align-items:center;gap:12px}
     h1{margin:8px 0;font-size:20px;color:#6b46c1}
     .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 20px rgba(16,24,40,0.06);margin-top:12px}
@@ -32,13 +32,24 @@
     .muted{color:#666}
     .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:8px;z-index:9999;opacity:0.95}
   </style>
+
+  <!-- astronomy-engine UMD (works in plain <script>) -->
+  <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+  <script>
+    // Fallback to unpkg if primary CDN fails (blocked/404)
+    if (!window.Astronomy) {
+      var s = document.createElement('script');
+      s.src = 'https://unpkg.com/astronomy-engine@2.1.19/astronomy.browser.min.js';
+      document.head.appendChild(s);
+    }
+  </script>
 </head>
 <body>
 <noscript><div style="background:#ffdfdf;color:#900;padding:10px">JavaScriptが無効です。オンにしてください。</div></noscript>
 
 <div class="wrap">
   <header>
-    <h1>100パーセント星占い（安定ビルド）</h1>
+    <h1>100パーセント星占い（安定版）</h1>
     <div id="status">起動準備中…</div>
   </header>
 
@@ -144,50 +155,29 @@
   function setStatus(s){ try{ $status.textContent = s; }catch(e){} }
   function toast(text){ try{ const n=document.createElement('div'); n.className='toast'; n.textContent=text; document.body.appendChild(n); setTimeout(()=>n.remove(),1300);}catch(_){ } }
 
-  // Use only UMD browser bundle (works in plain <script> environments)
-  const CDN_CANDIDATES = [
-    "https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js",
-    "https://unpkg.com/astronomy-engine@2.1.19/astronomy.browser.min.js"
-  ];
-  async function loadAstronomyEngine(){
-    if (window.Astronomy) return;
-    let lastErr=null;
-    for(const url of CDN_CANDIDATES){
-      log("ライブラリ取得: "+url);
-      try{
-        await new Promise((res, rej)=>{
-          const s=document.createElement('script');
-          s.src=url; s.async=true;
-          let done=false;
-          const timer=setTimeout(()=>{ if(done) return; done=true; rej(new Error("timeout")); }, 10000);
-          s.onload=()=>{ if(done) return; done=true; clearTimeout(timer); res(); };
-          s.onerror=()=>{ if(done) return; done=true; clearTimeout(timer); rej(new Error("script error")); };
-          document.head.appendChild(s);
-        });
-        if(window.Astronomy){ log("astronomy-engine 読み込み成功: "+url); return; }
-      }catch(e){
-        lastErr=e; log("読み込み失敗: "+url+" / "+(e && e.message));
-      }
-    }
-    throw lastErr || new Error("全CDN失敗（ネット遮断やCDNブロックの可能性）");
-  }
-  setStatus("天体計算ライブラリ取得中…");
-  loadAstronomyEngine().then(()=>{
-    setStatus("天体計算ライブラリOK");
-  }).catch(err=>{
-    setStatus("ライブラリ未読込");
-    log("ライブラリのロードに失敗しました: "+(err && err.message));
+  window.addEventListener('error', e=>{ if(String(e.message||'').includes('Unexpected token <')){ log('CDNがHTMLを返しました（ブロック/404の可能性）。'); } });
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    setStatus(window.Astronomy ? '天体計算ライブラリOK' : 'ライブラリ未読込');
+
+    // Button bindings
+    document.getElementById('geocodeBtn').addEventListener('click', onGeocodeClick);
+    document.getElementById('calcBtn').addEventListener('click', onCalcClick);
+    document.getElementById('fillBtn').addEventListener('click', onFillClick);
+
+    document.getElementById('latSelect').addEventListener('change', e=>toggleLatInput(e.target.value));
+    document.getElementById('lonSelect').addEventListener('change', e=>toggleLonInput(e.target.value));
+    document.getElementById('tzSelect').addEventListener('change', e=>toggleTzInput(e.target.value));
+
+    loadInputs();
+    setStatus('準備OK');
   });
 </script>
 
 <script>
-/* ===== Util & state ===== */
-window.onerror = function(message, source, lineno, colno, error){
-  log(`JSエラー: ${message} @ ${source}:${lineno}:${colno}`);
-};
-window.addEventListener('unhandledrejection', e=>{
-  log('Promise未捕捉: '+ (e.reason && e.reason.message ? e.reason.message : String(e.reason)));
-});
+/* ===== Core logic (same as前版・安定化) ===== */
+window.onerror = function(message, source, lineno, colno, error){ log(`JSエラー: ${message}`); };
+window.addEventListener('unhandledrejection', e=>{ log('Promise未捕捉: '+ String(e.reason)); });
 
 function toggleTzInput(val){
   const inEl=document.getElementById('tzInput');
@@ -214,7 +204,6 @@ function toggleLonInput(val){
   saveInputs();
 }
 
-/* 保存/復元 */
 const PERSIST_KEYS = ['birthDate','birthTime','placeName','lat','lon','tzSelect'];
 function saveInputs(){
   try{
@@ -239,7 +228,6 @@ function loadInputs(){
   }catch(e){ log('復元エラー: '+(e.message||e)); }
 }
 
-/* TZ初期化 */
 (function tzInit(){
   const sel=document.getElementById('tzSelect');
   let deviceTz='Asia/Tokyo';
@@ -257,7 +245,6 @@ function loadInputs(){
   log('TZ: 初期設定 → '+(saved||deviceTz));
 })();
 
-/* RNG bucket */
 let __rng = Math.random;
 function seedRngFrom(dateUTC, tz){
   try{
@@ -283,7 +270,6 @@ function seedRngFrom(dateUTC, tz){
   }
 }
 
-/* Astro helpers */
 function normalizeDeg(d){d=d%360; if(d<0)d+=360; return d;}
 function toJulianDate(date){return(date.getTime()/86400000.0)+2440587.5;}
 function gmstDegrees(date){const JD=toJulianDate(date);const T=(JD-2451545.0)/36525.0;let GMST=280.46061837+360.98564736629*(JD-2451545.0)+0.000387933*T*T-(T*T*T)/38710000.0;GMST=((GMST%360)+360)%360;return GMST;}
@@ -320,7 +306,6 @@ function planetEclipticLongitude(body,dateUTC){
   try{ return normalizeDeg(Astronomy.EclipticLongitude(body,dateUTC)); }catch(e){ try{ const ecl=Astronomy.Ecliptic(body,dateUTC); return normalizeDeg(ecl.lon);}catch(err){ return NaN; } }
 }
 
-/* Templates */
 const _recentLines=new Set();
 function _markRecent(line){ if(!line) return; _recentLines.add(line); if(_recentLines.size>180){ const it=_recentLines.values().next().value; _recentLines.delete(it);} }
 let RUN_USED = new Set();
@@ -366,7 +351,6 @@ const TPL={
   "健康":{"好調":["回復力が高め。軽い運動とたっぷりの水分を。","姿勢と呼吸を整えるだけで体感が変わる日。","朝の光を浴びるとリズムが整い、集中力もアップ。","温かい飲み物が身体を内側からサポート。","散歩やストレッチで血の巡りを良くして。"],"普通":["姿勢と呼吸を意識して、疲れをためない工夫を。","水分・たんぱく質・睡眠の三本柱を丁寧に。","間食は“ナッツ＋水”などシンプルに。","画面から目を離して、遠くを見る休憩を。","体調メモを一行。傾向が見えると対策が立てやすい。"],"注意":["無理は禁物。今日は短時間で切り上げてOK。","冷え・だるさを感じたら温かい飲み物でケアを。","睡眠最優先。深夜のスマホはお休みしましょう。","頑張り過ぎのサイン。軽いストレッチでリセットを。","人混みは短時間に。静かな時間を作って。"]}
 };
 
-/* Rendering */
 function bucketFromScore(s){ if(s>=67) return '好調'; if(s>=34) return '普通'; return '注意'; }
 
 function renderOutput({natal, transit, aspects, scores, meta}){
@@ -423,7 +407,6 @@ function renderOutput({natal, transit, aspects, scores, meta}){
   out.style.display='block';
 }
 
-/* Compute */
 function getTZ(){
   const sel = document.getElementById('tzSelect').value;
   if(sel==='OTHER'){
@@ -467,8 +450,7 @@ async function onCalcClick(){
 
     seedRngFrom(targetUTC, tz);
 
-    if(!window.Astronomy){ await loadAstronomyEngine(); }
-    if(!window.Astronomy) throw new Error('astronomy-engine が読み込めませんでした。');
+    if(!window.Astronomy){ throw new Error('astronomy-engine が読み込めませんでした（ネットやCDNをご確認ください）'); }
 
     const natal   = computeLongitudes(birthUTC,  lat, lon);
     const transit = computeLongitudes(targetUTC, lat, lon);
@@ -531,21 +513,6 @@ function onFillClick(){
   toast('デモ値を入力しました');
   log('デモ値を入力しました。');
 }
-
-/* Bind after DOM ready */
-document.addEventListener('DOMContentLoaded', ()=>{
-  const geocodeBtn = document.getElementById('geocodeBtn');
-  const calcBtn = document.getElementById('calcBtn');
-  const fillBtn = document.getElementById('fillBtn');
-  geocodeBtn?.addEventListener('click', onGeocodeClick);
-  calcBtn?.addEventListener('click', onCalcClick);
-  fillBtn?.addEventListener('click', onFillClick);
-  document.getElementById('latSelect')?.addEventListener('change', e=>toggleLatInput(e.target.value));
-  document.getElementById('lonSelect')?.addEventListener('change', e=>toggleLonInput(e.target.value));
-  document.getElementById('tzSelect')?.addEventListener('change', e=>toggleTzInput(e.target.value));
-  loadInputs();
-  setStatus('準備OK');
-});
 </script>
 </body>
 </html>

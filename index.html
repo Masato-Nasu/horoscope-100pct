@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>100% 星占い｜GitHub Pages 安定版</title>
+  <title>100% 星占い｜正午固定版（同日・同TZで完全同一結果）</title>
   <style>
     :root{--bg:#fbfbfc;--card:#fff;--accent:#6b46c1;--muted:#666}
     html,body{margin:0;padding:0;height:100%}
@@ -36,7 +36,6 @@
   <!-- astronomy-engine UMD (works in plain <script>) -->
   <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
   <script>
-    // Fallback to unpkg if primary CDN fails (blocked/404)
     if (!window.Astronomy) {
       var s = document.createElement('script');
       s.src = 'https://unpkg.com/astronomy-engine@2.1.19/astronomy.browser.min.js';
@@ -49,7 +48,7 @@
 
 <div class="wrap">
   <header>
-    <h1>100パーセント星占い（安定版）</h1>
+    <h1>100パーセント星占い（正午固定版）</h1>
     <div id="status">起動準備中…</div>
   </header>
 
@@ -133,11 +132,11 @@
       </div>
     </div>
 
-    <label>解析日時（空なら今）</label><input type="datetime-local" id="targetDatetime" /><div style="margin-top:6px"><label style="display:flex;align-items:center;gap:8px;font-weight:500"><input type="checkbox" id="stableMode"/> 同日・同TZなら同じ結果にする（安定モード）</label><small class="muted">安定モードではその日の正午（ローカル）で計算・文章乱数も日単位で固定します。</small></div>
+    <label>解析日（空なら今日）</label><input type="date" id="targetDate" />
 
     <div class="row" id="btnRow" style="margin-top:12px">
       <div style="flex:1"><button id="geocodeBtn" type="button">都市名から緯度経度を取得</button></div>
-      <div style="flex:1"><button id="calcBtn" type="button">本格解析を実行</button></div>
+      <div style="flex:1"><button id="calcBtn" type="button">本格解析を実行（正午固定）</button></div>
       <div style="flex:1"><button id="fillBtn" type="button">デモ値を入力</button></div>
     </div>
   </div>
@@ -145,7 +144,7 @@
   <div id="output" class="card" style="display:none"></div>
   <div class="card" id="logCard" style="margin-top:12px"><div><strong>ログ</strong> <span class="muted">（問題が出たらここを開いてスクショください）</span></div><pre id="log"></pre></div>
 
-  <footer><small>astronomy-engine（CDN）/ 太陽〜冥王星＋ASC/MC対応。</small></footer>
+  <footer><small>※ 正午固定版：同じ日付・同じTZであれば、スコアと文章は常に同一です。</small></footer>
 </div>
 
 <script>
@@ -160,7 +159,6 @@
   document.addEventListener('DOMContentLoaded', ()=>{
     setStatus(window.Astronomy ? '天体計算ライブラリOK' : 'ライブラリ未読込');
 
-    // Button bindings
     document.getElementById('geocodeBtn').addEventListener('click', onGeocodeClick);
     document.getElementById('calcBtn').addEventListener('click', onCalcClick);
     document.getElementById('fillBtn').addEventListener('click', onFillClick);
@@ -175,7 +173,7 @@
 </script>
 
 <script>
-/* ===== Core logic (same as前版・安定化) ===== */
+/* ===== Core logic (正午固定) ===== */
 window.onerror = function(message, source, lineno, colno, error){ log(`JSエラー: ${message}`); };
 window.addEventListener('unhandledrejection', e=>{ log('Promise未捕捉: '+ String(e.reason)); });
 
@@ -204,7 +202,7 @@ function toggleLonInput(val){
   saveInputs();
 }
 
-const PERSIST_KEYS = ['birthDate','birthTime','placeName','lat','lon','tzSelect'];
+const PERSIST_KEYS = ['birthDate','birthTime','placeName','lat','lon','tzSelect','targetDate'];
 function saveInputs(){
   try{
     for(const id of PERSIST_KEYS){
@@ -246,28 +244,17 @@ function loadInputs(){
 })();
 
 let __rng = Math.random;
-function seedRngFrom(dateUTC, tz){
-  try{
-    const parts = new Intl.DateTimeFormat('en-GB', {
-      timeZone: tz, hour12:false,
-      year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit'
-    }).formatToParts(dateUTC);
-    const m={}; for(const p of parts) m[p.type]=p.value;
-    const y=+m.year, mo=+m.month, d=+m.day, h=+m.hour;
-    const dayIndex = Math.floor(Date.UTC(y, mo-1, d) / 86400000);
-    const bucket   = Math.floor(h/3);
-    const seed = ((dayIndex>>>0)*37 + (bucket>>>0)*101) >>> 0;
-    __rng = (function(s){
-      return function(){
-        s = (s + 0x6D2B79F5) | 0;
-        let t = Math.imul(s ^ (s>>>15), 1 | s);
-        t = (t + Math.imul(t ^ (t>>>7), 61 | t)) ^ t;
-        return ((t ^ (t>>>14)) >>> 0) / 4294967296;
-      };
-    })(seed);
-  }catch(_){
-    __rng = Math.random;
-  }
+function seedRngFromDateOnly(localDateStr){
+  const nums = localDateStr.replace(/-/g,'').slice(0,8);
+  let s = parseInt(nums,10) >>> 0;
+  __rng = (function(seed){
+    return function(){
+      seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed>>>15), 1 | seed);
+      t = (t + Math.imul(t ^ (t>>>7), 61 | t)) ^ t;
+      return ((t ^ (t>>>14)) >>> 0) / 4294967296;
+    };
+  })(s);
 }
 
 function normalizeDeg(d){d=d%360; if(d<0)d+=360; return d;}
@@ -279,18 +266,12 @@ function calcAscendant(dateUTC,lat,lon){const lst=lstDegrees(dateUTC,lon);const 
 function calcMC(dateUTC,lon){const lst=lstDegrees(dateUTC,lon);const eps=deg2rad(23.4392911);const ramc=deg2rad(lst);let L=Math.atan2(Math.sin(ramc),Math.cos(ramc)*Math.cos(eps));L=rad2deg(L);if(L<0)L+=360;return normalizeDeg(L);}
 function isoWithTZoffset(localIso,tz){const dt=new Date(localIso);const parts=new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(dt);const map={};for(const p of parts)map[p.type]=p.value;const asTzISO=`${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}:${map.second}Z`;const tUtc=Date.parse(asTzISO),localMillis=dt.getTime();const diffMin=Math.round((tUtc-localMillis)/60000);const sign=diffMin>=0?'+':'-';const mm=Math.abs(diffMin);return localIso+sign+String(Math.floor(mm/60)).padStart(2,'0')+':'+String(mm%60).padStart(2,'0');}
 function parseLocalToUTCdate(localDateStr,tz){try{return new Date(isoWithTZoffset(localDateStr,tz));}catch(e){return new Date(localDateStr);}}
-function roundLocalIsoTo3hNearest(localIso, tz){
-  const base = new Date(localIso);
-  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit', year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(base);
-  const map={}; for(const p of parts) map[p.type]=p.value;
-  const H = parseInt(map.hour||'0',10);
-  const M = parseInt(map.minute||'0',10);
-  const S = parseInt(map.second||'0',10);
-  const total = H + M/60 + S/3600;
-  const rounded = Math.floor(total/3)*3;
-  const hh = String(rounded).padStart(2,'0');
-  const roundedLocalIso = `${map.year}-${map.month}-${map.day}T${hh}:00:00`;
-  return { roundedLocalIso, originalHM: `${String(H).padStart(2,'0')}:${String(M).padStart(2,'0')}`, roundedHM: `${hh}:00` };
+
+function planetEclipticLongitude(body,dateUTC){
+  try{ if(body==='Sun' && Astronomy.SunLongitude) return normalizeDeg(Astronomy.SunLongitude(dateUTC)); }catch(e){}
+  try{ if(body==='Sun' && Astronomy.SunPosition){ const sp = Astronomy.SunPosition(dateUTC); const lon = (typeof sp.elon==='number')?sp.elon : (sp.ecliptic&&typeof sp.ecliptic.lon==='number')?sp.ecliptic.lon : sp.lon; if(typeof lon==='number') return normalizeDeg(lon);} }catch(e){}
+  try{ if(body==='Sun'){ const ecl = Astronomy.Ecliptic('Sun', dateUTC); if(ecl && typeof ecl.lon==='number') return normalizeDeg(ecl.lon);} }catch(e){}
+  try{ return normalizeDeg(Astronomy.EclipticLongitude(body,dateUTC)); }catch(e){ try{ const ecl=Astronomy.Ecliptic(body,dateUTC); return normalizeDeg(ecl.lon);}catch(err){ return NaN; } }
 }
 
 const ASPECTS=[{name:'Conjunction',deg:0,orb:8,weight:1.4},{name:'Sextile',deg:60,orb:6,weight:0.9},{name:'Square',deg:90,orb:8,weight:-1.2},{name:'Trine',deg:120,orb:8,weight:1.2},{name:'Opposition',deg:180,orb:8,weight:-1.5}];
@@ -299,12 +280,6 @@ function angleDiff(a,b){let d=Math.abs(a-b)%360;if(d>180)d=360-d;return d;}
 function aspectStrength(delta,asp){const diff=Math.abs(delta-asp.deg);if(diff>asp.orb)return 0;return 1-(diff/asp.orb);}
 function detectAspects(natal,transit){const list=[];for(const p in natal){if(!(p in transit))continue;const d=angleDiff(natal[p],transit[p]);for(const asp of ASPECTS){const clos=aspectStrength(d,asp);if(clos>0){list.push({planet:p,aspect:asp.name,exactness:clos,weight:asp.weight,angle:d,orb:asp.orb});}}}return list;}
 function scoreCategories(aspects){const raw={};for(const c in CATEGORY_MAP)raw[c]=0;for(const a of aspects){const importance={'Sun':1.1,'Moon':1.05,'Mercury':0.9,'Venus':1.0,'Mars':1.0,'Jupiter':1.0,'Saturn':1.0,'Uranus':0.6,'Neptune':0.5,'Pluto':0.5,'ASC':0.8,'MC':0.9}[a.planet]||0.6;const contrib=a.exactness*a.weight*importance;for(const c in CATEGORY_MAP){if(CATEGORY_MAP[c].includes(a.planet))raw[c]+=contrib;}raw['総合']+=contrib*0.4;}const results={};for(const c in raw){const x=raw[c];results[c]=Math.round((1/(1+Math.exp(-(x))))*100);}return results;}
-function planetEclipticLongitude(body,dateUTC){
-  try{ if(body==='Sun' && Astronomy.SunLongitude) return normalizeDeg(Astronomy.SunLongitude(dateUTC)); }catch(e){}
-  try{ if(body==='Sun' && Astronomy.SunPosition){ const sp = Astronomy.SunPosition(dateUTC); const lon = (typeof sp.elon==='number')?sp.elon : (sp.ecliptic&&typeof sp.ecliptic.lon==='number')?sp.ecliptic.lon : sp.lon; if(typeof lon==='number') return normalizeDeg(lon);} }catch(e){}
-  try{ if(body==='Sun'){ const ecl = Astronomy.Ecliptic('Sun', dateUTC); if(ecl && typeof ecl.lon==='number') return normalizeDeg(ecl.lon);} }catch(e){}
-  try{ return normalizeDeg(Astronomy.EclipticLongitude(body,dateUTC)); }catch(e){ try{ const ecl=Astronomy.Ecliptic(body,dateUTC); return normalizeDeg(ecl.lon);}catch(err){ return NaN; } }
-}
 
 const _recentLines=new Set();
 function _markRecent(line){ if(!line) return; _recentLines.add(line); if(_recentLines.size>180){ const it=_recentLines.values().next().value; _recentLines.delete(it);} }
@@ -385,7 +360,7 @@ function renderOutput({natal, transit, aspects, scores, meta}){
 
   const chips = `<div class="chips">
     <div class="chip">出生: ${meta.birthLocal}</div>
-    <div class="chip">解析: ${meta.targetLocal}（丸め: ${meta.roundedHM}）</div>
+    <div class="chip">解析（固定）: ${meta.targetLocal}（正午固定）</div>
     <div class="chip">TZ: ${meta.tz}</div>
     <div class="chip">緯度: ${meta.lat.toFixed(4)}</div>
     <div class="chip">経度: ${meta.lon.toFixed(4)}</div>
@@ -401,7 +376,7 @@ function renderOutput({natal, transit, aspects, scores, meta}){
     <div class="explain" style="margin-top:12px">
       <h3 style="margin:6px 0">今日の読み</h3>
       ${readings}
-      <p class="muted">※ 本ツールはastronomy-engineで算出した天体位置とアスペクトを用い、カテゴリ別にスコア化しテンプレ文章を自動生成します。</p>
+      <p class="muted">※ 本ツールは解析日を<strong>ローカル正午</strong>に固定し、文章の乱数も<strong>日付のみ</strong>で決定しています。同日・同TZであれば結果は不変です。</p>
     </div>
   `;
   out.style.display='block';
@@ -438,29 +413,22 @@ function computeLongitudes(dateUTC, lat, lon){
 }
 
 async function onCalcClick(){
-  const stable = document.getElementById('stableMode')?.checked;
   try{
     setStatus('計算中…');
-    const targetLocal = (document.getElementById('targetDatetime').value||'').trim();
+    const targetDate = (document.getElementById('targetDate').value||'').trim();
     const { birthLocal, tz, lat, lon } = validateInputs();
 
-    const targetBase0 = targetLocal || new Date().toISOString().slice(0,16);
-    const localDateOnly = (targetBase0.split('T')[0]);
-    let targetBase = targetBase0;
-    let rounded = { roundedLocalIso: targetBase0, roundedHM: targetBase0.split('T')[1] ? targetBase0.split('T')[1].slice(0,5) : '00:00' };
-    if(stable){
-      // Fix to local noon for stability
-      targetBase = localDateAtNoonISO(tz, localDateOnly);
-      rounded = { roundedLocalIso: targetBase, roundedHM: '12:00' };
-    } else {
-      rounded = roundLocalIsoTo3hNearest(targetBase, tz);
-    }
+    const todayLocal = new Date().toISOString().slice(0,10);
+    const localDateOnly = targetDate || todayLocal;
+    const targetLocalNoon = `${localDateOnly}T12:00:00`;
+
     const birthUTC  = parseLocalToUTCdate(birthLocal, tz);
-    const targetUTC = parseLocalToUTCdate(rounded.roundedLocalIso, tz);
+    const targetUTC = parseLocalToUTCdate(targetLocalNoon, tz);
 
-    if(stable){ seedRngFromDateOnly(localDateOnly); } else { seedRngFrom(targetUTC, tz); }
+    // RNG: 日付だけで固定（文章ぶれ無し）
+    seedRngFromDateOnly(localDateOnly);
 
-    if(!window.Astronomy){ throw new Error('astronomy-engine が読み込めませんでした（ネットやCDNをご確認ください）'); }
+    if(!window.Astronomy) throw new Error('astronomy-engine が読み込めませんでした（ネットやCDNをご確認ください）');
 
     const natal   = computeLongitudes(birthUTC,  lat, lon);
     const transit = computeLongitudes(targetUTC, lat, lon);
@@ -474,8 +442,7 @@ async function onCalcClick(){
         tz,
         lat, lon,
         birthLocal: birthLocal.replace('T',' '),
-        targetLocal: targetBase.replace('T',' '),
-        roundedHM: rounded.roundedHM
+        targetLocal: targetLocalNoon.replace('T',' '),
       }
     });
     setStatus('計算完了');
@@ -518,7 +485,7 @@ function onFillClick(){
   document.getElementById('latSelect').value = '35.6895'; toggleLatInput('35.6895');
   document.getElementById('lonSelect').value = '139.6917'; toggleLonInput('139.6917');
   document.getElementById('tzSelect').value = 'Asia/Tokyo'; toggleTzInput('Asia/Tokyo');
-  document.getElementById('targetDatetime').value = new Date().toISOString().slice(0,16);
+  document.getElementById('targetDate').value = new Date().toISOString().slice(0,10);
   saveInputs();
   toast('デモ値を入力しました');
   log('デモ値を入力しました。');

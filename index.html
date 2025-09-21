@@ -1,304 +1,195 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>100% 星占い｜絶対評価</title>
-
-<!-- モバイル最適化＆キャッシュ関連（開発中はno-cacheでOK。安定後は外してクエリ版に切替推奨） -->
-<meta name="theme-color" content="#6b46c1">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-<meta http-equiv="Pragma" content="no-cache" />
-<meta http-equiv="Expires" content="0" />
-<link rel="icon" href="data:,"> <!-- favicon 404 回避 -->
-
-<style>
-  :root{--bg:#fbfbfc;--card:#fff;--accent:#6b46c1;--muted:#666;--text:#111}
-  html,body{margin:0;padding:0}
-  body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text)}
-  .wrap{max-width:980px;margin:0 auto;padding:16px}
-  h1{font-size:clamp(18px,2.6vw,24px);color:var(--accent);margin:8px 0}
-  .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 20px rgba(16,24,40,0.06);margin-top:12px}
-  label{display:block;font-weight:600;margin:10px 0 6px}
-  input,button{width:100%;padding:12px;font-size:16px;border-radius:8px;border:1px solid #d8dbe3;box-sizing:border-box}
-  button{background:var(--accent);color:#fff;cursor:pointer;border:0}
-  button:disabled{opacity:.6;cursor:not-allowed}
-  #btns{display:grid;gap:10px;grid-template-columns:1fr}
-  #output p{line-height:1.75}
-  .bigscore{font-size:clamp(22px,7vw,36px);font-weight:700;letter-spacing:.02em}
-  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-  .chip{background:#f3f0ff;color:#473592;font-size:12px;border-radius:999px;padding:4px 8px}
-  .bar{height:12px;background:#eee;border-radius:999px;overflow:hidden}
-  .bar>i{height:100%;display:block;background:linear-gradient(90deg,#ffd166,#ef476f)}
-  #log{white-space:pre-wrap;background:#0b1020;color:#e6f0ff;padding:10px;border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:12px;max-height:260px;overflow:auto}
-  small{color:var(--muted)}
-</style>
+  <meta charset="UTF-8">
+  <title>100% 星占い</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#6b46c1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #000;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    input, select, button {
+      width: 100%;
+      margin: 0.5rem 0;
+      padding: 0.6rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    button {
+      background: #6b46c1;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .card {
+      background: #f9f9f9;
+      border-radius: 10px;
+      padding: 1rem;
+      margin: 1rem 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    #output {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-<noscript><div style="background:#ffdfdf;color:#900;padding:10px">JavaScriptが無効です。オンにしてください。</div></noscript>
-
-<div class="wrap">
   <h1>100% 星占い</h1>
 
-  <div class="card" id="inputCard">
-    <p style="margin:6px 0;color:var(--muted)">太陽〜冥王星＋ASC/MCを本格計算。毎回少し違う言葉でアドバイスします。</p>
+  <div class="card">
+    <label>都市名</label>
+    <input id="placeName" type="text" placeholder="Tokyo, Japan">
 
-    <label>出生地（都市名・任意）</label>
-    <input id="cityInput" type="text" placeholder="Tokyo, Japan" autocomplete="off">
+    <label>タイムゾーン</label>
+    <select id="tzSelect" onchange="toggleTzInput(this.value)">
+      <option value="Asia/Tokyo">Asia/Tokyo</option>
+      <option value="Asia/Seoul">Asia/Seoul</option>
+      <option value="Asia/Shanghai">Asia/Shanghai</option>
+      <option value="Asia/Taipei">Asia/Taipei</option>
+      <option value="Europe/London">Europe/London</option>
+      <option value="Europe/Paris">Europe/Paris</option>
+      <option value="America/New_York">America/New_York</option>
+      <option value="America/Los_Angeles">America/Los_Angeles</option>
+      <option value="UTC">UTC</option>
+    </select>
 
-    <label>タイムゾーン（自由入力）</label>
-    <input id="tzInput" type="text" placeholder="Asia/Tokyo" list="tzList" autocomplete="off">
-    <datalist id="tzList">
-      <option value="Asia/Tokyo"><option value="Asia/Seoul"><option value="Asia/Shanghai"><option value="Asia/Taipei"><option value="Asia/Singapore">
-      <option value="Europe/London"><option value="Europe/Paris"><option value="America/New_York"><option value="America/Los_Angeles"><option value="UTC">
-    </datalist>
+    <label>緯度</label>
+    <input id="lat" type="text" placeholder="35.6895">
 
-    <label>緯度（自由入力・数値）</label>
-    <input id="latInput" type="text" inputmode="decimal" placeholder="35.6895" autocomplete="off">
+    <label>経度</label>
+    <input id="lon" type="text" placeholder="139.6917">
 
-    <label>経度（自由入力・数値）</label>
-    <input id="lonInput" type="text" inputmode="decimal" placeholder="139.6917" autocomplete="off">
+    <label>解析日時</label>
+    <input id="targetDatetime" type="datetime-local">
 
-    <label>解析日時（空なら今）</label>
-    <input id="whenInput" type="datetime-local" placeholder="">
-
-    <div id="btns" style="margin-top:12px">
-      <button id="geocodeBtn" type="button">都市名から緯度経度を取得</button>
-      <button id="calcBtn" type="button">本格解析を実行</button>
-      <button id="fillBtn" type="button" style="background:#7c5cf3">デモ値を入力</button>
-    </div>
+    <button id="geocodeBtn" type="button">都市名から緯度経度を取得</button>
+    <button id="calcBtn" type="button">本格解析を実行</button>
+    <button id="fillBtn" type="button" style="background:#7c5cf3">デモ値を入力</button>
   </div>
 
-  <div id="output" class="card" style="display:none"></div>
+  <div id="output" class="card"></div>
 
-  <div class="card" id="logCard" style="margin-top:12px">
-    <div><strong>ログ</strong></div>
-    <pre id="log"></pre>
-  </div>
-
-  <footer style="margin-top:8px">
-    <small>astronomy-engine / 太陽〜冥王星＋ASC/MC対応。TZ・入力は自動保存。文章テンプレ 強化パック（女性向け）。</small>
-  </footer>
-</div>
-
-<!-- astronomy-engine（CDN） -->
-<script>
-(function(){
-  const cdns=[
-    "https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js?v=20250921",
-    "https://unpkg.com/astronomy-engine@2.1.19/astronomy.browser.min.js?v=20250921"
-  ];
-  const log=(m)=>{ const el=document.getElementById('log'); if(el){ el.textContent += m + "\n"; el.scrollTop=el.scrollHeight; } };
-  (async()=>{
-    for(const url of cdns){
+  <script>
+    // ===== 入力保存・復元 =====
+    function saveInputs(){
+      const data = {
+        place: document.getElementById('placeName').value,
+        tz: document.getElementById('tzSelect').value,
+        lat: document.getElementById('lat').value,
+        lon: document.getElementById('lon').value,
+        when: document.getElementById('targetDatetime').value
+      };
+      localStorage.setItem("horoscope.inputs", JSON.stringify(data));
+    }
+    function restoreInputs(){
       try{
-        log(`[${new Date().toLocaleTimeString()}] ライブラリ取得: ${url}`);
-        await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=url; s.onload=res; s.onerror=()=>rej(new Error("load failed")); document.head.appendChild(s); });
-        log(`[${new Date().toLocaleTimeString()}] astronomy-engine 読み込み成功: ${url}`);
-        return;
-      }catch(e){ log(`読み込み失敗: ${url} / ${e.message}`); }
+        const d = JSON.parse(localStorage.getItem("horoscope.inputs"));
+        if(!d) return;
+        document.getElementById('placeName').value = d.place || "";
+        document.getElementById('tzSelect').value = d.tz || "Asia/Tokyo";
+        document.getElementById('lat').value = d.lat || "";
+        document.getElementById('lon').value = d.lon || "";
+        document.getElementById('targetDatetime').value = d.when || "";
+      }catch(_){}
     }
-    log("astronomy-engine を読み込めませんでした（オフライン？）");
-  })();
-})();
-</script>
 
-<script>
-/* ===== 実行内の重複禁止 ===== */
-const _recentLines=new Set();
-function _markRecent(line){ if(!line)return; _recentLines.add(line); if(_recentLines.size>180){ const it=_recentLines.values().next().value; _recentLines.delete(it);} }
-let RUN_USED=new Set();
-function beginRun(){ RUN_USED=new Set(); }
-function pickNoDup(arr){
-  if(!arr||!arr.length) return "";
-  const shuffled=[...arr].sort(()=>Math.random()-0.5);
-  for(const s of shuffled){ if(!RUN_USED.has(s) && !_recentLines.has(s)){ RUN_USED.add(s); _markRecent(s); return s; } }
-  const fb=shuffled[0]; RUN_USED.add(fb); _markRecent(fb); return fb;
-}
-function sampleUnique(arr,n){
-  if(!arr||!arr.length) return [];
-  const out=[], pool=[...arr];
-  for(let i=0;i<n;i++){
-    const c=pickNoDup(pool); if(!c) break;
-    out.push(c); const idx=pool.indexOf(c); if(idx>=0) pool.splice(idx,1);
-    if(pool.length===0) break;
-  }
-  return out;
-}
-
-/* ===== Safari向けジオコーディング（CORSプロキシ） ===== */
-async function robustGeocode(name){
-  if(!name||!name.trim()) return null;
-  const endpoint="https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(name);
-  const proxied="https://api.allorigins.win/raw?url="+encodeURIComponent(endpoint);
-  try{
-    const resp=await fetch(proxied,{cache:"no-store"});
-    if(!resp.ok) throw new Error("HTTP "+resp.status);
-    const json=await resp.json();
-    if(!Array.isArray(json)||json.length===0) throw new Error("no result");
-    const hit=json[0];
-    return {lat:parseFloat(hit.lat), lon:parseFloat(hit.lon), display:hit.display_name||name};
-  }catch(e){
-    alert("位置情報の取得に失敗しました。緯度・経度を手入力してください。");
-    console.warn("Geocode error:", e);
-    return null;
-  }
-}
-
-/* ===== テンプレ（必要に応じて拡張OK） ===== */
-const TPL={
-  "全体運":{好調:["今日は流れがスムーズ。第一歩を早めに。"],普通:["要点を先に、段取りで進めましょう。"],注意:["慎重に。小さな見直しが効きます。"]},
-  "恋愛":{好調:["気持ちが届きやすい日。"],普通:["一言の気配りを添えて。"],注意:["無理は禁物。静観が吉。"]},
-  "仕事":{好調:["集中力が高まります。"],普通:["全体→要点→依頼の順で伝えると◎。"],注意:["確認を丁寧に。"]},
-  "金運":{好調:["小さなラッキーが舞い込みそう。"],普通:["固定費の見直しを一つだけ。"],注意:["衝動買いに注意。"]},
-  "健康":{好調:["体調◎。軽い運動でさらに良し。"],普通:["休息と水分補給を。"],注意:["冷たい飲み物は控えめに。"]},
-  "締めの言葉":["軽やかに行きましょう。","小さな一歩が今日の鍵です。"]
-};
-const PlanetFlavor={
-  Mercury:{
-    intro:["言葉がなめらかに流れる気配。","伝えたい想いが届きやすい日。"],
-    tone:["短く優しく、軽やかに。","丁寧な聞き方が鍵。"],
-    actions:[
-      "一通だけ心を込めたメッセージを。",
-      "感情と出来事を切り分けて書き出しましょう。",
-      "心の動きと事実を並べて整理すると落ち着きます。",
-      "気持ちと事実を分けてメモにすると客観視できます。",
-      "出来事と感情を区別して書くと、考えがすっきりします。"
-    ]
-  }
-};
-
-/* ===== UIヘルパ ===== */
-const $=sel=>document.querySelector(sel);
-const log=(m)=>{ const el=$("#log"); if(el){ el.textContent += m + "\n"; el.scrollTop=el.scrollHeight; } };
-function saveInputs(){
-  try{
-    const data={
-      city: $("#cityInput")?.value||"",
-      tz:   $("#tzInput")?.value||"",
-      lat:  $("#latInput")?.value||"",
-      lon:  $("#lonInput")?.value||"",
-      when: $("#whenInput")?.value||""
-    };
-    localStorage.setItem("horoscope.inputs", JSON.stringify(data));
-  }catch(_){}
-}
-function restoreInputs(){
-  try{
-    const raw=localStorage.getItem("horoscope.inputs"); if(!raw) return;
-    const d=JSON.parse(raw);
-    if(d.city) $("#cityInput").value=d.city;
-    if(d.tz)   $("#tzInput").value=d.tz;
-    if(d.lat)  $("#latInput").value=d.lat;
-    if(d.lon)  $("#lonInput").value=d.lon;
-  }catch(_){}
-}
-
-/* ===== 出力組み立て ===== */
-function pickTier(v){ return v>70?"好調":(v<40?"注意":"普通"); }
-function renderUsingTemplates(scores){
-  const parts=[];
-  const avg=Math.round(Object.values(scores).reduce((s,v)=>s+v,0)/Object.values(scores).length);
-  const tier=pickTier(avg);
-  parts.push(`<p class="bigscore">いまの全体感： ${avg}%</p>`);
-  parts.push(`<p>${pickNoDup(TPL["全体運"][tier])}</p>`);
-  for(const key of ["恋愛","仕事","金運","健康"]){
-    const sc=scores[key]??avg; const t=pickTier(sc);
-    parts.push(`<p><strong>${key}：</strong> ${sc}%<br>${pickNoDup(TPL[key][t])}</p>`);
-  }
-  const p3="今日のヒント："+ pickNoDup(["完璧よりまず一歩。","短い共有・お礼・お願いが鍵。","小さな成功をメモに残す。"]);
-  const acts = sampleUnique(PlanetFlavor.Mercury.actions, 2);
-  const p4="やってみたいこと："+(acts.length?("・"+acts.join("　・")):"小さな一歩を選んで。");
-  parts.push(`<p>${p3}</p>`);
-  parts.push(`<p>${p4}</p>`);
-  parts.push(`<p style="color:var(--muted)"><em>${pickNoDup(TPL["締めの言葉"])}</em></p>`);
-  return parts.join("\n");
-}
-
-/* ===== 本格解析（デモ：疑似スコア。天体計算は後で差し替え可） ===== */
-async function realCalc(){
-  const tz=($("#tzInput")?.value||"").trim() || "Asia/Tokyo";
-  const lat=parseFloat($("#latInput")?.value);
-  const lon=parseFloat($("#lonInput")?.value);
-  if(!isFinite(lat) || !isFinite(lon)){
-    alert("緯度・経度は数値で入力してください（例：35.6895 / 139.6917）");
-    return;
-  }
-  // astronomy-engine を用いた本格計算はここに追加可
-  const seed=Math.abs(Math.sin(Date.now()/86400000 + lat*0.1 + lon*0.1))*10000|0;
-  function prng(n){ const x=Math.sin(seed+n)*10000; return x-Math.floor(x); }
-  const scores={
-    "総合":Math.round(40+prng(1)*60),
-    "恋愛":Math.round(30+prng(2)*70),
-    "仕事":Math.round(30+prng(3)*70),
-    "金運":Math.round(30+prng(4)*70),
-    "健康":Math.round(30+prng(5)*70)
-  };
-  const out=$("#output"); out.style.display="block"; out.innerHTML=renderUsingTemplates(scores);
-}
-
-/* ===== イベント配線（← これが “方法2”：onclick を使わない） ===== */
-document.addEventListener("DOMContentLoaded", ()=>{
-  restoreInputs();
-
-  const geocodeBtn = document.getElementById("geocodeBtn");
-  const calcBtn    = document.getElementById("calcBtn");
-  const fillBtn    = document.getElementById("fillBtn");
-
-  geocodeBtn?.addEventListener("click", async ()=>{
-    const name=$("#cityInput").value;
-    const r=await robustGeocode(name);
-    if(r){ $("#latInput").value=r.lat; $("#lonInput").value=r.lon; }
-    saveInputs();
-  });
-
-  calcBtn?.addEventListener("click", async ()=>{
-    beginRun();
-    try{ await realCalc(); saveInputs(); }
-    catch(e){
-      const out=$("#output");
-      out.style.display='block';
-      out.innerHTML=`<div style="padding:10px;border:1px solid #f3c;background:#fff0fb;border-radius:8px;">
-        <strong>実行エラー</strong><br><code>${String(e?.message||e)}</code><br>
-        <small>Safariやアプリ内ブラウザでは、都市名ではなく緯度・経度・タイムゾーンを手入力してお試しください。</small>
-      </div>`;
-      console.error(e);
+    // ===== Geocode =====
+    async function robustGeocode(name){
+      const endpoint = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(name);
+      const proxied = "https://api.allorigins.win/raw?url="+encodeURIComponent(endpoint);
+      const resp = await fetch(proxied,{cache:"no-store"});
+      if(!resp.ok) throw new Error("HTTP "+resp.status);
+      const arr = await resp.json();
+      if(!arr.length) throw new Error("no result");
+      return {lat: parseFloat(arr[0].lat), lon: parseFloat(arr[0].lon)};
     }
-  });
 
-  fillBtn?.addEventListener("click", ()=>{
-    $("#cityInput").value="Tokyo, Japan";
-    $("#tzInput").value="Asia/Tokyo";
-    $("#latInput").value="35.6895";
-    $("#lonInput").value="139.6917";
-    $("#whenInput").value="";
-    saveInputs();
-  });
-});
+    async function onGeocodeClick(){
+      const name = document.getElementById('placeName').value;
+      if(!name.trim()){ alert("都市名を入力してください"); return; }
+      try{
+        const geo = await robustGeocode(name);
+        document.getElementById('lat').value = geo.lat;
+        document.getElementById('lon').value = geo.lon;
+        saveInputs();
+      }catch(e){
+        alert("位置情報の取得に失敗しました。緯度・経度を手入力してください。");
+        console.error(e);
+      }
+    }
 
-/* ===== 開発中のトラブル見える化（任意・便利） ===== */
-window.addEventListener('error', e => {
-  const out = document.getElementById('output');
-  if(out){
-    out.style.display='block';
-    out.innerHTML = `<div style="padding:10px;border:1px solid red;background:#fee;border-radius:8px;">
-      <strong>エラー発生:</strong><br>${e.message}
-    </div>`;
-  }
-  console.error("GlobalError:", e.message, e);
-});
-window.addEventListener('unhandledrejection', e => {
-  const out = document.getElementById('output');
-  if(out){
-    out.style.display='block';
-    out.innerHTML = `<div style="padding:10px;border:1px solid red;background:#fee;border-radius:8px;">
-      <strong>Promiseエラー:</strong><br>${e.reason}
-    </div>`;
-  }
-  console.error("UnhandledRejection:", e.reason);
-});
-</script>
+    // ===== 占い本体（ダミー算出） =====
+    function renderResult(scores){
+      const out = document.getElementById('output');
+      out.style.display="block";
+      out.innerHTML = `
+        <h2>いまの全体感：${scores.total}%</h2>
+        <p><strong>恋愛：</strong>${scores.love}%</p>
+        <p><strong>仕事：</strong>${scores.work}%</p>
+        <p><strong>金運：</strong>${scores.money}%</p>
+        <p><strong>健康：</strong>${scores.health}%</p>
+        <p style="color:#666"><em>今日の一歩を大切に。</em></p>
+      `;
+    }
+
+    async function onCalcClick(){
+      try{
+        const lat = parseFloat(document.getElementById('lat').value);
+        const lon = parseFloat(document.getElementById('lon').value);
+        if(!isFinite(lat)||!isFinite(lon)){ alert("緯度・経度を入力してください"); return; }
+        const seed = Math.abs(Math.sin(Date.now()/86400000 + lat*0.1 + lon*0.1))*10000|0;
+        const prng = (n)=>{ const x=Math.sin(seed+n)*10000; return x-Math.floor(x); };
+        const scores = {
+          total: Math.round(40+prng(1)*60),
+          love:  Math.round(30+prng(2)*70),
+          work:  Math.round(30+prng(3)*70),
+          money: Math.round(30+prng(4)*70),
+          health:Math.round(30+prng(5)*70)
+        };
+        renderResult(scores);
+        saveInputs();
+      }catch(e){
+        const out=document.getElementById('output');
+        out.style.display="block";
+        out.innerHTML=`<div style="padding:10px;border:1px solid #f3c;background:#fff0fb;border-radius:8px;">
+          <strong>実行エラー</strong><br><code>${String(e?.message||e)}</code>
+        </div>`;
+      }
+    }
+
+    // ===== デモ値入力 =====
+    function onFillClick(){
+      document.getElementById('placeName').value="Tokyo, Japan";
+      document.getElementById('tzSelect').value="Asia/Tokyo";
+      document.getElementById('lat').value="35.6895";
+      document.getElementById('lon').value="139.6917";
+      document.getElementById('targetDatetime').value="";
+      saveInputs();
+    }
+
+    // ===== イベント配線（onclickを使わず確実に実行される） =====
+    document.addEventListener("DOMContentLoaded", ()=>{
+      restoreInputs();
+      document.getElementById("geocodeBtn").addEventListener("click", onGeocodeClick);
+      document.getElementById("calcBtn").addEventListener("click", onCalcClick);
+      document.getElementById("fillBtn").addEventListener("click", onFillClick);
+    });
+  </script>
 </body>
 </html>

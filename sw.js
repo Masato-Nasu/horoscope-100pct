@@ -1,4 +1,4 @@
-const CACHE_NAME = "hoshi-cache-v1";
+const CACHE_NAME = "hoshi-cache-v2";
 const URLS_TO_CACHE = [
   "./",
   "./index.html",
@@ -22,3 +22,4 @@ self.addEventListener("fetch", event => {
     })
   );
 });
+

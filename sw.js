@@ -1,77 +1,84 @@
-/* 100% 星占い — Service Worker */
-const CACHE_VERSION = 'v26';                 // index.html の ?v= と合わせる
+// ----- horoscope SW v28 : force refresh & purge old caches -----
+
+const CACHE_VERSION = 'v28';
 const CACHE_NAME = `horoscope-cache-${CACHE_VERSION}`;
 
+// ルートは GitHub Pages のプロジェクトパスに合わせる
+const ROOT = '/horoscope-100pct/';
+
+// 起動時に最低限使うファイル（絶対パス）
 const CORE_ASSETS = [
-  './',
-  './index.html',
-  './manifest.json?v=8',
-  './icon-192.png',
-  './icon-512.png',
+  `${ROOT}`,
+  `${ROOT}index.html`,
+  `${ROOT}manifest.json?v=9`,
+  `${ROOT}icon-192.png`,
+  `${ROOT}icon-512.png`,
 ];
 
+// ----- install: 先にコアだけ入れて、即アクティブ化 -----
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    await cache.addAll(CORE_ASSETS);
+    try { await cache.addAll(CORE_ASSETS); } catch (_) {}
     await self.skipWaiting();
   })());
 });
 
+// ----- activate: 既存キャッシュを**全削除**して最新に統一 -----
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : Promise.resolve())));
+    // 旧キャッシュをすべて削除（名前問わず）
+    await Promise.all(keys.map(k => caches.delete(k)));
     await self.clients.claim();
   })());
 });
 
+// ----- fetch: ナビゲーションはネット優先。失敗時だけキャッシュ -----
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  const url = new URL(req.url);
   if (req.method !== 'GET') return;
 
+  // 1) ページ遷移（アプリ本体のHTML）
   if (req.mode === 'navigate') {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match('./');
       try {
-        const fresh = await fetch(req);
-        cache.put('./', fresh.clone());
+        const fresh = await fetch(req, { cache: 'no-store' });
+        // ルートHTMLを最新に更新
+        cache.put(`${ROOT}`, fresh.clone()).catch(() => {});
+        cache.put(`${ROOT}index.html`, fresh.clone()).catch(() => {});
         return fresh;
-      } catch (_) {
-        if (cached) return cached;
-        return new Response(
-          `<!doctype html><meta charset="utf-8"><title>オフライン</title>
-           <body style="font-family:system-ui;padding:16px">
-             <h1>オフラインです</h1>
-             <p>ネットワークに接続してもう一度お試しください。</p>
-           </body>`,
-          { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
-        );
+      } catch {
+        const fallback =
+          (await cache.match(`${ROOT}`)) ||
+          (await cache.match(`${ROOT}index.html`));
+        return fallback || new Response('<h1>オフライン</h1>', {
+          headers: { 'Content-Type': 'text/html; charset=utf-8' }
+        });
       }
     })());
     return;
   }
 
+  // 2) 同一オリジンの静的ファイル（アイコン/manifest等）
+  const url = new URL(req.url);
   if (url.origin === self.location.origin) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       const cached = await cache.match(req);
-      const fetchPromise = (async () => {
-        try {
-          const res = await fetch(req);
-          if (res && res.status === 200) cache.put(req, res.clone());
-          return res;
-        } catch (_) {
-          return cached || Promise.reject(_);
-        }
-      })();
-      return cached || fetchPromise;
+      try {
+        const res = await fetch(req);
+        if (res && res.status === 200) cache.put(req, res.clone());
+        return res;
+      } catch {
+        return cached || Response.error();
+      }
     })());
     return;
   }
 
+  // 3) 外部CDN（astronomy-engine等）はネット優先、失敗時のみキャッシュ
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     try {
@@ -80,12 +87,10 @@ self.addEventListener('fetch', (event) => {
         cache.put(req, res.clone());
       }
       return res;
-    } catch (_) {
+    } catch {
       const cached = await cache.match(req);
       if (cached) return cached;
-      throw _;
+      throw new Error('network error');
     }
   })());
 });
-
-

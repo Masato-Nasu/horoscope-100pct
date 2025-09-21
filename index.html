@@ -575,13 +575,20 @@ function computeLongitudes(dateUTC, lat, lon){
 
 function bucketFromScore(s){ if(s>=67) return '好調'; if(s>=34) return '普通'; return '注意'; }
 
+
 function renderOutput({natal, transit, aspects, scores, meta}){
   const out = document.getElementById('output');
-  const cats = ['総合','恋愛','仕事','金運','健康'];
+  const cats = [
+    {key:'総合', label:'総合', tplKey:'全体運'},
+    {key:'恋愛', label:'恋愛', tplKey:'恋愛'},
+    {key:'仕事', label:'仕事', tplKey:'仕事'},
+    {key:'金運', label:'金運', tplKey:'金運'},
+    {key:'健康', label:'健康', tplKey:'健康'}
+  ];
   const bars = cats.map(c=>{
-    const v = scores[c] ?? 50;
+    const v = scores[c.key] ?? (c.key==='総合' ? (scores['総合'] ?? 50) : 50);
     return `<div style="margin:6px 0">
-      <div style="display:flex;justify-content:space-between"><strong>${c}</strong><span>${v}%</span></div>
+      <div style="display:flex;justify-content:space-between"><strong>${c.label}</strong><span>${v}%</span></div>
       <div class="bar"><i style="width:${v}%"></i></div>
     </div>`;
   }).join('');
@@ -590,12 +597,13 @@ function renderOutput({natal, transit, aspects, scores, meta}){
     return `<tr><td>${a.planet}</td><td>${a.aspect}</td><td>${a.angle.toFixed(1)}°</td><td>${(a.exactness*100|0)}%</td></tr>`;
   }).join('');
 
-  // 読み物
   beginRun();
   const readings = cats.map(c=>{
-    const bucket = bucketFromScore(scores[c] ?? 50);
-    const lines = sampleUnique(TPL[c]?.[bucket]||[], 3).map(s=>`<li>${s}</li>`).join('');
-    return `<details open><summary>${c}：${bucket}</summary><ul>${lines||'<li>…</li>'}</ul></details>`;
+    const score = scores[c.key] ?? (c.key==='総合' ? (scores['総合'] ?? 50) : 50);
+    const bucket = bucketFromScore(score);
+    const tplKey = c.tplKey || c.key;
+    const lines = sampleUnique(TPL[tplKey]?.[bucket]||[], 3).map(s=>`<li>${s}</li>`).join('');
+    return `<details open><summary>${c.label}：${bucket}</summary><ul>${lines||'<li>…</li>'}</ul></details>`;
   }).join('');
 
   const chips = `<div class="chips">
@@ -609,6 +617,19 @@ function renderOutput({natal, transit, aspects, scores, meta}){
   out.innerHTML = `
     <div><strong>結果</strong></div>
     ${chips}
+    <div style="margin-top:10px">${bars}</div>
+    <details style="margin-top:10px"><summary>アスペクト一覧（最大24件）</summary>
+      <table><thead><tr><th>天体</th><th>種別</th><th>角度</th><th>近さ</th></tr></thead><tbody>${aspRows}</tbody></table>
+    </details>
+    <div class="explain" style="margin-top:12px">
+      <h3 style="margin:6px 0">今日の読み</h3>
+      ${readings}
+      <p class="muted">※ 本ツールは天体位置をastronomy-engineで近似計算し、アスペクトから各カテゴリのスコアを算出のうえテンプレート文を動的生成します。医療/投資等の助言ではありません。</p>
+    </div>
+  `;
+  out.style.display='block';
+}
+
     <div style="margin-top:10px">${bars}</div>
     <details style="margin-top:10px"><summary>アスペクト一覧（最大24件）</summary>
       <table><thead><tr><th>天体</th><th>種別</th><th>角度</th><th>近さ</th></tr></thead><tbody>${aspRows}</tbody></table>

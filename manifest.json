@@ -1,15 +1,23 @@
 {
   "name": "100% 星占い",
   "short_name": "星占い100%",
-  "id": "/horoscope-100pct/",
+  "description": "日付固定の読みで、毎日ぶれない星占い。PWA対応。",
   "start_url": "/horoscope-100pct/",
   "scope": "/horoscope-100pct/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#6b46c1",
-  "lang": "ja",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "/horoscope-100pct/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/horoscope-100pct/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }

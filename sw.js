@@ -1,88 +1,67 @@
-// ----- horoscope SW v31 : キャッシュ刷新 & 通常インストール対応 -----
-const CACHE_VERSION = 'v31';
-const CACHE_NAME = `horoscope-cache-${CACHE_VERSION}`;
-const ROOT = '/horoscope-100pct/';
+/* sw.js v32 — 2025-09-21 23:14:47 */
+const CACHE_VERSION = 'v32';
+const APP_CACHE = 'horoscope-app-' + CACHE_VERSION;
 
-const CORE_ASSETS = [
-  `${ROOT}`,
-  `${ROOT}index.html`,
-  `${ROOT}manifest.json?v=9`,
-  `${ROOT}icon-192.png`,
-  `${ROOT}icon-512.png`,
+const APP_SHELL = [
+  '/horoscope-100pct/',
+  '/horoscope-100pct/index.html?v=build-202509212314',
+  '/horoscope-100pct/manifest.json?v=10',
+  '/horoscope-100pct/icon-192.png',
+  '/horoscope-100pct/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil((async () => {
-    const cache = await caches.open(CACHE_NAME);
-    try { await cache.addAll(CORE_ASSETS); } catch (_) {}
-    await self.skipWaiting();
-  })());
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(APP_CACHE).then(cache => cache.addAll(APP_SHELL).catch(()=>{}))
+  );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    // 古いキャッシュを全削除（GitHub Pagesの更新反映を確実に）
-    await Promise.all(keys.map(k => caches.delete(k)));
+    await Promise.all(keys.filter(k => k !== APP_CACHE).map(k => caches.delete(k)));
     await self.clients.claim();
   })());
 });
 
+// Network-first for HTML; cache-first for others.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
+  const url = new URL(req.url);
   if (req.method !== 'GET') return;
 
-  // HTMLナビゲーションはネット優先（失敗時はキャッシュfallback）
-  if (req.mode === 'navigate') {
+  // Ignore cross-origin
+  if (url.origin !== location.origin) return;
+
+  const isHTML = req.headers.get('accept')?.includes('text/html') || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
+
+  if (isHTML) {
     event.respondWith((async () => {
-      const cache = await caches.open(CACHE_NAME);
       try {
         const fresh = await fetch(req, { cache: 'no-store' });
-        cache.put(`${ROOT}`, fresh.clone()).catch(() => {});
-        cache.put(`${ROOT}index.html`, fresh.clone()).catch(() => {});
+        const cache = await caches.open(APP_CACHE);
+        cache.put(req, fresh.clone());
         return fresh;
-      } catch {
-        const fallback =
-          (await cache.match(`${ROOT}`)) ||
-          (await cache.match(`${ROOT}index.html`));
-        return fallback || new Response('<h1>オフライン</h1>', {
-          headers: { 'Content-Type': 'text/html; charset=utf-8' }
-        });
+      } catch (e) {
+        const cache = await caches.open(APP_CACHE);
+        const cached = await cache.match(req) || await cache.match('/horoscope-100pct/');
+        return cached || new Response('Offline', {status: 503});
       }
     })());
     return;
   }
 
-  // 同一オリジンの静的ファイルはキャッシュ優先・バックグラウンド更新
-  const url = new URL(req.url);
-  if (url.origin === self.location.origin) {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match(req);
-      try {
-        const res = await fetch(req);
-        if (res && res.status === 200) cache.put(req, res.clone());
-        return res;
-      } catch {
-        return cached || Response.error();
-      }
-    })());
-    return;
-  }
-
-  // 外部リソース（CDN等）はネット優先（キャッシュは保険）
   event.respondWith((async () => {
-    const cache = await caches.open(CACHE_NAME);
+    const cache = await caches.open(APP_CACHE);
+    const cached = await cache.match(req);
+    if (cached) return cached;
     try {
-      const res = await fetch(req);
-      if (res && (res.status === 200 || res.type === 'opaque')) {
-        cache.put(req, res.clone());
-      }
-      return res;
-    } catch {
-      const cached = await cache.match(req);
-      if (cached) return cached;
-      throw new Error('network error');
+      const fresh = await fetch(req);
+      cache.put(req, fresh.clone());
+      return fresh;
+    } catch (e) {
+      return cached || Response.error();
     }
   })());
 });

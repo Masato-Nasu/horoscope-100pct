@@ -1,5 +1,5 @@
 /* 100% 星占い — Service Worker */
-const CACHE_VERSION = 'v24';                 // index.html の ?v= と合わせる
+const CACHE_VERSION = 'v25';                 // index.html の ?v= と合わせる
 const CACHE_NAME = `horoscope-cache-${CACHE_VERSION}`;
 
 const CORE_ASSETS = [
@@ -87,3 +87,4 @@ self.addEventListener('fetch', (event) => {
     }
   })());
 });
+

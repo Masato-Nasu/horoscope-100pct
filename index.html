@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>100% 星占い｜正午固定版（同日・同TZで完全同一結果）</title>
+  <title>100% 星占い</title>
   <style>
     :root{--bg:#fbfbfc;--card:#fff;--accent:#6b46c1;--muted:#666}
     html,body{margin:0;padding:0;height:100%}
@@ -17,6 +17,7 @@
     .col{flex:1}
     input,select,button{width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9ee;box-sizing:border-box;font-size:14px;background:#fff}
     button{background:#6b46c1;color:#fff;border:0;cursor:pointer;padding:10px;min-height:44px}
+    .btn-secondary{background:#e9e6ff;color:#3b2fb3}
     small{color:#666}
     .bar{height:12px;background:#eee;border-radius:999px;overflow:hidden}
     .bar>i{height:100%;display:block;background:linear-gradient(90deg,#ffd166,#ef476f)}
@@ -31,9 +32,10 @@
     @media(max-width:700px){.row{flex-direction:column}}
     .muted{color:#666}
     .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:8px;z-index:9999;opacity:0.95}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   </style>
 
-  <!-- astronomy-engine UMD (works in plain <script>) -->
+  <!-- astronomy-engine UMD -->
   <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
   <script>
     if (!window.Astronomy) {
@@ -48,7 +50,7 @@
 
 <div class="wrap">
   <header>
-    <h1>100パーセント星占い（正午固定版）</h1>
+    <h1>100パーセント星占い</h1>
     <div id="status">起動準備中…</div>
   </header>
 
@@ -134,23 +136,23 @@
 
     <label>解析日（空なら今日）</label><input type="date" id="targetDate" />
 
-    <div class="row" id="btnRow" style="margin-top:12px">
-      <div style="flex:1"><button id="geocodeBtn" type="button">都市名から緯度経度を取得</button></div>
-      <div style="flex:1"><button id="calcBtn" type="button">本格解析を実行（正午固定）</button></div>
-      <div style="flex:1"><button id="fillBtn" type="button">デモ値を入力</button></div>
+    <div class="toolbar">
+      <button id="geocodeBtn" type="button">都市名から緯度経度を取得</button>
+      <button id="calcBtn" type="button">本格解析を実行</button>
+      <button id="fillBtn" type="button" class="btn-secondary">デモ値を入力</button>
+      <button id="resetBtn" type="button" class="btn-secondary">全てリセット</button>
     </div>
   </div>
 
   <div id="output" class="card" style="display:none"></div>
   <div class="card" id="logCard" style="margin-top:12px"><div><strong>ログ</strong> <span class="muted">（問題が出たらここを開いてスクショください）</span></div><pre id="log"></pre></div>
-
-  <footer><small>※ 正午固定版：同じ日付・同じTZであれば、スコアと文章は常に同一です。</small></footer>
 </div>
 
 <script>
   const $status = document.getElementById('status');
   const $log = document.getElementById('log');
-  function log(msg){ try{ const t=new Date().toLocaleTimeString(); $log.textContent += `[${t}] ${msg}\n`; }catch(e){} }
+  const NS = 'astro_' + (location.pathname || 'root').replace(/[^\\w]/g,'_') + '_'; // 名前空間化
+  function log(msg){ try{ const t=new Date().toLocaleTimeString(); $log.textContent += `[${t}] ${msg}\\n`; }catch(e){} }
   function setStatus(s){ try{ $status.textContent = s; }catch(e){} }
   function toast(text){ try{ const n=document.createElement('div'); n.className='toast'; n.textContent=text; document.body.appendChild(n); setTimeout(()=>n.remove(),1300);}catch(_){ } }
 
@@ -159,13 +161,24 @@
   document.addEventListener('DOMContentLoaded', ()=>{
     setStatus(window.Astronomy ? '天体計算ライブラリOK' : 'ライブラリ未読込');
 
+    // Button bindings
     document.getElementById('geocodeBtn').addEventListener('click', onGeocodeClick);
     document.getElementById('calcBtn').addEventListener('click', onCalcClick);
     document.getElementById('fillBtn').addEventListener('click', onFillClick);
+    document.getElementById('resetBtn').addEventListener('click', onResetClick);
 
     document.getElementById('latSelect').addEventListener('change', e=>toggleLatInput(e.target.value));
     document.getElementById('lonSelect').addEventListener('change', e=>toggleLonInput(e.target.value));
     document.getElementById('tzSelect').addEventListener('change', e=>toggleTzInput(e.target.value));
+
+    // Auto-save hooks for ALL inputs
+    const ids = ['birthDate','birthTime','placeName','lat','lon','tzSelect','targetDate','tzInput','latSelect','lonSelect'];
+    ids.forEach(id=>{
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.addEventListener('input', saveInputs);
+      el.addEventListener('change', saveInputs);
+    });
 
     loadInputs();
     setStatus('準備OK');
@@ -173,21 +186,34 @@
 </script>
 
 <script>
-/* ===== Core logic (正午固定) ===== */
-window.onerror = function(message, source, lineno, colno, error){ log(`JSエラー: ${message}`); };
+/* ===== Core logic（正午固定＋自動保存） ===== */
+window.onerror = function(message){ log(`JSエラー: ${message}`); };
 window.addEventListener('unhandledrejection', e=>{ log('Promise未捕捉: '+ String(e.reason)); });
+
+function storageSet(k,v){ try{ localStorage.setItem(NS+k, v); }catch(e){ log('localStorage保存不可: '+e.message); } }
+function storageGet(k){ try{ return localStorage.getItem(NS+k); }catch(e){ log('localStorage取得不可: '+e.message); return null; } }
+function storageRemoveAll(){
+  try{
+    for(let i=localStorage.length-1;i>=0;i--){
+      const key = localStorage.key(i);
+      if(key && key.startsWith(NS)){ localStorage.removeItem(key); }
+    }
+    log('保存データを全削除しました。');
+  }catch(e){ log('削除エラー: '+e.message); }
+}
 
 function toggleTzInput(val){
   const inEl=document.getElementById('tzInput');
   if(val==='OTHER'){
     inEl.style.display='block';
-    const saved = localStorage.getItem('astro_tz')||'';
+    const saved = storageGet('tz')||'';
     if(saved && saved!=='OTHER') inEl.value = saved;
   }else{
     inEl.style.display='none';
     inEl.value='';
-    try{ localStorage.setItem('astro_tz', val); }catch(e){}
+    storageSet('tz', val);
   }
+  saveInputs();
 }
 function toggleLatInput(val){
   const latInput=document.getElementById('lat');
@@ -202,16 +228,15 @@ function toggleLonInput(val){
   saveInputs();
 }
 
-const PERSIST_KEYS = ['birthDate','birthTime','placeName','lat','lon','tzSelect','targetDate'];
+const PERSIST_KEYS = ['birthDate','birthTime','placeName','lat','lon','tzSelect','targetDate','tzInput','latSelect','lonSelect'];
 function saveInputs(){
   try{
     for(const id of PERSIST_KEYS){
       const el=document.getElementById(id);
-      const val=(el && (el.tagName==='SELECT' ? el.value : el.value)) || '';
-      localStorage.setItem('astro_'+id, val);
+      if(!el) continue;
+      const val = (el.tagName==='SELECT') ? el.value : el.value;
+      storageSet('fld_'+id, val ?? '');
     }
-    localStorage.setItem('astro_latSelect', document.getElementById('latSelect')?.value || '');
-    localStorage.setItem('astro_lonSelect', document.getElementById('lonSelect')?.value || '');
     log('入力を保存しました。');
   }catch(e){ log('保存エラー: '+(e.message||e)); }
 }
@@ -219,9 +244,14 @@ function loadInputs(){
   try{
     for(const id of PERSIST_KEYS){
       const el=document.getElementById(id);
-      const val=localStorage.getItem('astro_'+id);
-      if(val!==null && el){ el.value=val; }
+      if(!el) continue;
+      const val = storageGet('fld_'+id);
+      if(val!==null){ el.value = val; }
     }
+    // reflect selects to input visibility
+    toggleLatInput(document.getElementById('latSelect').value);
+    toggleLonInput(document.getElementById('lonSelect').value);
+    toggleTzInput(document.getElementById('tzSelect').value);
     log('入力を復元しました。');
   }catch(e){ log('復元エラー: '+(e.message||e)); }
 }
@@ -233,14 +263,13 @@ function loadInputs(){
   if (![...sel.options].some(o=>o.value===deviceTz)){
     const o=document.createElement('option');o.value=deviceTz;o.textContent=deviceTz+'（端末）';sel.insertBefore(o,sel.firstChild);
   }
-  const saved = localStorage.getItem('astro_tz');
+  const saved = storageGet('tz');
   if(saved && saved!=='OTHER'){
-    if ([...sel.options].some(o=>o.value===saved)){ sel.value=saved; toggleTzInput(saved); }
-    else{ sel.value='OTHER'; toggleTzInput('OTHER'); document.getElementById('tzInput').value=saved; }
+    if ([...sel.options].some(o=>o.value===saved)){ sel.value=saved; }
+    else{ sel.value='OTHER'; document.getElementById('tzInput').value=saved; }
   }else{
-    sel.value=deviceTz; toggleTzInput(deviceTz);
+    sel.value=sel.value || deviceTz;
   }
-  log('TZ: 初期設定 → '+(saved||deviceTz));
 })();
 
 let __rng = Math.random;
@@ -376,7 +405,8 @@ function renderOutput({natal, transit, aspects, scores, meta}){
     <div class="explain" style="margin-top:12px">
       <h3 style="margin:6px 0">今日の読み</h3>
       ${readings}
-      <p class="muted">※ 本ツールは解析日を<strong>ローカル正午</strong>に固定し、文章の乱数も<strong>日付のみ</strong>で決定しています。同日・同TZであれば結果は不変です。</p>
+      <p class="muted">※ 解析日を<strong>ローカル正午</strong>に固定し、文章乱数も<strong>日付のみ</strong>で決定。<br/>同日・同TZであれば結果は不変です。入力値は localStorage に自動保存されます。</p>
+      <div style="margin-top:8px"><button class="btn-secondary" onclick="onResetClick()">入力をすべてクリア</button></div>
     </div>
   `;
   out.style.display='block';
@@ -425,7 +455,6 @@ async function onCalcClick(){
     const birthUTC  = parseLocalToUTCdate(birthLocal, tz);
     const targetUTC = parseLocalToUTCdate(targetLocalNoon, tz);
 
-    // RNG: 日付だけで固定（文章ぶれ無し）
     seedRngFromDateOnly(localDateOnly);
 
     if(!window.Astronomy) throw new Error('astronomy-engine が読み込めませんでした（ネットやCDNをご確認ください）');
@@ -489,6 +518,16 @@ function onFillClick(){
   saveInputs();
   toast('デモ値を入力しました');
   log('デモ値を入力しました。');
+}
+function onResetClick(){
+  storageRemoveAll();
+  // clear UI
+  const ids = ['birthDate','birthTime','placeName','lat','lon','tzInput','latSelect','lonSelect','tzSelect','targetDate'];
+  ids.forEach(id=>{ const el=document.getElementById(id); if(el){ if(el.tagName==='SELECT'){ el.selectedIndex=0; } else { el.value=''; } } });
+  toggleLatInput(document.getElementById('latSelect').value);
+  toggleLonInput(document.getElementById('lonSelect').value);
+  toggleTzInput(document.getElementById('tzSelect').value);
+  toast('保存データをリセットしました');
 }
 </script>
 </body>

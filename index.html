@@ -212,6 +212,7 @@
       <label>解析日（空なら今日）</label><input type="date" id="targetDate" />
 
       <div class="toolbar">
+        <button id="logTestBtn" type="button" class="btn-secondary">ログテスト</button>
         <button id="geocodeBtn" type="button">都市名から緯度経度を取得</button>
         <button id="calcBtn" type="button">本格解析を実行</button>
         <button id="fillBtn" type="button" class="btn-secondary">デモ値を入力</button>
@@ -232,12 +233,38 @@
     function setStatus(s){ try{ $status.textContent = s; }catch(e){} }
     function toast(text){ try{ const n=document.createElement('div'); n.className='toast'; n.textContent=text; document.body.appendChild(n); setTimeout(()=>n.remove(),1300);}catch(_){ } }
 
+    
+    // ==== 追加: コンソールを#logにミラー（診断用） ====
+    (function(){
+      const $logEl = document.getElementById('log');
+      function append(kind, args){
+        try{
+          const t = new Date().toLocaleTimeString();
+          const line = "["+t+"]["+kind+"] " + Array.from(args).map(x => {
+            try { return (typeof x === 'object') ? JSON.stringify(x) : String(x); }
+            catch (_){ return String(x); }
+          }).join(' ');
+          if($logEl){ $logEl.textContent += line + "\n"; }
+        }catch(_){}
+      }
+      const orig = { log: console.log, warn: console.warn, error: console.error };
+      console.log = function(){ append('log', arguments); orig.log.apply(console, arguments); };
+      console.warn = function(){ append('warn', arguments); orig.warn.apply(console, arguments); };
+      console.error = function(){ append('error', arguments); orig.error.apply(console, arguments); };
+      console.log('診断: コンソールミラー有効化');
+      window.addEventListener('error', e => append('window.onerror', [e.message||String(e)]));
+      window.addEventListener('unhandledrejection', e => append('promise', [e.reason||'unhandled']));
+      document.addEventListener('DOMContentLoaded', () => console.log('診断: DOMContentLoaded 到達'));
+    })();
+    // ==== /ミラーここまで ====
+
     window.addEventListener('error', e=>{ if(String(e.message||'').includes('Unexpected token <')){ log('CDNがHTMLを返しました（ブロック/404の可能性）。'); } });
 
     document.addEventListener('DOMContentLoaded', ()=>{
       setStatus(window.Astronomy ? '天体計算ライブラリOK' : 'ライブラリ未読込');
 
       // Button bindings
+      const logTest=document.getElementById('logTestBtn'); if(logTest){ logTest.addEventListener('click', ()=>{ log('テスト: ログは書けています。'); console.log('テスト: console.log'); console.warn('テスト: console.warn'); console.error('テスト: console.error'); alert('ログに4行出力しました'); }); }
       document.getElementById('geocodeBtn').addEventListener('click', onGeocodeClick);
       document.getElementById('calcBtn').addEventListener('click', onCalcClick);
       document.getElementById('fillBtn').addEventListener('click', onFillClick);

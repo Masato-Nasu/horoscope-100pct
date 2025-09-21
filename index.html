@@ -77,7 +77,74 @@
     });
   </script>
 </head>
-<body>
+<script>
+(() => {
+  let deferred;
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;right:12px;bottom:12px;background:#111;color:#fff;padding:10px;border-radius:10px;font:12px/1.4 system-ui;z-index:99999;max-width:320px';
+  box.innerHTML = `
+    <div style="font-weight:700;margin-bottom:6px">PWA 診断</div>
+    <div id="pwaStatus">チェック中…</div>
+    <button id="installBtn" style="margin-top:8px;display:none;background:#6b46c1;color:#fff;border:0;border-radius:8px;padding:8px 10px;cursor:pointer">インストール</button>
+    <button id="hideBtn" style="margin-top:8px;background:#333;color:#ddd;border:0;border-radius:8px;padding:6px 8px;cursor:pointer">閉じる</button>
+  `;
+  document.body.appendChild(box);
+
+  document.getElementById('hideBtn').onclick = () => box.remove();
+  const installBtn = document.getElementById('installBtn');
+  installBtn.onclick = async () => {
+    installBtn.disabled = true;
+    try {
+      await deferred.prompt();
+      const choice = await deferred.userChoice;
+      document.getElementById('pwaStatus').textContent = '結果: ' + choice.outcome;
+    } catch(e) {
+      document.getElementById('pwaStatus').textContent = 'インストール開始に失敗: ' + e;
+    } finally {
+      installBtn.disabled = false;
+    }
+  };
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferred = e;
+    installBtn.style.display = 'inline-block';
+    document.getElementById('pwaStatus').textContent = 'Installable: OK（ボタンから実行可）';
+  });
+
+  async function runChecks(){
+    const lines = [];
+    // manifest OK?
+    try {
+      const r = await fetch('./manifest.json?v=8', {cache:'no-store'});
+      lines.push(`manifest: ${r.status} ${r.ok?'OK':'NG'}`);
+    } catch(e) { lines.push('manifest: fetch失敗 ' + e); }
+
+    // SW control?
+    try {
+      const controlled = !!navigator.serviceWorker?.controller;
+      lines.push('ServiceWorker controlled: ' + controlled);
+    } catch(e){ lines.push('ServiceWorker: 例外 ' + e); }
+
+    // アイコン到達可能？
+    try {
+      const [i192, i512] = await Promise.all([
+        fetch('./icon-192.png', {cache:'no-store'}),
+        fetch('./icon-512.png', {cache:'no-store'})
+      ]);
+      lines.push(`icons: 192=${i192.status} / 512=${i512.status}`);
+    } catch(e){ lines.push('icons: 取得失敗 ' + e); }
+
+    // URLの一致（scope/start_url想定）
+    lines.push('URL pathname: ' + location.pathname);
+    lines.push('想定 scope/start_url: /horoscope-100pct/');
+
+    document.getElementById('pwaStatus').innerHTML = lines.join('<br>');
+  }
+  runChecks();
+})();
+</script>
+  <body>
   <noscript>
     <div style="background:#ffdfdf;color:#900;padding:10px">
       JavaScriptが無効です。オンにしてください。

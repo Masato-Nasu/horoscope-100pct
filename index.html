@@ -13,7 +13,40 @@
   <meta name="theme-color" content="#6b46c1">
   <meta name="mobile-web-app-capable" content="yes">
 
-  <!-- Service Worker 登録 -->
+  <!-- ★ 一時的リセット機能：URLに ?reset=1 が付いているときだけ SW/キャッシュ等を全削除して再読み込み -->
+  <script>
+  (function(){
+    try{
+      const url = new URL(location.href);
+      if (url.searchParams.get('reset') === '1') {
+        (async () => {
+          try {
+            if ('serviceWorker' in navigator) {
+              const regs = await navigator.serviceWorker.getRegistrations();
+              for (const r of regs) { await r.unregister(); }
+            }
+            if (window.caches) {
+              const keys = await caches.keys();
+              for (const k of keys) { await caches.delete(k); }
+            }
+            try { localStorage.clear(); } catch(_) {}
+            try { sessionStorage.clear(); } catch(_) {}
+            // cookieはGitHub Pagesでは基本不要だが一応全削除
+            document.cookie.split(';').forEach(c=>{
+              document.cookie = c.replace(/^ +/,'').replace(/=.*/, '=;expires=' + new Date(0).toUTCString() + ';path=/');
+            });
+          } finally {
+            // クエリを外して再読み込み（最新HTMLを取得）
+            url.searchParams.delete('reset');
+            location.replace(url.toString());
+          }
+        })();
+      }
+    }catch(e){ console.warn('reset script error', e); }
+  })();
+  </script>
+
+  <!-- Service Worker 登録（通常運用） -->
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js?v=25')
@@ -29,8 +62,7 @@
     html,body{margin:0;padding:0;height:100%}
     body{
       font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
-      background:var(--bg);
-      color:#111
+      background:var(--bg); color:#111
     }
     .wrap{max-width:980px;margin:0 auto;padding:18px}
     header{display:flex;align-items:center;gap:12px}
@@ -40,13 +72,10 @@
     .row{display:flex;gap:12px}
     .col{flex:1}
     input,select,button{
-      width:100%;padding:8px;border-radius:8px;
-      border:1px solid #e6e9ee;box-sizing:border-box;
-      font-size:14px;background:#fff
+      width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9ee;box-sizing:border-box;font-size:14px;background:#fff
     }
     button{background:#6b46c1;color:#fff;border:0;cursor:pointer;padding:10px;min-height:44px}
     .btn-secondary{background:#e9e6ff;color:#3b2fb3}
-    small{color:#666}
     .bar{height:12px;background:#eee;border-radius:999px;overflow:hidden}
     .bar>i{height:100%;display:block;background:linear-gradient(90deg,#ffd166,#ef476f)}
     table{width:100%;border-collapse:collapse;margin-top:8px}
@@ -66,7 +95,7 @@
   <!-- astronomy-engine UMD -->
   <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js" defer></script>
   <script>
-    // 予備CDN（まれなブロックに備える）
+    // 予備CDN
     window.addEventListener('DOMContentLoaded', ()=>{
       setTimeout(()=>{
         if(!window.Astronomy){
@@ -80,9 +109,7 @@
 </head>
 <body>
   <noscript>
-    <div style="background:#ffdfdf;color:#900;padding:10px">
-      JavaScriptが無効です。オンにしてください。
-    </div>
+    <div style="background:#ffdfdf;color:#900;padding:10px">JavaScriptが無効です。オンにしてください。</div>
   </noscript>
 
   <div class="wrap">
@@ -90,7 +117,6 @@
       <h1>100パーセント星占い</h1>
       <div id="status">起動準備中…</div>
     </header>
-
     <div class="card" id="inputCard">
       <div class="row" style="margin-top:10px">
         <div class="col"><label>出生日</label><input type="date" id="birthDate" /></div>

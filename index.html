@@ -1,7 +1,11 @@
 <!doctype html>
 <html lang="ja">
 <head>
- <link rel="manifest" href="./manifest.json?v=3">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js?v=20'); // ← 必ず ?v=付き
+  }
+</script>
 <link rel="icon" href="./icon-192.png" type="image/png">   <!-- ← これで favicon 404解消 -->
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#6b46c1">

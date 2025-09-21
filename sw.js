@@ -1,12 +1,8 @@
-// ----- horoscope SW v30 : 強制リフレッシュ & 全キャッシュ削除 -----
-
-const CACHE_VERSION = 'v30';
+// ----- horoscope SW v31 : キャッシュ刷新 & 通常インストール対応 -----
+const CACHE_VERSION = 'v31';
 const CACHE_NAME = `horoscope-cache-${CACHE_VERSION}`;
-
-// GitHub Pages のプロジェクトルート
 const ROOT = '/horoscope-100pct/';
 
-// コアファイル（最低限オフラインで必要なもの）
 const CORE_ASSETS = [
   `${ROOT}`,
   `${ROOT}index.html`,
@@ -15,7 +11,6 @@ const CORE_ASSETS = [
   `${ROOT}icon-512.png`,
 ];
 
-// ----- install -----
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
@@ -24,22 +19,20 @@ self.addEventListener('install', (event) => {
   })());
 });
 
-// ----- activate -----
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    // 古いキャッシュを全部削除
+    // 古いキャッシュを全削除（GitHub Pagesの更新反映を確実に）
     await Promise.all(keys.map(k => caches.delete(k)));
     await self.clients.claim();
   })());
 });
 
-// ----- fetch -----
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
-  // ページ遷移（HTML）はネット優先
+  // HTMLナビゲーションはネット優先（失敗時はキャッシュfallback）
   if (req.mode === 'navigate') {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
@@ -60,7 +53,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 同一オリジンの静的ファイルはキャッシュ優先
+  // 同一オリジンの静的ファイルはキャッシュ優先・バックグラウンド更新
   const url = new URL(req.url);
   if (url.origin === self.location.origin) {
     event.respondWith((async () => {
@@ -77,7 +70,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 外部リソース（CDN等）はネット優先
+  // 外部リソース（CDN等）はネット優先（キャッシュは保険）
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     try {

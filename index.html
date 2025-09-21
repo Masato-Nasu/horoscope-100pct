@@ -1,27 +1,36 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=20'); // ← 必ず ?v=付き
-  }
-</script>
-<link rel="icon" href="./icon-192.png" type="image/png">   <!-- ← これで favicon 404解消 -->
-<link rel="apple-touch-icon" href="./icon-192.png">
-<meta name="theme-color" content="#6b46c1">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js'); // 先頭スラッシュ禁止（Pagesで404の元）
-  }
-</script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+
+  <!-- manifest & アイコン -->
+  <link rel="manifest" href="./manifest.json?v=4">
+  <link rel="icon" href="./icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+
+  <!-- PWA カラー設定 -->
+  <meta name="theme-color" content="#6b46c1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <!-- Service Worker 登録（1回だけ、?v=付き） -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js?v=21');
+    }
+  </script>
+
   <title>100% 星占い</title>
+
+  <!-- CSS -->
   <style>
     :root{--bg:#fbfbfc;--card:#fff;--accent:#6b46c1;--muted:#666}
     html,body{margin:0;padding:0;height:100%}
-    body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;background:var(--bg);color:#111}
+    body{
+      font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+      background:var(--bg);
+      color:#111
+    }
     .wrap{max-width:980px;margin:0 auto;padding:18px}
     header{display:flex;align-items:center;gap:12px}
     h1{margin:8px 0;font-size:20px;color:#6b46c1}
@@ -29,7 +38,11 @@
     label{display:block;font-weight:600;margin-top:8px}
     .row{display:flex;gap:12px}
     .col{flex:1}
-    input,select,button{width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9ee;box-sizing:border-box;font-size:14px;background:#fff}
+    input,select,button{
+      width:100%;padding:8px;border-radius:8px;
+      border:1px solid #e6e9ee;box-sizing:border-box;
+      font-size:14px;background:#fff
+    }
     button{background:#6b46c1;color:#fff;border:0;cursor:pointer;padding:10px;min-height:44px}
     .btn-secondary{background:#e9e6ff;color:#3b2fb3}
     small{color:#666}
@@ -50,23 +63,32 @@
   </style>
 
   <!-- astronomy-engine UMD -->
-  <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js" defer></script>
   <script>
-    if (!window.Astronomy) {
-      var s = document.createElement('script');
-      s.src = 'https://unpkg.com/astronomy-engine@2.1.19/astronomy.browser.min.js';
-      document.head.appendChild(s);
-    }
+    // 予備CDN（まれなブロックに備える）
+    window.addEventListener('DOMContentLoaded', ()=>{
+      setTimeout(()=>{
+        if(!window.Astronomy){
+          const s=document.createElement('script');
+          s.src='https://unpkg.com/astronomy-engine@2.1.19/astronomy.browser.min.js';
+          document.head.appendChild(s);
+        }
+      },800);
+    });
   </script>
 </head>
 <body>
-<noscript><div style="background:#ffdfdf;color:#900;padding:10px">JavaScriptが無効です。オンにしてください。</div></noscript>
+  <noscript>
+    <div style="background:#ffdfdf;color:#900;padding:10px">
+      JavaScriptが無効です。オンにしてください。
+    </div>
+  </noscript>
 
-<div class="wrap">
-  <header>
-    <h1>100パーセント星占い</h1>
-    <div id="status">起動準備中…</div>
-  </header>
+  <div class="wrap">
+    <header>
+      <h1>100パーセント星占い</h1>
+      <div id="status">起動準備中…</div>
+    </header>
 
   <div class="card" id="inputCard">
     <div class="row" style="margin-top:10px">
@@ -165,8 +187,9 @@
 <script>
   const $status = document.getElementById('status');
   const $log = document.getElementById('log');
-  const NS = 'astro_' + (location.pathname || 'root').replace(/[^\\w]/g,'_') + '_'; // 名前空間化
-  function log(msg){ try{ const t=new Date().toLocaleTimeString(); $log.textContent += `[${t}] ${msg}\\n`; }catch(e){} }
+  // ✅ 正規表現修正：パス名から安全な名前空間キーを作成
+  const NS = 'astro_' + (location.pathname || 'root').replace(/[^\w]/g,'_') + '_';
+  function log(msg){ try{ const t=new Date().toLocaleTimeString(); $log.textContent += `[${t}] ${msg}\n`; }catch(e){} }
   function setStatus(s){ try{ $status.textContent = s; }catch(e){} }
   function toast(text){ try{ const n=document.createElement('div'); n.className='toast'; n.textContent=text; document.body.appendChild(n); setTimeout(()=>n.remove(),1300);}catch(_){ } }
 
@@ -307,8 +330,22 @@ function lstDegrees(dateUTC,lon){let lst=gmstDegrees(dateUTC)+lon;lst=((lst%360)
 function deg2rad(d){return d*Math.PI/180;} function rad2deg(r){return r*180/Math.PI;}
 function calcAscendant(dateUTC,lat,lon){const lst=lstDegrees(dateUTC,lon);const eps=23.4392911*Math.PI/180;const theta=deg2rad(lst),phi=deg2rad(lat);const y=-Math.cos(theta);const x=Math.sin(theta)*Math.cos(eps)+Math.tan(phi)*Math.sin(eps);let asc=Math.atan2(y,x);asc=rad2deg(asc);if(asc<0)asc+=360;if(asc<180)asc+=180;else asc-=180;return normalizeDeg(asc);}
 function calcMC(dateUTC,lon){const lst=lstDegrees(dateUTC,lon);const eps=deg2rad(23.4392911);const ramc=deg2rad(lst);let L=Math.atan2(Math.sin(ramc),Math.cos(ramc)*Math.cos(eps));L=rad2deg(L);if(L<0)L+=360;return normalizeDeg(L);}
-function isoWithTZoffset(localIso,tz){const dt=new Date(localIso);const parts=new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(dt);const map={};for(const p of parts)map[p.type]=p.value;const asTzISO=`${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}:${map.second}Z`;const tUtc=Date.parse(asTzISO),localMillis=dt.getTime();const diffMin=Math.round((tUtc-localMillis)/60000);const sign=diffMin>=0?'+':'-';const mm=Math.abs(diffMin);return localIso+sign+String(Math.floor(mm/60)).padStart(2,'0')+':'+String(mm%60).padStart(2,'0');}
-function parseLocalToUTCdate(localDateStr,tz){try{return new Date(isoWithTZoffset(localDateStr,tz));}catch(e){return new Date(localDateStr);}}
+function isoWithTZoffset(localIso,tz){
+  // localIso: "YYYY-MM-DDTHH:mm:ss"
+  const dt=new Date(localIso); // ブラウザローカルとして一旦生成
+  try{
+    const parts=new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(dt);
+    const map={}; for(const p of parts) map[p.type]=p.value;
+    const asTzISO=`${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}:${map.second}Z`;
+    const tUtc=Date.parse(asTzISO),localMillis=dt.getTime();
+    const diffMin=Math.round((tUtc-localMillis)/60000);
+    const sign=diffMin>=0?'+':'-'; const mm=Math.abs(diffMin);
+    return localIso+sign+String(Math.floor(mm/60)).padStart(2,'0')+':'+String(mm%60).padStart(2,'0');
+  }catch(e){
+    return localIso;
+  }
+}
+function parseLocalToUTCdate(localDateStr,tz){try{return new Date(isoWithTZoffset(localDateStr,tz));}catch(e){return new Date(localDateStr);} }
 
 function planetEclipticLongitude(body,dateUTC){
   try{ if(body==='Sun' && Astronomy.SunLongitude) return normalizeDeg(Astronomy.SunLongitude(dateUTC)); }catch(e){}
@@ -321,8 +358,31 @@ const ASPECTS=[{name:'Conjunction',deg:0,orb:8,weight:1.4},{name:'Sextile',deg:6
 const CATEGORY_MAP={"総合":['Sun','Moon','Jupiter','Saturn'],"恋愛":['Venus','Moon','Mars'],"仕事":['Sun','Mars','Saturn'],"金運":['Jupiter','Venus'],"健康":['Moon','Saturn','Mars']};
 function angleDiff(a,b){let d=Math.abs(a-b)%360;if(d>180)d=360-d;return d;}
 function aspectStrength(delta,asp){const diff=Math.abs(delta-asp.deg);if(diff>asp.orb)return 0;return 1-(diff/asp.orb);}
-function detectAspects(natal,transit){const list=[];for(const p in natal){if(!(p in transit))continue;const d=angleDiff(natal[p],transit[p]);for(const asp of ASPECTS){const clos=aspectStrength(d,asp);if(clos>0){list.push({planet:p,aspect:asp.name,exactness:clos,weight:asp.weight,angle:d,orb:asp.orb});}}}return list;}
-function scoreCategories(aspects){const raw={};for(const c in CATEGORY_MAP)raw[c]=0;for(const a of aspects){const importance={'Sun':1.1,'Moon':1.05,'Mercury':0.9,'Venus':1.0,'Mars':1.0,'Jupiter':1.0,'Saturn':1.0,'Uranus':0.6,'Neptune':0.5,'Pluto':0.5,'ASC':0.8,'MC':0.9}[a.planet]||0.6;const contrib=a.exactness*a.weight*importance;for(const c in CATEGORY_MAP){if(CATEGORY_MAP[c].includes(a.planet))raw[c]+=contrib;}raw['総合']+=contrib*0.4;}const results={};for(const c in raw){const x=raw[c];results[c]=Math.round((1/(1+Math.exp(-(x))))*100);}return results;}
+function detectAspects(natal,transit){
+  const list=[];
+  for(const p in natal){
+    if(!(p in transit)) continue;
+    const d=angleDiff(natal[p],transit[p]);
+    for(const asp of ASPECTS){
+      const clos=aspectStrength(d,asp);
+      if(clos>0){ list.push({planet:p,aspect:asp.name,exactness:clos,weight:asp.weight,angle:d,orb:asp.orb});}
+    }
+  }
+  // ✅ 並び順修正：寄与の大きさ（|weight|×exactness）で降順
+  return list.sort((a,b)=>(Math.abs(b.weight)*b.exactness)-(Math.abs(a.weight)*a.exactness));
+}
+function scoreCategories(aspects){
+  const raw={}; for(const c in CATEGORY_MAP) raw[c]=0;
+  for(const a of aspects){
+    const importance={'Sun':1.1,'Moon':1.05,'Mercury':0.9,'Venus':1.0,'Mars':1.0,'Jupiter':1.0,'Saturn':1.0,'Uranus':0.6,'Neptune':0.5,'Pluto':0.5,'ASC':0.8,'MC':0.9}[a.planet]||0.6;
+    const contrib=a.exactness*a.weight*importance;
+    for(const c in CATEGORY_MAP){ if(CATEGORY_MAP[c].includes(a.planet)) raw[c]+=contrib; }
+    raw['総合']+=contrib*0.4;
+  }
+  const results={};
+  for(const c in raw){ const x=raw[c]; results[c]=Math.round((1/(1+Math.exp(-(x))))*100); }
+  return results;
+}
 
 const _recentLines=new Set();
 function _markRecent(line){ if(!line) return; _recentLines.add(line); if(_recentLines.size>180){ const it=_recentLines.values().next().value; _recentLines.delete(it);} }
@@ -348,8 +408,7 @@ function pickNoDup(arr){
 }
 function sampleUnique(arr, n){
   if(!arr || !arr.length) return [];
-  const out=[];
-  const pool=[...arr];
+  const out=[]; const pool=[...arr];
   for(let i=0;i<n;i++){
     const candidate = pickNoDup(pool);
     if(!candidate) break;
@@ -476,7 +535,7 @@ async function onCalcClick(){
     const natal   = computeLongitudes(birthUTC,  lat, lon);
     const transit = computeLongitudes(targetUTC, lat, lon);
 
-    const aspects = detectAspects(natal, transit).sort((a,b)=>b.exactness*a.weight - a.exactness*b.weight);
+    const aspects = detectAspects(natal, transit);
     const scores  = scoreCategories(aspects);
 
     renderOutput({

@@ -1,12 +1,12 @@
-// ----- horoscope SW v28 : force refresh & purge old caches -----
+// ----- horoscope SW v30 : 強制リフレッシュ & 全キャッシュ削除 -----
 
-const CACHE_VERSION = 'v28';
+const CACHE_VERSION = 'v30';
 const CACHE_NAME = `horoscope-cache-${CACHE_VERSION}`;
 
-// ルートは GitHub Pages のプロジェクトパスに合わせる
+// GitHub Pages のプロジェクトルート
 const ROOT = '/horoscope-100pct/';
 
-// 起動時に最低限使うファイル（絶対パス）
+// コアファイル（最低限オフラインで必要なもの）
 const CORE_ASSETS = [
   `${ROOT}`,
   `${ROOT}index.html`,
@@ -15,7 +15,7 @@ const CORE_ASSETS = [
   `${ROOT}icon-512.png`,
 ];
 
-// ----- install: 先にコアだけ入れて、即アクティブ化 -----
+// ----- install -----
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
@@ -24,28 +24,27 @@ self.addEventListener('install', (event) => {
   })());
 });
 
-// ----- activate: 既存キャッシュを**全削除**して最新に統一 -----
+// ----- activate -----
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    // 旧キャッシュをすべて削除（名前問わず）
+    // 古いキャッシュを全部削除
     await Promise.all(keys.map(k => caches.delete(k)));
     await self.clients.claim();
   })());
 });
 
-// ----- fetch: ナビゲーションはネット優先。失敗時だけキャッシュ -----
+// ----- fetch -----
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
-  // 1) ページ遷移（アプリ本体のHTML）
+  // ページ遷移（HTML）はネット優先
   if (req.mode === 'navigate') {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       try {
         const fresh = await fetch(req, { cache: 'no-store' });
-        // ルートHTMLを最新に更新
         cache.put(`${ROOT}`, fresh.clone()).catch(() => {});
         cache.put(`${ROOT}index.html`, fresh.clone()).catch(() => {});
         return fresh;
@@ -61,7 +60,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2) 同一オリジンの静的ファイル（アイコン/manifest等）
+  // 同一オリジンの静的ファイルはキャッシュ優先
   const url = new URL(req.url);
   if (url.origin === self.location.origin) {
     event.respondWith((async () => {
@@ -78,7 +77,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3) 外部CDN（astronomy-engine等）はネット優先、失敗時のみキャッシュ
+  // 外部リソース（CDN等）はネット優先
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     try {

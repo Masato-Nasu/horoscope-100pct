@@ -11,12 +11,13 @@
 
   <!-- PWA カラー設定 -->
   <meta name="theme-color" content="#6b46c1">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
 
-  <!-- Service Worker 登録（1回だけ、?v=付き） -->
+  <!-- Service Worker 登録 -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js?v=25').catch(e=>console.warn('SW登録失敗', e));
+      navigator.serviceWorker.register('./sw.js?v=25')
+        .catch(e => console.warn('SW登録失敗', e));
     }
   </script>
 

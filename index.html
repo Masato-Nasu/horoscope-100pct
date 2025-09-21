@@ -133,7 +133,7 @@
       </div>
     </div>
 
-    <label>解析日時（空なら今）</label><input type="datetime-local" id="targetDatetime" />
+    <label>解析日時（空なら今）</label><input type="datetime-local" id="targetDatetime" /><div style="margin-top:6px"><label style="display:flex;align-items:center;gap:8px;font-weight:500"><input type="checkbox" id="stableMode"/> 同日・同TZなら同じ結果にする（安定モード）</label><small class="muted">安定モードではその日の正午（ローカル）で計算・文章乱数も日単位で固定します。</small></div>
 
     <div class="row" id="btnRow" style="margin-top:12px">
       <div style="flex:1"><button id="geocodeBtn" type="button">都市名から緯度経度を取得</button></div>
@@ -438,17 +438,27 @@ function computeLongitudes(dateUTC, lat, lon){
 }
 
 async function onCalcClick(){
+  const stable = document.getElementById('stableMode')?.checked;
   try{
     setStatus('計算中…');
     const targetLocal = (document.getElementById('targetDatetime').value||'').trim();
     const { birthLocal, tz, lat, lon } = validateInputs();
 
-    const targetBase = targetLocal || new Date().toISOString().slice(0,16);
-    const rounded = roundLocalIsoTo3hNearest(targetBase, tz);
+    const targetBase0 = targetLocal || new Date().toISOString().slice(0,16);
+    const localDateOnly = (targetBase0.split('T')[0]);
+    let targetBase = targetBase0;
+    let rounded = { roundedLocalIso: targetBase0, roundedHM: targetBase0.split('T')[1] ? targetBase0.split('T')[1].slice(0,5) : '00:00' };
+    if(stable){
+      // Fix to local noon for stability
+      targetBase = localDateAtNoonISO(tz, localDateOnly);
+      rounded = { roundedLocalIso: targetBase, roundedHM: '12:00' };
+    } else {
+      rounded = roundLocalIsoTo3hNearest(targetBase, tz);
+    }
     const birthUTC  = parseLocalToUTCdate(birthLocal, tz);
     const targetUTC = parseLocalToUTCdate(rounded.roundedLocalIso, tz);
 
-    seedRngFrom(targetUTC, tz);
+    if(stable){ seedRngFromDateOnly(localDateOnly); } else { seedRngFrom(targetUTC, tz); }
 
     if(!window.Astronomy){ throw new Error('astronomy-engine が読み込めませんでした（ネットやCDNをご確認ください）'); }
 

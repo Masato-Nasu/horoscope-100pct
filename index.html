@@ -3,46 +3,47 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>100% 星占い｜絶対評価</title>
-  
-  <!-- プロジェクトページ用キャッシュ解除・Service Worker 無効化 -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
-      caches?.keys?.().then(keys => keys.forEach(k => caches.delete(k)));
-    }
-  </script>
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  
-  <meta name="theme-color" content="#6b46c1">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="icon" href="data:,">
-  
+  <title>100% 星占い｜絶対評価（GitHub Pages 版）</title>
+  <meta name="description" content="出生情報と現在の星の配置から、全体運・恋愛・仕事・金運・健康のスコアと読み物を自動生成します。GitHub Pagesで動作する単一HTML。">
   <style>
     :root{--bg:#fbfbfc;--card:#fff;--accent:#6b46c1;--muted:#666}
-    html,body{margin:0;padding:0}
+    html,body{margin:0;padding:0;height:100%}
     body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;background:var(--bg);color:#111}
-    .wrap{max-width:980px;margin:0 auto;padding:18px}
+    .wrap{max-width:980px;margin:0 auto;padding:18px;position:relative;z-index:1}
+    header{display:flex;align-items:center;gap:12px;position:relative;z-index:2}
     h1{margin:8px 0;font-size:20px;color:#6b46c1}
-    .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 20px rgba(16,24,40,0.06);margin-top:12px}
+    .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 20px rgba(16,24,40,0.06);margin-top:12px;position:relative;z-index:2}
     label{display:block;font-weight:600;margin-top:8px}
-    .row{display:flex;gap:12px}
+    .row{display:flex;gap:12px;position:relative;z-index:2}
     .col{flex:1}
-    input,select,button{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ee;box-sizing:border-box;font-size:14px;background:#fff}
-    button{background:#6b46c1;color:#fff;border:0;cursor:pointer;min-height:44px}
+    input,select,button{width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9ee;box-sizing:border-box;font-size:14px;background:#fff}
+    button{background:#6b46c1;color:#fff;border:0;cursor:pointer;padding:10px;min-height:44px}
     small{color:#666}
+    .bar{height:12px;background:#eee;border-radius:999px;overflow:hidden}
+    .bar>i{height:100%;display:block;background:linear-gradient(90deg,#ffd166,#ef476f)}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{padding:6px;border-bottom:1px solid #f0f0f0;text-align:left}
+    .explain p{margin:8px 0}
+    .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+    .chip{background:#f3f0ff;color:#473592;font-size:12px;border-radius:999px;padding:4px 8px}
+    #status{margin-left:auto;font-size:12px;color:#666}
     #log{white-space:pre-wrap;background:#0b1020;color:#e6f0ff;padding:10px;border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:12px;max-height:260px;overflow:auto}
+    details{border:1px solid #eee;border-radius:10px;padding:8px;margin:8px 0;background:#fff}
+    details>summary{cursor:pointer;font-weight:600}
     @media(max-width:700px){.row{flex-direction:column}}
+    #tzSelect,#tzInput,#geocodeBtn,#calcBtn,#fillBtn{pointer-events:auto;position:relative;z-index:10}
+    *[style*="pointer-events: none"]{pointer-events:auto !important}
+    .muted{color:#666}
   </style>
 </head>
 <body>
 <noscript><div style="background:#ffdfdf;color:#900;padding:10px">JavaScriptが無効です。オンにしてください。</div></noscript>
 
 <div class="wrap">
-  <h1>100パーセント星占い</h1>
+  <header>
+    <h1>100パーセント星占い（GitHub Pages 版）</h1>
+    <div id="status">起動準備中…</div>
+  </header>
 
   <div class="card" id="inputCard">
     <div class="row" style="margin-top:10px">
@@ -54,7 +55,7 @@
       <div class="col"><label>出生地（都市名）</label><input type="text" id="placeName" placeholder="Tokyo, Japan" /></div>
       <div class="col">
         <label>タイムゾーン</label>
-        <select id="tzSelect" onchange="toggleTzInput(this.value)">
+        <select id="tzSelect" tabindex="0" onchange="toggleTzInput(this.value)">
           <option value="Asia/Tokyo">Asia/Tokyo (日本)</option>
           <option value="UTC">UTC</option>
           <option value="Europe/London">Europe/London</option>
@@ -64,7 +65,7 @@
           <option value="Asia/Shanghai">Asia/Shanghai</option>
           <option value="OTHER">その他（自由入力）</option>
         </select>
-        <input id="tzInput" type="text" placeholder="例: Asia/Tokyo" style="display:none;margin-top:6px" />
+        <input id="tzInput" type="text" placeholder="例: Asia/Tokyo" style="display:none;margin-top:6px" inputmode="latin-name" />
       </div>
     </div>
 
@@ -76,10 +77,26 @@
           <option value="34.6937">大阪 (34.6937)</option>
           <option value="43.0621">札幌 (43.0621)</option>
           <option value="33.5902">福岡 (33.5902)</option>
+          <option value="38.2682">仙台 (38.2682)</option>
+          <option value="35.4437">横浜 (35.4437)</option>
+          <option value="36.3890">前橋 (36.3890)</option>
+          <option value="35.1815">名古屋 (35.1815)</option>
+          <option value="34.6851">奈良 (34.6851)</option>
+          <option value="34.2250">広島 (34.2250)</option>
+          <option value="32.7503">熊本 (32.7503)</option>
+          <option value="26.2124">那覇 (26.2124)</option>
+          <option value="37.9026">金沢 (37.9026)</option>
+          <option value="36.5748">長野 (36.5748)</option>
+          <option value="34.7336">高松 (34.7336)</option>
+          <option value="33.8416">松山 (33.8416)</option>
+          <option value="31.5966">鹿児島 (31.5966)</option>
+          <option value="40.8246">青森 (40.8246)</option>
+          <option value="39.7036">盛岡 (39.7036)</option>
           <option value="0">その他（自由入力）</option>
         </select>
         <input type="number" id="lat" step="0.0001" placeholder="緯度を入力" style="display:none" />
       </div>
+
       <div class="col">
         <label>経度</label>
         <select id="lonSelect" onchange="toggleLonInput(this.value)">
@@ -87,227 +104,592 @@
           <option value="135.5023">大阪 (135.5023)</option>
           <option value="141.3544">札幌 (141.3544)</option>
           <option value="130.4017">福岡 (130.4017)</option>
+          <option value="140.8719">仙台 (140.8719)</option>
+          <option value="139.6380">横浜 (139.6380)</option>
+          <option value="139.0600">前橋 (139.0600)</option>
+          <option value="136.9066">名古屋 (136.9066)</option>
+          <option value="135.8049">奈良 (135.8049)</option>
+          <option value="132.4553">広島 (132.4553)</option>
+          <option value="130.7417">熊本 (130.7417)</option>
+          <option value="127.6809">那覇 (127.6809)</option>
+          <option value="136.9066">金沢 (136.9066)</option>
+          <option value="138.1810">長野 (138.1810)</option>
+          <option value="134.0434">高松 (134.0434)</option>
+          <option value="132.7661">松山 (132.7661)</option>
+          <option value="130.5571">鹿児島 (130.5571)</option>
+          <option value="140.7400">青森 (140.7400)</option>
+          <option value="141.1527">盛岡 (141.1527)</option>
           <option value="0">その他（自由入力）</option>
         </select>
         <input type="number" id="lon" step="0.0001" placeholder="経度を入力" style="display:none" />
       </div>
     </div>
 
-    <label>解析日時（空なら今）</label>
-    <input id="targetDatetime" type="datetime-local" />
+    <label>解析日時（空なら今）</label><input type="datetime-local" id="targetDatetime" />
 
-    <div class="row" style="margin-top:12px">
-      <div class="col"><button id="geocodeBtn" type="button" onclick="onGeocodeClick()">都市名から緯度経度を取得</button></div>
-      <div class="col"><button id="calcBtn" type="button" onclick="onCalcClick()">本格解析を実行</button></div>
-      <div class="col"><button id="fillBtn" type="button" onclick="onFillClick()" style="background:#7c5cf3">デモ値を入力</button></div>
+    <div class="row" id="btnRow" style="margin-top:12px; position:relative; z-index:20">
+      <div style="flex:1"><button id="geocodeBtn" type="button" onclick="onGeocodeClick()">都市名から緯度経度を取得</button></div>
+      <div style="flex:1"><button id="calcBtn" type="button" onclick="onCalcClick()">本格解析を実行</button></div>
+      <div style="flex:1"><button id="fillBtn" type="button" onclick="onFillClick()">デモ値を入力</button></div>
     </div>
   </div>
 
   <div id="output" class="card" style="display:none"></div>
+  <div class="card" id="logCard" style="margin-top:12px"><div><strong>ログ</strong> <span class="muted">（問題が出たらここを開いてスクショください）</span></div><pre id="log"></pre></div>
 
-  <div class="card" id="logCard" style="margin-top:12px">
-    <div><strong>ログ</strong></div>
-    <pre id="log"></pre>
-  </div>
-
-  <footer><small>astronomy-engine / 太陽〜冥王星＋ASC/MC対応。入力は自動保存。</small></footer>
+  <footer><small>astronomy-engine（CDN）/ 太陽〜冥王星＋ASC/MC対応。TZ・入力は自動保存。文章テンプレ 強化パック1（女性向き）統合版。</small></footer>
 </div>
 
+<!-- マルチCDNローダ（GitHub Pages で動作） -->
 <script>
-  const $ = (s)=>document.querySelector(s);
-  function log(m){
-    const el = $("#log");
-    if(el){
-      el.textContent += `[${new Date().toLocaleTimeString()}] ${m}\n`;
-      el.scrollTop = el.scrollHeight;
-    }
-  }
+  const $status = document.getElementById('status');
+  const $log = document.getElementById('log');
+  function log(msg){ try{ const t=new Date().toLocaleTimeString(); $log.textContent += `[${t}] ${msg}\n`; }catch(e){} }
+  function setStatus(s){ try{ $status.textContent = s; }catch(e){} }
 
-  // 入力の保存と復元
-  const PERSIST = ["birthDate","birthTime","placeName","lat","lon","tzSelect","targetDatetime","latSelect","lonSelect"];
-  function saveInputs(){
-    try{
-      PERSIST.forEach(id=>{
-        const el = document.getElementById(id);
-        if(el) localStorage.setItem("astro_"+id, el.value||"");
-      });
-    }catch(e){ console.warn("saveInputs error", e); }
-  }
-  function restoreInputs(){
-    try{
-      PERSIST.forEach(id=>{
-        const el = document.getElementById(id);
-        const v = localStorage.getItem("astro_"+id);
-        if(el && v!=null) el.value = v;
-      });
-    }catch(e){ console.warn("restoreInputs error", e); }
-  }
-
-  // セレクト ↔ 自由入力切り替え関数
-  function toggleTzInput(val){
-    const inEl = $("#tzInput");
-    if(val === "OTHER"){
-      inEl.style.display = "block";
-      if(!inEl.value) inEl.value = "Asia/Tokyo";
-    } else {
-      inEl.style.display = "none";
-      inEl.value = "";
-    }
-    saveInputs();
-  }
-  function toggleLatInput(val){
-    const inEl = $("#lat");
-    if(val === "0"){
-      inEl.style.display = "block";
-      if(!inEl.value) inEl.value = "";
-    } else {
-      inEl.style.display = "none";
-      inEl.value = val;
-    }
-    saveInputs();
-  }
-  function toggleLonInput(val){
-    const inEl = $("#lon");
-    if(val === "0"){
-      inEl.style.display = "block";
-      if(!inEl.value) inEl.value = "";
-    } else {
-      inEl.style.display = "none";
-      inEl.value = val;
-    }
-    saveInputs();
-  }
-
-  // 地名→緯度経度取得
-  async function robustGeocode(name){
-    if(!name||!name.trim()) throw new Error("都市名が空です");
-    const endpoint = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(name);
-    const proxied  = "https://api.allorigins.win/raw?url="+encodeURIComponent(endpoint);
-    const resp = await fetch(proxied, {cache:"no-store"});
-    if(!resp.ok) throw new Error("HTTP "+resp.status);
-    const arr = await resp.json();
-    if(!Array.isArray(arr)||!arr.length) throw new Error("no result");
-    return { lat: parseFloat(arr[0].lat), lon: parseFloat(arr[0].lon) };
-  }
-
-  async function onGeocodeClick(){
-    try{
-      const name = $("#placeName").value;
-      if(!name.trim()){ alert("都市名を入力してください"); return; }
-      const geo = await robustGeocode(name);
-      // 緯度経度セレクトが「その他」の時は自由入力欄を使う
-      $("#latSelect").value = "0";
-      toggleLatInput("0");
-      $("#lat").value = geo.lat;
-      $("#lonSelect").value = "0";
-      toggleLonInput("0");
-      $("#lon").value = geo.lon;
-      saveInputs();
-      log("Geocode OK: " + geo.lat + ", " + geo.lon);
-    }catch(e){
-      alert("位置情報の取得に失敗しました。緯度・経度を手入力してください。");
-      log("Geocode error: " + (e && e.message));
-    }
-  }
-
-  // デデュープ用選択
-  let RUN_USED = new Set();
-  function beginRun(){ RUN_USED = new Set(); }
-  function pickNoDup(arr){
-    if(!arr||!arr.length) return "";
-    const shuffled = [...arr].sort(()=>Math.random()-0.5);
-    for(const s of shuffled){
-      if(!RUN_USED.has(s)){
-        RUN_USED.add(s);
-        return s;
+  const CDN_CANDIDATES = [
+    "https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js",
+    "https://unpkg.com/astronomy-engine@2.1.19/astronomy.browser.min.js",
+    "https://esm.sh/astronomy-engine@2.1.19?bundle&target=es2018"
+  ];
+  async function loadAstronomyEngine(){
+    if (window.Astronomy) return;
+    let lastErr=null;
+    for(const url of CDN_CANDIDATES){
+      log("ライブラリ取得: "+url);
+      try{
+        await new Promise((res, rej)=>{
+          const s=document.createElement('script');
+          s.src=url; s.async=true;
+          let done=false;
+          const timer=setTimeout(()=>{ if(done) return; done=true; rej(new Error("timeout")); }, 7000);
+          s.onload=()=>{ if(done) return; done=true; clearTimeout(timer); res(); };
+          s.onerror=()=>{ if(done) return; done=true; clearTimeout(timer); rej(new Error("script error")); };
+          document.head.appendChild(s);
+        });
+        if(window.Astronomy){ log("astronomy-engine 読み込み成功: "+url); return; }
+      }catch(e){
+        lastErr=e; log("読み込み失敗: "+url+" / "+(e && e.message));
       }
     }
-    return shuffled[0];
+    throw lastErr || new Error("全CDN失敗");
   }
-  function sampleUnique(arr, n){
-    if(!arr||!arr.length) return [];
-    const out = [];
-    const pool = [...arr];
-    for(let i=0;i<n;i++){
-      const idx = Math.floor(Math.random()*pool.length);
-      const p = pool.splice(idx,1)[0];
-      if(p) out.push(p);
-      if(pool.length === 0) break;
-    }
-    return out;
-  }
-
-  // 占いロジック（デモとして）
-  function renderResult(scores){
-    const out = $("#output");
-    out.style.display = "block";
-    out.innerHTML = `
-      <h2>いまの全体感：${scores.total}%</h2>
-      <p><strong>恋愛：</strong>${scores.love}%</p>
-      <p><strong>仕事：</strong>${scores.work}%</p>
-      <p><strong>金運：</strong>${scores.money}%</p>
-      <p><strong>健康：</strong>${scores.health}%</p>
-      <p style="color:#666"><em>今日の一歩を大切に。</em></p>
-    `;
-  }
-
-  async function onCalcClick(){
-    beginRun();
-    try{
-      const tz = ($("#tzSelect").value === "OTHER" ? ($("#tzInput").value || "Asia/Tokyo") : $("#tzSelect").value);
-      const lat = parseFloat($("#lat").value);
-      const lon = parseFloat($("#lon").value);
-      if(!isFinite(lat) || !isFinite(lon)){
-        alert("緯度・経度は数値で入力してください");
-        return;
-      }
-      const seed = Math.abs(Math.sin(Date.now()/86400000 + lat*0.1 + lon*0.1)) * 10000 | 0;
-      const prng = (n) => { const x = Math.sin(seed + n) * 10000; return x - Math.floor(x); };
-      const scores = {
-        total: Math.round(40 + prng(1) * 60),
-        love:  Math.round(30 + prng(2) * 70),
-        work:  Math.round(30 + prng(3) * 70),
-        money: Math.round(30 + prng(4) * 70),
-        health:Math.round(30 + prng(5) * 70)
-      };
-      renderResult(scores);
-      saveInputs();
-    }catch(e){
-      const outEl = document.getElementById('output');
-      outEl.style.display = 'block';
-      outEl.innerHTML = `<div style="padding:10px;border:1px solid #f3c;background:#fff0fb;border-radius:8px;">
-        <strong>実行エラー</strong><br><code>${String(e?.message||e)}</code>
-      </div>`;
-      console.error(e);
-    }
-  }
-
-  function onFillClick(){
-    $("#placeName").value = "Tokyo, Japan";
-    $("#tzSelect").value = "Asia/Tokyo";
-    toggleTzInput("Asia/Tokyo");
-    $("#latSelect").value = "0";
-    toggleLatInput("0");
-    $("#lat").value = "35.6895";
-    $("#lonSelect").value = "0";
-    toggleLonInput("0");
-    $("#lon").value = "139.6917";
-    $("#targetDatetime").value = "";
-    saveInputs();
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    restoreInputs();
-    // 初期表示整え
-    toggleLatInput($("#latSelect").value);
-    toggleLonInput($("#lonSelect").value);
-    toggleTzInput($("#tzSelect").value);
+  setStatus("天体計算ライブラリ取得中…");
+  loadAstronomyEngine().then(()=>{
+    setStatus("天体計算ライブラリOK");
+  }).catch(err=>{
+    setStatus("ライブラリ未読込");
+    log("ライブラリのロードに失敗しました: "+(err && err.message));
   });
+</script>
 
-  // グローバル関数公開（onclick="onCalcClick()" 等が undefined にならないよう）
-  window.onCalcClick = onCalcClick;
-  window.onGeocodeClick = onGeocodeClick;
-  window.onFillClick = onFillClick;
+<script>
+/* ====== 基本ユーティリティとRNG ====== */
+let __booted = false;
+window.onerror = function(message, source, lineno, colno, error){
+  log(`JSエラー: ${message} @ ${source}:${lineno}:${colno}`);
+  const out=document.getElementById('output');
+  out.innerHTML = `<div style="padding:10px;border:1px solid #f3c;background:#fff0fb;border-radius:8px;">
+  <strong>スクリプトエラー</strong><br><code>${String(message).replace(/</g,'&lt;')}</code></div>`;
+  out.style.display='block';
+};
+window.addEventListener('unhandledrejection', e=>{
+  log('Promise未捕捉: '+ (e.reason && e.reason.message ? e.reason.message : String(e.reason)));
+});
+log('ブート開始');
+setStatus('ブート中…');
+document.addEventListener('DOMContentLoaded', ()=>{
+  __booted = true;
+  log('DOMContentLoaded OK');
+  setStatus('準備OK（ボタン押せます）');
+});
+
+function toggleTzInput(val){
+  const inEl=document.getElementById('tzInput');
+  if(val==='OTHER'){
+    inEl.style.display='block';
+    const saved = localStorage.getItem('astro_tz')||'';
+    if(saved && saved!=='OTHER') inEl.value = saved;
+  }else{
+    inEl.style.display='none';
+    inEl.value='';
+    try{ localStorage.setItem('astro_tz', val); }catch(e){}
+  }
+}
+function toggleLatInput(val){
+  const latInput=document.getElementById('lat');
+  if(val==="0"){ latInput.style.display="block"; if(!latInput.value) latInput.value=""; }
+  else{ latInput.style.display="none"; latInput.value=val; }
+  saveInputs();
+}
+function toggleLonInput(val){
+  const lonInput=document.getElementById('lon');
+  if(val==="0"){ lonInput.style.display="block"; if(!lonInput.value) lonInput.value=""; }
+  else{ lonInput.style.display="none"; lonInput.value=val; }
+  saveInputs();
+}
+
+/* 保存/復元 */
+const PERSIST_KEYS = ['birthDate','birthTime','placeName','lat','lon','tzSelect'];
+function saveInputs(){
+  try{
+    for(const id of PERSIST_KEYS){
+      const el=document.getElementById(id);
+      const val=(el && (el.tagName==='SELECT' ? el.value : el.value)) || '';
+      localStorage.setItem('astro_'+id, val);
+    }
+    localStorage.setItem('astro_latSelect', document.getElementById('latSelect')?.value || '');
+    localStorage.setItem('astro_lonSelect', document.getElementById('lonSelect')?.value || '');
+    log('入力を保存しました。');
+  }catch(e){ log('保存エラー: '+(e.message||e)); }
+}
+function loadInputs(){
+  try{
+    for(const id of PERSIST_KEYS){
+      const el=document.getElementById(id);
+      const val=localStorage.getItem('astro_'+id);
+      if(val!==null && el){ el.value=val; }
+    }
+    log('入力を復元しました。');
+  }catch(e){ log('復元エラー: '+(e.message||e)); }
+}
+function syncSelectsFromInputs(){
+  const lat = document.getElementById('lat').value;
+  const lon = document.getElementById('lon').value;
+  const latSel = document.getElementById('latSelect');
+  const lonSel = document.getElementById('lonSelect');
+  function setOrOther(selectEl, val, toggleFn){
+    if(!selectEl) return;
+    const found = [...selectEl.options].some(opt => opt.value === String(val));
+    if(found && val!==""){ selectEl.value=String(val); toggleFn(String(val)); }
+    else{ selectEl.value="0"; toggleFn("0"); const target=(selectEl.id==='latSelect')?document.getElementById('lat'):document.getElementById('lon'); if(val) target.value=val; }
+  }
+  setOrOther(latSel, lat || "35.6895", toggleLatInput);
+  setOrOther(lonSel, lon || "139.6917", toggleLonInput);
+}
+window.addEventListener('beforeunload', saveInputs);
+document.addEventListener('change', (e)=>{ if(e.target && (PERSIST_KEYS.includes(e.target.id))) saveInputs(); });
+loadInputs();
+
+/* TZ初期化 */
+(function tzInit(){
+  const sel=document.getElementById('tzSelect');
+  let deviceTz='Asia/Tokyo';
+  try{deviceTz=Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Tokyo';}catch(e){}
+  if (![...sel.options].some(o=>o.value===deviceTz)){
+    const o=document.createElement('option');o.value=deviceTz;o.textContent=deviceTz+'（端末）';sel.insertBefore(o,sel.firstChild);
+  }
+  const saved = localStorage.getItem('astro_tz');
+  if(saved && saved!=='OTHER'){
+    if ([...sel.options].some(o=>o.value===saved)){ sel.value=saved; toggleTzInput(saved); }
+    else{ sel.value='OTHER'; toggleTzInput('OTHER'); document.getElementById('tzInput').value=saved; }
+  }else{
+    sel.value=deviceTz; toggleTzInput(deviceTz);
+  }
+  log('TZ: 初期設定 → '+(saved||deviceTz));
+})();
+
+/* 決定的RNG（日×3時間枠） */
+let __rng = Math.random;
+function seedRngFrom(dateUTC, tz){
+  try{
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: tz, hour12:false,
+      year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit'
+    }).formatToParts(dateUTC);
+    const m={}; for(const p of parts) m[p.type]=p.value;
+    const y=+m.year, mo=+m.month, d=+m.day, h=+m.hour;
+    const dayIndex = Math.floor(Date.UTC(y, mo-1, d) / 86400000);
+    const bucket   = Math.floor(h/3);
+    const seed = ((dayIndex>>>0)*37 + (bucket>>>0)*101) >>> 0;
+    __rng = (function(s){
+      return function(){
+        s = (s + 0x6D2B79F5) | 0;
+        let t = Math.imul(s ^ (s>>>15), 1 | s);
+        t = (t + Math.imul(t ^ (t>>>7), 61 | t)) ^ t;
+        return ((t ^ (t>>>14)) >>> 0) / 4294967296;
+      };
+    })(seed);
+  }catch(_){
+    __rng = Math.random;
+  }
+}
+
+/* 天文ユーティリティ */
+function normalizeDeg(d){d=d%360; if(d<0)d+=360; return d;}
+function toJulianDate(date){return(date.getTime()/86400000.0)+2440587.5;}
+function gmstDegrees(date){const JD=toJulianDate(date);const T=(JD-2451545.0)/36525.0;let GMST=280.46061837+360.98564736629*(JD-2451545.0)+0.000387933*T*T-(T*T*T)/38710000.0;GMST=((GMST%360)+360)%360;return GMST;}
+function lstDegrees(dateUTC,lon){let lst=gmstDegrees(dateUTC)+lon;lst=((lst%360)+360)%360;return lst;}
+function deg2rad(d){return d*Math.PI/180;} function rad2deg(r){return r*180/Math.PI;}
+function calcAscendant(dateUTC,lat,lon){const lst=lstDegrees(dateUTC,lon);const eps=23.4392911*Math.PI/180;const theta=deg2rad(lst),phi=deg2rad(lat);const y=-Math.cos(theta);const x=Math.sin(theta)*Math.cos(eps)+Math.tan(phi)*Math.sin(eps);let asc=Math.atan2(y,x);asc=rad2deg(asc);if(asc<0)asc+=360;if(asc<180)asc+=180;else asc-=180;return normalizeDeg(asc);}
+function calcMC(dateUTC,lon){const lst=lstDegrees(dateUTC,lon);const eps=deg2rad(23.4392911);const ramc=deg2rad(lst);let L=Math.atan2(Math.sin(ramc),Math.cos(ramc)*Math.cos(eps));L=rad2deg(L);if(L<0)L+=360;return normalizeDeg(L);}
+function isoWithTZoffset(localIso,tz){const dt=new Date(localIso);const parts=new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(dt);const map={};for(const p of parts)map[p.type]=p.value;const asTzISO=`${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}:${map.second}Z`;const tUtc=Date.parse(asTzISO),localMillis=dt.getTime();const diffMin=Math.round((tUtc-localMillis)/60000);const sign=diffMin>=0?'+':'-';const mm=Math.abs(diffMin);return localIso+sign+String(Math.floor(mm/60)).padStart(2,'0')+':'+String(mm%60).padStart(2,'0');}
+function parseLocalToUTCdate(localDateStr,tz){try{return new Date(isoWithTZoffset(localDateStr,tz));}catch(e){return new Date(localDateStr);}}
+function roundLocalIsoTo3hNearest(localIso, tz){
+  const base = new Date(localIso);
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit', year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(base);
+  const map={}; for(const p of parts) map[p.type]=p.value;
+  const H = parseInt(map.hour||'0',10);
+  const M = parseInt(map.minute||'0',10);
+  const S = parseInt(map.second||'0',10);
+  const total = H + M/60 + S/3600;
+  const rounded = Math.floor(total/3)*3;
+  const hh = String(rounded).padStart(2,'0');
+  const roundedLocalIso = `${map.year}-${map.month}-${map.day}T${hh}:00:00`;
+  return { roundedLocalIso, originalHM: `${String(H).padStart(2,'0')}:${String(M).padStart(2,'0')}`, roundedHM: `${hh}:00` };
+}
+
+/* アスペクト/スコア */
+const ASPECTS=[{name:'Conjunction',deg:0,orb:8,weight:1.4},{name:'Sextile',deg:60,orb:6,weight:0.9},{name:'Square',deg:90,orb:8,weight:-1.2},{name:'Trine',deg:120,orb:8,weight:1.2},{name:'Opposition',deg:180,orb:8,weight:-1.5}];
+const CATEGORY_MAP={"総合":['Sun','Moon','Jupiter','Saturn'],"恋愛":['Venus','Moon','Mars'],"仕事":['Sun','Mars','Saturn'],"金運":['Jupiter','Venus'],"健康":['Moon','Saturn','Mars']};
+function angleDiff(a,b){let d=Math.abs(a-b)%360;if(d>180)d=360-d;return d;}
+function aspectStrength(delta,asp){const diff=Math.abs(delta-asp.deg);if(diff>asp.orb)return 0;return 1-(diff/asp.orb);}
+function detectAspects(natal,transit){const list=[];for(const p in natal){if(!(p in transit))continue;const d=angleDiff(natal[p],transit[p]);for(const asp of ASPECTS){const clos=aspectStrength(d,asp);if(clos>0){list.push({planet:p,aspect:asp.name,exactness:clos,weight:asp.weight,angle:d,orb:asp.orb});}}}return list;}
+function scoreCategories(aspects){const raw={};for(const c in CATEGORY_MAP)raw[c]=0;for(const a of aspects){const importance={'Sun':1.1,'Moon':1.05,'Mercury':0.9,'Venus':1.0,'Mars':1.0,'Jupiter':1.0,'Saturn':1.0,'Uranus':0.6,'Neptune':0.5,'Pluto':0.5,'ASC':0.8,'MC':0.9}[a.planet]||0.6;const contrib=a.exactness*a.weight*importance;for(const c in CATEGORY_MAP){if(CATEGORY_MAP[c].includes(a.planet))raw[c]+=contrib;}raw['総合']+=contrib*0.4;}const results={};for(const c in raw){const x=raw[c];results[c]=Math.round((1/(1+Math.exp(-(x))))*100);}return results;}
+function planetEclipticLongitude(body,dateUTC){
+  try{ if(body==='Sun' && Astronomy.SunLongitude) return normalizeDeg(Astronomy.SunLongitude(dateUTC)); }catch(e){}
+  try{ if(body==='Sun' && Astronomy.SunPosition){ const sp = Astronomy.SunPosition(dateUTC); const lon = (typeof sp.elon==='number')?sp.elon : (sp.ecliptic&&typeof sp.ecliptic.lon==='number')?sp.ecliptic.lon : sp.lon; if(typeof lon==='number') return normalizeDeg(lon);} }catch(e){}
+  try{ if(body==='Sun'){ const ecl = Astronomy.Ecliptic('Sun', dateUTC); if(ecl && typeof ecl.lon==='number') return normalizeDeg(ecl.lon);} }catch(e){}
+  try{ return normalizeDeg(Astronomy.EclipticLongitude(body,dateUTC)); }catch(e){ try{ const ecl=Astronomy.Ecliptic(body,dateUTC); return normalizeDeg(ecl.lon);}catch(err){ return NaN; } }
+}
+
+/* ====== ★テンプレ 強化パック1（女性向き） ★ ====== */
+const _recentLines=new Set();
+function _markRecent(line){ if(!line) return; _recentLines.add(line); if(_recentLines.size>180){ const it=_recentLines.values().next().value; _recentLines.delete(it);} }
+function pick(arr){ if(!arr||!arr.length) return ""; return arr[Math.floor(__rng()*arr.length)]; }
+function pickUnique(list){
+  if(!list||!list.length) return "";
+  const shuffled=[...list].sort(()=>__rng()-0.5);
+  for(const s of shuffled){ if(!_recentLines.has(s)){ _markRecent(s); return s; } }
+  const fb=shuffled[0]; _markRecent(fb); return fb;
+}
+let RUN_USED = new Set();
+function beginRun(){ RUN_USED = new Set(); }
+function pickNoDup(arr){
+  if(!arr || !arr.length) return "";
+  const shuffled=[...arr].sort(()=>__rng()-0.5);
+  for(const s of shuffled){
+    if(!RUN_USED.has(s) && !_recentLines.has(s)){
+      RUN_USED.add(s); _markRecent(s);
+      return s;
+    }
+  }
+  for(const s of shuffled){
+    if(!RUN_USED.has(s)){
+      RUN_USED.add(s); _markRecent(s);
+      return s;
+    }
+  }
+  const fb=shuffled[0]; RUN_USED.add(fb); _markRecent(fb);
+  return fb;
+}
+function sampleUnique(arr, n){
+  if(!arr || !arr.length) return [];
+  const out=[];
+  const pool=[...arr];
+  for(let i=0;i<n;i++){
+    const candidate = pickNoDup(pool);
+    if(!candidate) break;
+    out.push(candidate);
+    const idx = pool.indexOf(candidate);
+    if(idx>=0) pool.splice(idx,1);
+    if(pool.length===0) break;
+  }
+  return out;
+}
+
+/* 文章テンプレ（抜粋＆統合：FINAL-3とindex-7の同等ブロック） */
+const TPL={
+  "全体運":{
+    "好調":[
+      "追い風がふんわり吹いています。いまのリズムを大切に。",
+      "小さな決断が大きな前進に。気持ちの“素直さ”を信じて。",
+      "流れは軽やか。段取りより“まず着手”が吉。",
+      "助けが自然と集まりやすい日。感謝を言葉にして循環を。",
+      "良い偶然とタイミングが重なる予感。余白を残して動こう。",
+      "持ち味が伝わりやすいとき。等身大で十分に魅力的。",
+      "積み上げの実感が得やすい一日。小さな完了を積み重ねて。",
+      "迷ったら“軽いほう”。身体が楽な選択が進むサイン。",
+      "気持ちの輪郭がやわらかく整います。笑顔が最強のお守り。",
+      "“今の私”に合うサイズ感でOK。無理せず軽やかに。"
+    ],
+    "普通":[
+      "ほどよいペースで進めば十分。丁寧さが味方になります。",
+      "焦らず、基本を整えるほど安定。チェックリストが役立ちます。",
+      "やることを三つに絞ると、心の余裕が戻ってきます。",
+      "休む・食べる・整えるの基礎を丁寧に。中庸の良さが活きる日。",
+      "完璧より継続。60点で提出して次へ進もう。"
+    ],
+    "注意":[
+      "がんばり過ぎのサイン。深呼吸して心をゆるめて。",
+      "判断は明日に回してもOK。まずは睡眠と栄養を。",
+      "“やらないこと”を三つ決めて、負荷を軽くしましょう。",
+      "感情は波立ちやすいとき。言葉はひと呼吸置いてから。",
+      "一人で抱え込まないで。頼ることも前進の一部です。"
+    ]
+  },
+  "恋愛":{
+    "好調":[
+      "素直な言葉が届きやすいとき。ちいさな優しさを添えて。",
+      "笑顔とあいづちで距離が縮まります。背伸びは不要。",
+      "共有より共感を大切に。短い一言が想像以上に響きます。",
+      "予定を一つだけ一緒に決めると、関係が前に進みます。",
+      "身だしなみのワンポイントで印象UP。香りやアクセが吉。"
+    ],
+    "普通":[
+      "自然体のあなたが一番魅力的。焦らず、心地よいテンポで。",
+      "相手のペースを尊重して、今日は“広げすぎない”が正解。",
+      "話題は軽めに。共通の小ネタが距離を縮めます。",
+      "返信は短くてもOK。丁寧さが伝われば十分です。",
+      "予定は曖昧にせず“いつ”で締めると安心感が増します。"
+    ],
+    "注意":[
+      "言い過ぎ・受け取り違いに注意。言葉選びはやさしく。",
+      "不安は事実と分けてメモ。感情が整うと会話も整います。",
+      "返信は一旦保留でもOK。今は休むのが最善です。",
+      "白黒を急がない。グレーを丁寧に確認するほど安心に。",
+      "沈黙は悪ではありません。相手のスペースを尊重して。"
+    ]
+  },
+  "仕事":{
+    "好調":[
+      "段取りがすっとハマる日。先回りの気配りが好印象に。",
+      "最初の30分を全力で。勢いがそのまま成果に。",
+      "小さな完了を積み重ねるほど評価がついてきます。",
+      "“今日のゴールを一行”で決めると進みが加速。",
+      "得意領域に寄せるとスムーズ。分からない所は早めに相談。"
+    ],
+    "普通":[
+      "基本に立ち返るほど安定します。チェックリストが頼もしい味方。",
+      "TODOを3個に絞ると集中が戻ります。通知は切ってOK。",
+      "進捗が見えなくなったら“分ける・並べる・捨てる”。",
+      "一番軽い作業から着手。手が温まると難所も進みます。",
+      "5分だけのドラフトで良いので、まず提出して会話を始める。"
+    ],
+    "注意":[
+      "がんばりどころを選んで。抱え込み過ぎにブレーキを。",
+      "判断は短く、作業は長く。悩みすぎは生産性を下げます。",
+      "寝不足・空腹は集中の敵。まずは身体を整えて。",
+      "期限と品質はトレードオフ。“必要十分”を確認しましょう。",
+      "怒りのメールは“下書き”へ。明朝見直してから送信。"
+    ]
+  },
+  "金運":{
+    "好調":[
+      "よい選択眼。必要なものを必要な分だけ賢く。",
+      "小さな投資が将来の安心に。まずは固定費の改善から。",
+      "値札より“使用回数”で考えると満足度が上がります。",
+      "ポイントより現金の可視化が効果的。家計をシンプルに。",
+      "ご褒美は上質を少量。満足感と節度のバランス◎。"
+    ],
+    "普通":[
+      "見直しと整え直しのタイミング。サブスク点検が◎。",
+      "週次予算を決めると、ブレが減って気持ちも楽に。",
+      "食費は“固定の定番”を作ると安定します。",
+      "レシートを撮るだけ家計簿で十分。続けやすさ優先。",
+      "買い替えは“修理できるか”を先に確認。長持ちが節約。"
+    ],
+    "注意":[
+      "気分買いに注意。カートは一度閉じて。",
+      "勧誘や限定表示は深呼吸してから。必要性で判断を。",
+      "大きな契約は先送りでもOK。情報を整理してから。",
+      "“安いから買う”はコスト増の芽。使う予定を確認。",
+      "ローンや分割は総額で見る。手数料の影響に注意。"
+    ]
+  },
+  "健康":{
+    "好調":[
+      "回復力が高め。軽い運動とたっぷりの水分を。",
+      "姿勢と呼吸を整えるだけで体感が変わる日。",
+      "朝の光を浴びるとリズムが整い、集中力もアップ。",
+      "温かい飲み物が身体を内側からサポート。",
+      "散歩やストレッチで血の巡りを良くして。"
+    ],
+    "普通":[
+      "姿勢と呼吸を意識して、疲れをためない工夫を。",
+      "水分・たんぱく質・睡眠の三本柱を丁寧に。",
+      "間食は“ナッツ＋水”などシンプルに。",
+      "画面から目を離して、遠くを見る休憩を。",
+      "体調メモを一行。傾向が見えると対策が立てやすい。"
+    ],
+    "注意":[
+      "無理は禁物。今日は短時間で切り上げてOK。",
+      "冷え・だるさを感じたら温かい飲み物でケアを。",
+      "睡眠最優先。深夜のスマホはお休みしましょう。",
+      "頑張り過ぎのサイン。軽いストレッチでリセットを。",
+      "人混みは短時間に。静かな時間を作って。"
+    ]
+  }
+};
+
+/* ===== 実装：UIハンドラ ===== */
+function warn(msg){ log(msg); alert(msg); }
+
+function getTZ(){
+  const sel = document.getElementById('tzSelect').value;
+  if(sel==='OTHER'){
+    const custom = document.getElementById('tzInput').value.trim();
+    return custom || 'UTC';
+  }
+  return sel || 'UTC';
+}
+
+async function onGeocodeClick(){
+  const q = (document.getElementById('placeName').value||'').trim();
+  if(!q){ warn('都市名を入力してください。'); return; }
+  try{
+    setStatus('位置検索中…');
+    log('Geocode: '+q);
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q);
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    if(!data || !data.length){ warn('見つかりませんでした。別の表記でお試しください。'); setStatus('準備OK'); return; }
+    const pt = data[0];
+    document.getElementById('lat').value = String(pt.lat);
+    document.getElementById('lon').value = String(pt.lon);
+    document.getElementById('latSelect').value = "0"; document.getElementById('lat').style.display='block';
+    document.getElementById('lonSelect').value = "0"; document.getElementById('lon').style.display='block';
+    saveInputs();
+    setStatus('位置取得OK');
+    log(`→ lat=${pt.lat}, lon=${pt.lon}`);
+  }catch(e){
+    setStatus('準備OK');
+    warn('位置取得に失敗しました: '+(e && e.message));
+  }
+}
+
+function planetList(){ return ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto']; }
+
+function computeLongitudes(dateUTC, lat, lon){
+  const out={};
+  for(const b of planetList()){
+    const L = planetEclipticLongitude(b, dateUTC);
+    if(!isFinite(L)) log('計算失敗: '+b);
+    out[b]=isFinite(L)?L:NaN;
+  }
+  out['ASC'] = calcAscendant(dateUTC, lat, lon);
+  out['MC']  = calcMC(dateUTC, lon);
+  return out;
+}
+
+function bucketFromScore(s){ if(s>=67) return '好調'; if(s>=34) return '普通'; return '注意'; }
+
+function renderOutput({natal, transit, aspects, scores, meta}){
+  const out = document.getElementById('output');
+  const cats = ['総合','恋愛','仕事','金運','健康'];
+  const bars = cats.map(c=>{
+    const v = scores[c] ?? 50;
+    return `<div style="margin:6px 0">
+      <div style="display:flex;justify-content:space-between"><strong>${c}</strong><span>${v}%</span></div>
+      <div class="bar"><i style="width:${v}%"></i></div>
+    </div>`;
+  }).join('');
+
+  const aspRows = aspects.slice(0,24).map(a=>{
+    return `<tr><td>${a.planet}</td><td>${a.aspect}</td><td>${a.angle.toFixed(1)}°</td><td>${(a.exactness*100|0)}%</td></tr>`;
+  }).join('');
+
+  // 読み物
+  beginRun();
+  const readings = cats.map(c=>{
+    const bucket = bucketFromScore(scores[c] ?? 50);
+    const lines = sampleUnique(TPL[c]?.[bucket]||[], 3).map(s=>`<li>${s}</li>`).join('');
+    return `<details open><summary>${c}：${bucket}</summary><ul>${lines||'<li>…</li>'}</ul></details>`;
+  }).join('');
+
+  const chips = `<div class="chips">
+    <div class="chip">出生: ${meta.birthLocal}</div>
+    <div class="chip">解析: ${meta.targetLocal}（丸め: ${meta.roundedHM}）</div>
+    <div class="chip">TZ: ${meta.tz}</div>
+    <div class="chip">緯度: ${meta.lat.toFixed(4)}</div>
+    <div class="chip">経度: ${meta.lon.toFixed(4)}</div>
+  </div>`;
+
+  out.innerHTML = `
+    <div><strong>結果</strong></div>
+    ${chips}
+    <div style="margin-top:10px">${bars}</div>
+    <details style="margin-top:10px"><summary>アスペクト一覧（最大24件）</summary>
+      <table><thead><tr><th>天体</th><th>種別</th><th>角度</th><th>近さ</th></tr></thead><tbody>${aspRows}</tbody></table>
+    </details>
+    <div class="explain" style="margin-top:12px">
+      <h3 style="margin:6px 0">今日の読み</h3>
+      ${readings}
+      <p class="muted">※ 本ツールは天体位置をastronomy-engineで近似計算し、アスペクトから各カテゴリのスコアを算出のうえテンプレート文を動的生成します。医療/投資等の助言ではありません。</p>
+    </div>
+  `;
+  out.style.display='block';
+}
+
+function validateInputs(){
+  const birthDate = document.getElementById('birthDate').value;
+  const birthTime = document.getElementById('birthTime').value;
+  const tz = getTZ();
+  const lat = parseFloat(document.getElementById('lat').value || document.getElementById('latSelect').value);
+  const lon = parseFloat(document.getElementById('lon').value || document.getElementById('lonSelect').value);
+  if(!birthDate || !birthTime) throw new Error('出生日と出生時刻を入力してください。');
+  if(!isFinite(lat) || !isFinite(lon)) throw new Error('緯度・経度が不正です。都市名から取得するか手入力してください。');
+  return { birthLocal: `${birthDate}T${birthTime}`, tz, lat, lon };
+}
+
+function planetNameJP(k){
+  const map = {Sun:'太陽', Moon:'月', Mercury:'水星', Venus:'金星', Mars:'火星', Jupiter:'木星', Saturn:'土星', Uranus:'天王星', Neptune:'海王星', Pluto:'冥王星', ASC:'ASC', MC:'MC'};
+  return map[k] || k;
+}
+
+async function onCalcClick(){
+  try{
+    setStatus('計算中…');
+    const targetLocal = (document.getElementById('targetDatetime').value||'').trim();
+    const { birthLocal, tz, lat, lon } = validateInputs();
+
+    const targetBase = targetLocal || new Date().toISOString().slice(0,16);
+    const rounded = roundLocalIsoTo3hNearest(targetBase, tz);
+    const birthUTC  = parseLocalToUTCdate(birthLocal, tz);
+    const targetUTC = parseLocalToUTCdate(rounded.roundedLocalIso, tz);
+
+    seedRngFrom(targetUTC, tz);
+
+    if(!window.Astronomy){ await loadAstronomyEngine(); }
+    if(!window.Astronomy) throw new Error('astronomy-engine が読み込めませんでした。ネットワークをご確認ください。');
+
+    const natal   = computeLongitudes(birthUTC,  lat, lon);
+    const transit = computeLongitudes(targetUTC, lat, lon);
+
+    const aspects = detectAspects(natal, transit).sort((a,b)=>b.exactness*a.weight - a.exactness*b.weight);
+    const scores  = scoreCategories(aspects);
+
+    renderOutput({
+      natal, transit, aspects, scores,
+      meta:{
+        tz,
+        lat, lon,
+        birthLocal: birthLocal.replace('T',' '),
+        targetLocal: targetBase.replace('T',' '),
+        roundedHM: rounded.roundedHM
+      }
+    });
+    setStatus('計算完了');
+    log('計算完了');
+  }catch(e){
+    setStatus('準備OK');
+    warn(e.message || String(e));
+  }
+}
+
+function onFillClick(){
+  document.getElementById('birthDate').value = '1995-05-15';
+  document.getElementById('birthTime').value = '14:30:00';
+  document.getElementById('placeName').value = 'Tokyo, Japan';
+  document.getElementById('latSelect').value = '35.6895'; toggleLatInput('35.6895');
+  document.getElementById('lonSelect').value = '139.6917'; toggleLonInput('139.6917');
+  document.getElementById('tzSelect').value = 'Asia/Tokyo'; toggleTzInput('Asia/Tokyo');
+  document.getElementById('targetDatetime').value = new Date().toISOString().slice(0,16);
+  saveInputs();
+  log('デモ値を入力しました。');
+}
+
 </script>
 </body>
 </html>

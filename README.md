@@ -16,10 +16,10 @@
 ## 📸 スクリーンショット
 
 ### トップ画面
-<img src="docs/ドキュメントスクリーンショットトップ.png" width="320">
+<img src="docs/screenshot-top.png" width="320">
 
 ### 結果画面
-<img src="docs/ドキュメントスクリーンショット結果.png" width="320">
+<img src="docs/screenshot-result.png" width="320">
 
 ---
 

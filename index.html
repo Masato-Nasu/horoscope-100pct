@@ -1,1 +1,25 @@
-<!DOCTYPE html><html><body><p>100% Horoscope v48a Deterministic Build (Stable Score)</p></body></html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>100% 星占い</title>
+<meta name="theme-color" content="#6b46c1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/horoscope-100pct/icon-180.png">
+<link rel="manifest" href="/horoscope-100pct/manifest.json">
+</head>
+<body>
+<p>100% Horoscope v48b PWA Stable</p>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/horoscope-100pct/sw.js?v=48b', { scope: '/horoscope-100pct/' })
+      .then(() => navigator.serviceWorker.ready)
+      .catch(console.error);
+  });
+}
+</script>
+</body>
+</html>

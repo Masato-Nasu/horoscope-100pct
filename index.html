@@ -93,7 +93,7 @@
   <!-- Service Worker 登録（通常運用） -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js?v=34')
+      navigator.serviceWorker.register('./sw.js?v=35')
         .catch(e => console.warn('SW登録失敗', e));
     }
   </script>
@@ -602,161 +602,49 @@
       return tones[m] || "季節の移ろいを感じる日";
     }
 
-    async function fetchNewsTopJP(){
-      // 1) GNews
-      try{
-        const url = `https://gnews.io/api/v4/top-headlines?lang=ja&country=jp&max=3&category=general&apikey=${GNEWS_API_KEY}`;
-        const res = await fetch(url, { headers: { 'Accept': 'application/json' }, cache:'no-store' });
-        if(!res.ok) throw new Error('GNews HTTP '+res.status);
-        const data = await res.json();
-        const titles = (data?.articles||[]).map(a=>a?.title).filter(Boolean).slice(0,2);
-        if(titles.length) return titles;
-        throw new Error('GNews empty');
-      }catch(e){ log('GNews取得失敗: '+(e.message||e)); }
+    async function fetchNewsTopJP() {
+  // 1) GNews
+  try {
+    const url = `https://gnews.io/api/v4/top-headlines?lang=ja&country=jp&max=3&category=general&apikey=${GNEWS_API_KEY}`;
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+    if (!res.ok) throw new Error('GNews HTTP ' + res.status);
+    const data = await res.json();
+    const titles = (data?.articles || []).map(a => a?.title).filter(Boolean).slice(0, 2);
+    if (titles.length) return titles;
+    throw new Error('GNews empty');
+  } catch (e) {
+    log('GNews取得失敗: ' + (e.message || e));
+  }
+  // 2) NHK RSS (XML直fetch)
+  try {
+    const rssUrl = 'https://www3.nhk.or.jp/rss/news/cat0.xml';
+    const res = await fetch(rssUrl, { cache: 'no-store' });
+    if (!res.ok) throw new Error('NHK RSS HTTP ' + res.status);
+    const xmlText = await res.text();
+    const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+    const items = Array.from(doc.querySelectorAll('item > title'))
+      .map(n => (n.textContent || '').trim()).filter(Boolean);
+    return items.slice(0, 2);
+  } catch (e) {
+    log('RSS取得失敗: ' + (e.message || e));
+    return [];
+  }
+}
 
-      // 2) NHK RSS direct XML
-      try{
-        const rssUrl = 'https://www3.nhk.or.jp/rss/news/cat0.xml';
-        const res = await fetch(rssUrl, { cache:'no-store' });
-        if(!res.ok) throw new Error('NHK RSS HTTP '+res.status);
-        const xml = await res.text();
-        const doc = new DOMParser().parseFromString(xml, 'application/xml');
-        const items = Array.from(doc.querySelectorAll('item > title')).map(n=>n.textContent?.trim()).filter(Boolean);
-        return items.slice(0,2);
-      }catch(e){ log('RSS取得失敗: '+(e.message||e)); return []; }
-    }
-
-    async function fetchNewsAndSeasonContext(targetLocalDateStr){
-      const d = new Date(targetLocalDateStr+"T12:00:00");
-      const season = seasonToneByMonth(d.getMonth()+1);
-      const news = await fetchNewsTopJP();
-      let line = `今日の空気感：${season}。`;
-      if(news.length){
-        line += `<br><span class="muted">🗞️ 最近の話題：${news.slice(0,2).join(' ／ ')}。</span>`;
-      }
-      return line;
-    }
-function bucketFromScore(s){ if(s>=67) return '好調'; if(s>=34) return '普通'; return '注意'; }
-
-    function renderOutput({natal, transit, aspects, scores, meta, context}){
-      const out = document.getElementById('output');
-      const cats = [
-        {key:'総合', label:'総合', tplKey:'全体運'},
-        {key:'恋愛', label:'恋愛', tplKey:'恋愛'},
-        {key:'仕事', label:'仕事', tplKey:'仕事'},
-        {key:'金運', label:'金運', tplKey:'金運'},
-        {key:'健康', label:'健康', tplKey:'健康'}
-      ];
-      const bars = cats.map(c=>{
-        const v = scores[c.key] ?? 50;
-        return `<div style="margin:6px 0">
-          <div style="display:flex;justify-content:space-between"><strong>${c.label}</strong><span>${v}%</span></div>
-          <div class="bar"><i style="width:${v}%"></i></div>
-        </div>`;
-      }).join('');
-
-      const aspRows = aspects.slice(0,24).map(a=>{
-        return `<tr><td>${a.planet}</td><td>${a.aspect}</td><td>${a.angle.toFixed(1)}°</td><td>${(a.exactness*100|0)}%</td></tr>`;
-      }).join('');
-
-      beginRun();
-      const readings = cats.map(c=>{
-        const score = scores[c.key] ?? 50;
-        const bucket = bucketFromScore(score);
-        const tplKey = c.tplKey || c.key;
-        const lines = sampleUnique(TPL[tplKey]?.[bucket]||[], 5).map(s=>`<li>${s}</li>`).join('');
-        return `<details open><summary>${c.label}：${bucket}</summary><ul>${lines||'<li>…</li>'}</ul></details>`;
-      }).join('');
-
-      const chips = `<div class="chips">
-        <div class="chip">出生: ${meta.birthLocal}</div>
-        <div class="chip">解析（固定）: ${meta.targetLocal}（正午固定）</div>
-        <div class="chip">TZ: ${meta.tz}</div>
-        <div class="chip">緯度: ${meta.lat.toFixed(4)}</div>
-        <div class="chip">経度: ${meta.lon.toFixed(4)}</div>
-      </div>`;
-
-      out.innerHTML = `
-        <div><strong>結果</strong></div>
-        ${chips}
-        ${context?.seasonNews?`<div class="muted" style="margin-top:4px">${context.seasonNews}</div>`:""}
-        <div style="margin-top:10px">${bars}</div>
-        <details style="margin-top:10px"><summary>アスペクト一覧（最大24件）</summary>
-          <table><thead><tr><th>天体</th><th>種別</th><th>角度</th><th>近さ</th></tr></thead><tbody>${aspRows}</tbody></table>
-        </details>
-        <div class="explain" style="margin-top:12px">
-          <h3 style="margin:6px 0">今日の読み</h3>
-          ${readings}
-          <p class="muted">※ 解析日を<strong>ローカル正午</strong>に固定し、文章乱数も<strong>日付のみ</strong>で決定。<br/>同日・同TZであれば結果は不変です。入力値は localStorage に自動保存されます。</p>
-          <div style="margin-top:8px"><button class="btn-secondary" onclick="onResetClick()">入力をすべてクリア</button></div>
-        </div>
-      `;
-      out.style.display='block';
-    }
-
-    function getTZ(){
-      const sel = document.getElementById('tzSelect').value;
-      if(sel==='OTHER'){
-        const custom = document.getElementById('tzInput').value.trim();
-        return custom || 'UTC';
-      }
-      return sel || 'UTC';
-    }
-    function validateInputs(){
-      const birthDate = document.getElementById('birthDate').value;
-      const birthTime = document.getElementById('birthTime').value;
-      const tz = getTZ();
-      const lat = parseFloat(document.getElementById('lat').value || document.getElementById('latSelect').value);
-      const lon = parseFloat(document.getElementById('lon').value || document.getElementById('lonSelect').value);
-      if(!birthDate || !birthTime) throw new Error('出生日と出生時刻を入力してください。');
-      if(!isFinite(lat) || !isFinite(lon)) throw new Error('緯度・経度が不正です。都市名から取得するか手入力してください。');
-      return { birthLocal: `${birthDate}T${birthTime}`, tz, lat, lon };
-    }
-    function planetList(){ return ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto']; }
-    function computeLongitudes(dateUTC, lat, lon){
-      const out={};
-      for(const b of planetList()){
-        const L = planetEclipticLongitude(b, dateUTC);
-        out[b]=isFinite(L)?L:NaN;
-      }
-      out['ASC'] = calcAscendant(dateUTC, lat, lon);
-      out['MC']  = calcMC(dateUTC, lon);
-      return out;
-    }
-
-    async function onCalcClick(){
-      try{
-        setStatus('計算中…');
-        const targetDate = (document.getElementById('targetDate').value||'').trim();
-        const { birthLocal, tz, lat, lon } = validateInputs();
-
-        const todayLocal = new Date().toISOString().slice(0,10);
-        const localDateOnly = targetDate || todayLocal;
-        const targetLocalNoon = `${localDateOnly}T12:00:00`;
-
-        const birthUTC  = parseLocalToUTCdate(birthLocal, tz);
-        const targetUTC = parseLocalToUTCdate(targetLocalNoon, tz);
-
-        seedRngFromDateOnly(localDateOnly);
-
-        if(!window.Astronomy) throw new Error('astronomy-engine が読み込めませんでした（ネットやCDNをご確認ください）');
-
-        const natal   = computeLongitudes(birthUTC,  lat, lon);
-        const transit = computeLongitudes(targetUTC, lat, lon);
-
-        const aspects = detectAspects(natal, transit);
-        const scores  = scoreCategories(aspects);
-        const seasonNews = await fetchNewsAndSeasonContext(localDateOnly);
-
-        renderOutput({
-          natal, transit, aspects, scores,
-          meta:{
-            tz,
-            lat, lon,
-            birthLocal: birthLocal.replace('T',' '),
-            targetLocal: targetLocalNoon.replace('T',' '),
-          }
-        });
+    function escapeHtmlInline(s){
+  return String(s).replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+}
+async function fetchNewsAndSeasonContext(targetLocalDateStr){
+  const d = new Date(targetLocalDateStr + "T12:00:00");
+  const season = seasonToneByMonth(d.getMonth() + 1);
+  const news = await fetchNewsTopJP();
+  let line = `今日の空気感：${season}。`;
+  if (news.length) {
+    const safe = news.slice(0,2).map(t => escapeHtmlInline(t));
+    line += `<br><span class="muted">🗞️ 最近の話題：${safe.join(' ／ ')}。</span>`;
+  }
+  return line;
+});
         setStatus('計算完了');
       }catch(e){
         setStatus('準備OK');

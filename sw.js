@@ -1,5 +1,5 @@
-/* sw.js v34 — 2025-09-21 23:14:47 */
-const CACHE_VERSION = 'v34';
+/* sw.js v35 — 2025-09-21 23:14:47 */
+const CACHE_VERSION = 'v35';
 const APP_CACHE = 'horoscope-app-' + CACHE_VERSION;
 
 const APP_SHELL = [

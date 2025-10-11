@@ -501,14 +501,19 @@
       const tones={1:"冬の静けさが思考を澄ませる頃",2:"寒さの底で基盤を整える季節",3:"春の兆しが芽吹く季節",4:"桜の余韻と新しい循環が始まる頃",5:"若葉の勢いが背中を押す季節",6:"湿り気の中でペース配分が鍵",7:"夏の熱気が行動力を呼ぶ季節",8:"盛夏の勢い、体調管理が運を支える頃",9:"初秋の風が切り替えを促す季節",10:"実りの秋、仕上げに向く頃",11:"深まる秋、内省と整え直しの季節",12:"冬支度と静かな計画に向く頃"};
       return tones[m] || "季節の移ろいを感じる日";
     }
-    async function fetchNewsAndSeasonContext(targetLocalDateStr){
-      const d = new Date(targetLocalDateStr+"T12:00:00");
-      const season = seasonToneByMonth(d.getMonth()+1);
-      const news = await fetchNewsTopJP();
-      let line = `今日の空気感：${season}。`;
-      if(news.length){ line += ` 最近の話題：${news.join('／')}。`; }
-      return line;
-    }
+   async function fetchNewsAndSeasonContext(targetLocalDateStr) {
+  const d = new Date(targetLocalDateStr + "T12:00:00");
+  const season = seasonToneByMonth(d.getMonth() + 1);
+  const news = await fetchNewsTopJP();
+
+  // 👇 ここから修正版
+  let line = `今日の空気感：${season}。`;
+  if (news.length) {
+    // ニュースを2件まで整形して表示
+    line += `<br>🗞️ 最近の話題：${news.slice(0, 2).join(' ／ ')}。`;
+  }
+  return line;
+}
 
     /* ===== 誕生日判定 ===== */
     function isBirthdayToday(birthDateStr, targetDateStr){

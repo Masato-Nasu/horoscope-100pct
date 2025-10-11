@@ -1,7 +1,7 @@
-/* sw.js v47 */
-const CACHE_VERSION='v47';
+/* sw.js v48 (Deterministic Build) */
+const CACHE_VERSION='v48';
 const APP_CACHE='horoscope-'+CACHE_VERSION;
-const ASSETS=['./','./index.html?v=47','./manifest.json','./icon-192.png','./icon-512.png'];
+const ASSETS=['./','./index.html?v=48','./manifest.json','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(APP_CACHE).then(c=>c.addAll(ASSETS)));

@@ -1,392 +1,264 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>100% 星占い</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#6b46c1">
 <style>
-body {
-  font-family: 'Noto Sans JP', sans-serif;
-  background: #fafafa;
-  color: #222;
-  margin: 0;
-  padding: 0;
-  text-align: center;
-}
-header {
-  background: #6b46c1;
-  color: #fff;
-  padding: 1.2em 0;
-  font-size: 1.4em;
-  font-weight: 700;
-}
-main {
-  padding: 1.2em;
-  max-width: 720px;
-  margin: 0 auto;
-}
-input, select, button {
-  font-family: inherit;
-  font-size: 1em;
-  padding: .6em;
-  border-radius: .5em;
-  border: 1px solid #ccc;
-  width: 100%;
-  box-sizing: border-box;
-}
-button {
-  background: #6b46c1;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-}
-button:hover { opacity: 0.9; }
-.card {
-  background: #fff;
-  border-radius: 1em;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  padding: 1.2em;
-  margin-top: 1.5em;
-  text-align: left;
-}
-.muted { color:#666; font-size:0.9em; }
-.chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
-.chip {
-  background:#eee; border-radius:999px; padding:3px 10px;
-  font-size:0.85em; color:#555;
-}
-.bar { height:8px; background:#ddd; border-radius:4px; overflow:hidden; }
-.bar-fill { height:100%; background:#6b46c1; }
-.toast {
-  position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-  background:#333; color:#fff; padding:10px 20px; border-radius:999px;
-  opacity:0; transition:opacity .3s;
-}
-.toast.show { opacity:1; }
+body{font-family:'Noto Sans JP',system-ui,-apple-system,sans-serif;background:#fafafa;color:#222;margin:0;text-align:center}
+header{background:#6b46c1;color:#fff;padding:1.2em 0;font-weight:700;font-size:1.3em}
+main{padding:1.2em;max-width:720px;margin:0 auto}
+input,button{font:inherit;padding:.6em;border-radius:.6em;border:1px solid #ccc;box-sizing:border-box;width:100%}
+button{background:#6b46c1;color:#fff;border:none;cursor:pointer} button:hover{opacity:.9}
+.card{background:#fff;border-radius:1em;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:1.1em;margin-top:1em;text-align:left}
+.muted{color:#666;font-size:.9em} .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .25s}
+.toast.show{opacity:1} .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px} .chip{background:#eee;border-radius:999px;padding:3px 10px;font-size:.85em;color:#555}
 </style>
 </head>
 <body>
 <header>100% 星占い</header>
 <main>
-  <section id="inputArea">
-    <h2>あなたの情報を入力</h2>
-    <label>生年月日</label>
-    <input type="date" id="birthDate"><br><br>
-    <label>都市名</label>
-    <input type="text" id="placeName" placeholder="Tokyo"><br><br>
-    <button id="geoBtn">都市名から取得</button><br><br>
-    <label>緯度</label>
-    <input type="text" id="lat" placeholder="例: 35.6895"><br><br>
-    <label>経度</label>
-    <input type="text" id="lon" placeholder="例: 139.6917"><br><br>
-    <button id="runBtn">結果を見る</button>
-  </section>
-
-  <section id="outputArea" style="display:none;">
-    <h2>結果</h2>
-    <div id="resultContainer"></div>
-    <button id="saveBtn">JPEG保存</button>
-    <button id="backBtn">戻る</button>
-  </section>
+<section id="inputArea">
+  <h2>あなたの情報を入力</h2>
+  <label>生年月日</label>
+  <input type="date" id="birthDate"><br><br>
+  <label>出生時刻（任意）</label>
+  <input type="time" id="birthTime" step="60"><br><br>
+  <label>都市名</label>
+  <input type="text" id="placeName" placeholder="Tokyo"><br><br>
+  <button id="geoBtn">都市名から取得</button><br><br>
+  <label>緯度</label><input type="text" id="lat" placeholder="35.6895"><br><br>
+  <label>経度</label><input type="text" id="lon" placeholder="139.6917"><br><br>
+  <button id="runBtn">結果を見る</button>
+</section>
+<section id="outputArea" style="display:none;">
+  <h2>結果</h2>
+  <div id="resultContainer"></div>
+  <button id="saveBtn">JPEG保存</button>
+  <button id="backBtn">戻る</button>
+</section>
 </main>
 <div class="toast" id="toast"></div>
 <script>
+/* ===== Utils ===== */
+const $=id=>document.getElementById(id);
+function toast(m){const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400);}
+function escapeHtml(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+function saveInputs(){const d={birthDate:$('birthDate').value||'',birthTime:$('birthTime').value||'',placeName:$('placeName').value||'',lat:$('lat').value||'',lon:$('lon').value||''}; localStorage.setItem('horo.inputs',JSON.stringify(d));}
+function loadInputs(){try{const d=JSON.parse(localStorage.getItem('horo.inputs')||'{}'); if(d.birthDate)$('birthDate').value=d.birthDate; if(d.birthTime)$('birthTime').value=d.birthTime; if(d.placeName)$('placeName').value=d.placeName; if(d.lat)$('lat').value=d.lat; if(d.lon)$('lon').value=d.lon;}catch{}}
+function seasonToneByMonth(m){if([12,1,2].includes(m))return'静かな冬、足元を固めるとき'; if([3,4,5].includes(m))return'芽吹く春、動き出しに追い風'; if([6,7,8].includes(m))return'輝く夏、勢いと発信が効く'; if([9,10,11].includes(m))return'実りの秋、仕上げと整えが吉'; return'季節のリズムに乗ると良い日';}
 
-/***** ユーティリティ *****/
-function $(id){ return document.getElementById(id); }
-function log(...a){ try{ console.log(...a); }catch(_){ } }
-function toast(msg){
-  const el=$('toast'); el.textContent=msg; el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),1500);
-}
-function setStatus(msg){ /* 将来用：UIに状態表示したい場合ここで */ }
-function escapeHtml(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
-
-/***** 入力保存（localStorage） *****/
-function saveInputs(){
-  const data={
-    birthDate: $('birthDate').value || '',
-    placeName: $('placeName').value || '',
-    lat: $('lat').value || '',
-    lon: $('lon').value || ''
-  };
-  localStorage.setItem('horo.inputs', JSON.stringify(data));
-}
-function loadInputs(){
-  try{
-    const data=JSON.parse(localStorage.getItem('horo.inputs')||'{}');
-    if(data.birthDate) $('birthDate').value=data.birthDate;
-    if(data.placeName) $('placeName').value=data.placeName;
-    if(data.lat) $('lat').value=data.lat;
-    if(data.lon) $('lon').value=data.lon;
-  }catch(e){}
-}
-
-/***** 季節トーン（シンプル・自然） *****/
-function seasonToneByMonth(m){
-  if([12,1,2].includes(m)) return '静かな冬、足元を固めるとき';
-  if([3,4,5].includes(m))  return '芽吹く春、動き出しに追い風';
-  if([6,7,8].includes(m))  return '輝く夏、勢いと発信が効く';
-  if([9,10,11].includes(m))return '実りの秋、仕上げと整えが吉';
-  return '季節のリズムに乗ると良い日';
-}
-
-/***** 都市プリセット（Tokyo固定ほか） *****/
-const CITY_PRESETS = [
-  {name:'東京',   lat:'35.6895', lon:'139.6917', aliases:['tokyo','tokyo japan','東京','とうきょう']},
-  {name:'大阪',   lat:'34.6937', lon:'135.5023', aliases:['osaka','大阪']},
-  {name:'札幌',   lat:'43.0621', lon:'141.3544', aliases:['sapporo','札幌']},
-  {name:'福岡',   lat:'33.5902', lon:'130.4017', aliases:['fukuoka','福岡']},
-  {name:'名古屋', lat:'35.1815', lon:'136.9066', aliases:['nagoya','名古屋']},
-  {name:'横浜',   lat:'35.4437', lon:'139.6380', aliases:['yokohama','横浜']},
-];
-
-/***** プリセット吸着（強化版） *****/
+/* ===== City presets (Tokyo only fixed), Balance mode: near-snap 15km ===== */
+const CITY_PRESETS=[{name:'東京',lat:'35.6895',lon:'139.6917',aliases:['tokyo','tokyo japan','東京','とうきょう']}];
 function snapToPresetIfAlias(q){
   if(!q) return null;
-  let s=String(q).toLowerCase().trim();
-  s=s.replace(/[.,]/g,' ').replace(/\s+/g,' ');
-  s=s.replace(/\s+(city|prefecture|metropolis)$/,'').replace(/\s+japan$/,'').trim();
-  for(const c of CITY_PRESETS){
-    for(const a of c.aliases){
-      const al=a.toLowerCase();
-      if(s===al || s.includes(al)) return {lat:c.lat, lon:c.lon};
-    }
-  }
+  const s=String(q).toLowerCase().trim();
+  if(['tokyo','tokyo japan','東京','とうきょう'].includes(s)) return {lat:'35.6895',lon:'139.6917'};
   return null;
 }
-function haversine(lat1,lon1,lat2,lon2){
-  const R=6371,toRad=x=>x*Math.PI/180;
-  const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
-  const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-  return 2*R*Math.asin(Math.sqrt(a));
-}
-function snapNearPreset(lat,lon,km=30){
-  let best=null,bestD=1e9;
+function haversine(a,b,c,d){const R=6371,toRad=x=>x*Math.PI/180; const dLat=toRad(c-a), dLon=toRad(d-b); const A=Math.sin(dLat/2)**2+Math.cos(toRad(a))*Math.cos(toRad(c))*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(A));}
+function snapNearPreset(lat,lon,km=15){ // 15km only
+  let best=null,b=1e9;
   for(const c of CITY_PRESETS){
-    const d=haversine(+lat,+lon,+c.lat,+c.lon);
-    if(d<bestD){bestD=d;best=c;}
+    const dist=haversine(+lat,+lon,+c.lat,+c.lon);
+    if(dist<b){b=dist; best=c;}
   }
-  return (bestD<=km)?{lat:best.lat,lon:best.lon}:null;
+  return (b<=km)?{lat:best.lat,lon:best.lon}:null;
 }
 
-/***** ニュース＆季節（GNews→NHK RSS） *****/
-const GNEWS_API_KEY = "0e21cddc975f5f620c1431fde88db5fe"; // そのまま使えます
-
+/* ===== News (GNews → NHK RSS) ===== */
+const GNEWS_API_KEY="0e21cddc975f5f620c1431fde88db5fe";
 async function fetchNewsTopJP(){
-  // 1) GNews
   try{
     const url=`https://gnews.io/api/v4/top-headlines?lang=ja&country=jp&max=3&category=general&apikey=${GNEWS_API_KEY}`;
-    const res=await fetch(url,{headers:{'Accept':'application/json'},cache:'no-store'});
-    if(!res.ok) throw new Error('GNews HTTP '+res.status);
-    const data=await res.json();
-    const titles=(data?.articles||[]).map(a=>a?.title).filter(Boolean).slice(0,2);
-    if(titles.length) return titles;
-  }catch(e){ log('GNews取得失敗:',e); }
-  // 2) NHK RSS (XML直fetch)
+    const r=await fetch(url,{headers:{'Accept':'application/json'},cache:'no-store'});
+    if(!r.ok) throw new Error('GNews HTTP '+r.status);
+    const j=await r.json();
+    const t=(j?.articles||[]).map(a=>a?.title).filter(Boolean).slice(0,2);
+    if(t.length) return t;
+  }catch(e){}
   try{
     const rss='https://www3.nhk.or.jp/rss/news/cat0.xml';
-    const r=await fetch(rss,{cache:'no-store'});
-    if(!r.ok) throw new Error('NHK RSS HTTP '+r.status);
-    const t=await r.text();
-    const doc=new DOMParser().parseFromString(t,'application/xml');
-    const titles=Array.from(doc.querySelectorAll('item > title')).map(n=>(n.textContent||'').trim()).filter(Boolean);
-    return titles.slice(0,2);
-  }catch(e){ log('RSS取得失敗:',e); return []; }
+    const r=await fetch(rss,{cache:'no-store'}); if(!r.ok) throw new Error('NHK RSS HTTP '+r.status);
+    const x=await r.text(); const doc=new DOMParser().parseFromString(x,'application/xml');
+    return Array.from(doc.querySelectorAll('item>title')).map(n=>(n.textContent||'').trim()).filter(Boolean).slice(0,2);
+  }catch(e){return []}
 }
-function escapeHtmlInline(s){
-  return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+function escapeHtmlInline(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+
+/* ===== High-precision Sun-Moon elongation (Meeus simplified) ===== */
+const norm360 = d => ((d % 360) + 360) % 360;
+const d2r = d => d * Math.PI / 180;
+function toJD(date){ return date.getTime()/86400000 + 2440587.5; }
+function sunLongitudeDeg(jd){
+  const T=(jd-2451545.0)/36525;
+  const L0=norm360(280.46646+36000.76983*T+0.0003032*T*T);
+  const M =norm360(357.52911+35999.05029*T-0.0001537*T*T);
+  const Mr=d2r(M);
+  const C =(1.914602-0.004817*T-0.000014*T*T)*Math.sin(Mr)
+         +(0.019993-0.000101*T)*Math.sin(2*Mr)
+         +0.000289*Math.sin(3*Mr);
+  return norm360(L0+C);
 }
+function moonLongitudeDeg(jd){
+  const T=(jd-2451545.0)/36525;
+  const Lp=norm360(218.3164477+481267.88123421*T-0.0015786*T*T+T*T*T/538841 - T*T*T*T/65194000);
+  const D =norm360(297.8501921+445267.1114034*T -0.0018819*T*T+T*T*T/545868 - T*T*T*T/113065000);
+  const M =norm360(357.5291092+35999.0502909*T -0.0001536*T*T+T*T*T/24490000);
+  const Mp=norm360(134.9633964+477198.8675055*T +0.0087414*T*T+T*T*T/69699  - T*T*T*T/14712000);
+  const Dr=d2r(D), Mr=d2r(M), Mpr=d2r(Mp);
+  let lon=Lp
+    +6.289*Math.sin(Mpr)
+    +1.274*Math.sin(2*Dr - Mpr)
+    +0.658*Math.sin(2*Dr)
+    +0.214*Math.sin(2*Mpr)
+    +0.110*Math.sin(Dr)
+    -0.186*Math.sin(Mr)
+    -0.059*Math.sin(2*Dr - 2*Mpr)
+    -0.057*Math.sin(2*Dr - Mr - Mpr)
+    +0.053*Math.sin(2*Dr + Mpr)
+    +0.046*Math.sin(2*Dr - Mr)
+    +0.041*Math.sin(M - Mp);
+  return norm360(lon);
+}
+function sunMoonElongationDeg(date){
+  const jd=toJD(date);
+  const lamS=sunLongitudeDeg(jd);
+  const lamM=moonLongitudeDeg(jd);
+  return norm360(lamM - lamS);
+}
+function aspectName(a){
+  a=((a%360)+360)%360; const eps=15;
+  if(Math.abs(a-0)<=eps||Math.abs(a-360)<=eps) return '新月付近';
+  if(Math.abs(a-90)<=eps) return '上弦付近';
+  if(Math.abs(a-180)<=eps) return '満月付近';
+  if(Math.abs(a-270)<=eps) return '下弦付近';
+  if(a<90) return '成長の相'; if(a<180) return '熟成の相'; if(a<270) return '収穫の相'; return '内省の相';
+}
+
+/* ===== News + Season + Angle (with birth time) ===== */
 async function fetchNewsAndSeasonContext(dateStr){
-  const d=new Date(dateStr+"T12:00:00");
+  const d=new Date(dateStr+'T12:00:00');
+  const bt=$('birthTime')?.value||'00:00'; const [hh,mm]=(bt||'00:00').split(':').map(v=>parseInt(v||'0',10));
+  d.setMinutes(d.getMinutes()+hh*60+mm - 12*60);
   const season=seasonToneByMonth(d.getMonth()+1);
+  const ang=sunMoonElongationDeg(d);
+  const star=`☆ 星の角度：太陽-月 ≈ ${Math.round(ang)}°（${aspectName(ang)}）`;
   const news=await fetchNewsTopJP();
-  let line=`今日の空気感：${season}。`; // ← 季節は常時表示
-  if(news.length){
-    const safe=news.map(escapeHtmlInline);
-    line+=`<br><span class="muted">🗞️ 最近の話題：${safe.join(' ／ ')}。</span>`;
-  }
+  let line=`今日の空気感：${season}。<br><span class="muted">${star}</span>`;
+  if(news.length){ const safe=news.map(escapeHtmlInline); line+=`<br><span class="muted">🗞️ 最近の話題：${safe.join(' ／ ')}。</span>`; }
   return line;
 }
 
-/***** テンプレ最小（重複回避のためIDを生成） *****/
-const TPL = {
-  全体運: [
-    '肩の力を抜くほど流れが整う日。小さな改善が大きな前進に。',
-    '早めの着手が好機を呼ぶ。午前中の一歩が午後を変える。',
-    '周囲の声にヒントあり。まず聴く、次に動く。'
-  ],
-  恋愛: [
-    '挨拶＋一言で距離が縮む。連絡は短く明るく。',
-    '予定の共有が吉。相手の都合を先に聞いて。'
-  ],
-  仕事: [
-    '5分で粗案→15分で叩き台。スピードが評価に直結。',
-    '確認は二段構えで。依頼→復唱→合意の順が安全。'
-  ],
-  金運: [
-    '固定費の見直し日。サブスクを一件だけ整理。',
-    'ポイント失効の確認で得。小さな積み上げが効く。'
-  ],
-  健康: [
-    '姿勢リセットで集中力UP。深呼吸×3回を習慣に。',
-    '白湯か常温水を少量こまめに。'
-  ]
+/* ===== Templates and selection ===== */
+const TPL={
+ "全体運":[
+   "肩の力を抜くほど流れが整う日。小さな改善が大きな前進に。",
+   "早めの着手が好機を呼ぶ。午前中の一歩が午後を変える。",
+   "周囲の声にヒントあり。まず聴く、次に動く。",
+   "温めていた案を試すと発見がある。"
+ ],
+ "恋愛":[
+   "挨拶＋一言で距離が縮む。連絡は短く明るく。",
+   "予定の共有が吉。相手の都合を先に聞いて。",
+   "聞き役7割で安心感を。"
+ ],
+ "仕事":[
+   "5分で粗案→15分で叩き台。スピードが評価に直結。",
+   "確認は二段構えで。依頼→復唱→合意の順が安全。",
+   "ToDoを3つに絞ると集中できる。"
+ ],
+ "金運":[
+   "固定費の見直し日。サブスクを一件だけ整理。",
+   "ポイント失効の確認で得。小さな積み上げが効く。",
+   "必要なものにだけ投資する。"
+ ],
+ "健康":[
+   "姿勢リセットで集中力UP。深呼吸×3回を習慣に。",
+   "白湯か常温水を少量こまめに。",
+   "今日は歩数を少しだけ多めに。"
+ ]
 };
-function pickUnique(arr, seed){
-  // seedで擬似乱数（当日固定）
-  const x=Math.abs(Math.sin(seed))*10000;
-  const i=Math.floor(x)%arr.length;
-  return arr[i];
-}
-function usedKey(dateStr, topic, text){
-  return `${dateStr}|${topic}|${text}`;
-}
-function isUsed(key){
-  const set=new Set(JSON.parse(localStorage.getItem('horo.used')||'[]'));
-  return set.has(key);
-}
-function markUsed(key){
-  const arr=JSON.parse(localStorage.getItem('horo.used')||'[]');
-  arr.push(key); if(arr.length>400) arr.shift(); // 120日相当を想定
-  localStorage.setItem('horo.used', JSON.stringify(arr));
-}
+function pickNUnique(arr,n,seed){const out=[],used=new Set(); if(!arr||!arr.length)return out; for(let k=0;k<n;k++){const x=Math.abs(Math.sin(seed*(k+1)))*10000; let i=Math.floor(x)%arr.length,g=0,t=arr[i]; while(used.has(t)&&g<arr.length){i=(i+1)%arr.length;t=arr[i];g++;} used.add(t); out.push(t);} return out;}
+function usedKey(d,t,txt){return `${d}|${t}|${txt}`} function isUsed(k){return new Set(JSON.parse(localStorage.getItem('horo.used')||'[]')).has(k)} function markUsed(k){const a=JSON.parse(localStorage.getItem('horo.used')||'[]'); a.push(k); if(a.length>480)a.shift(); localStorage.setItem('horo.used',JSON.stringify(a));}
 
-/***** 都市名→緯度経度 *****/
+/* ===== Geocode (balance mode) ===== */
 async function onGeocodeClick(){
   const q=($('placeName').value||'').trim();
   if(!q){ alert('都市名を入力してください。'); return; }
 
-  // 1) Tokyoなどプリセット一致
+  // Tokyo only fixed; others pass to geocoder
   const alias=snapToPresetIfAlias(q);
   if(alias){
-    $('lat').value=alias.lat;
-    $('lon').value=alias.lon;
-    saveInputs();
-    toast(`${q} をプリセット座標に固定しました`);
-    log(`Preset snap → lat=${alias.lat}, lon=${alias.lon}`);
+    $('lat').value=alias.lat; $('lon').value=alias.lon; saveInputs(); toast(`${q} を東京の代表点に固定しました`);
     return;
   }
 
-  // 2) 通常ジオコード→近傍吸着
   try{
     toast('位置検索中…');
     const url='https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q);
-    const res=await fetch(url,{headers:{'Accept':'application/json'}});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const data=await res.json();
-    if(!data||!data.length){ alert('見つかりませんでした。'); return; }
-    let lat=String(data[0].lat), lon=String(data[0].lon);
-    const near=snapNearPreset(lat,lon,30);
-    if(near){ lat=near.lat; lon=near.lon; log('近傍スナップ適用'); }
-    $('lat').value=lat; $('lon').value=lon;
-    saveInputs();
-    toast('座標を設定しました');
-  }catch(e){
-    alert('位置取得に失敗: '+(e.message||e));
-  }
+    const r=await fetch(url,{headers:{'Accept':'application/json'}}); if(!r.ok) throw new Error('HTTP '+r.status);
+    const j=await r.json(); if(!j||!j.length){alert('見つかりませんでした。'); return;}
+    let lat=String(j[0].lat), lon=String(j[0].lon);
+    const near=snapNearPreset(lat,lon,15); if(near){lat=near.lat;lon=near.lon;}
+    $('lat').value=lat; $('lon').value=lon; saveInputs(); toast('座標を設定しました');
+  }catch(e){ alert('位置取得に失敗: '+(e.message||e)); }
 }
 
-/***** 占い結果生成 *****/
+/* ===== Run / Back ===== */
 async function runHoroscope(){
   saveInputs();
-  const birth=$('birthDate').value;
-  if(!birth){ alert('生年月日を入力してください。'); return; }
-  const lat=parseFloat($('lat').value);
-  const lon=parseFloat($('lon').value);
-  if(isNaN(lat)||isNaN(lon)){ alert('緯度経度が無効です。'); return; }
-
+  const birth=$('birthDate').value; if(!birth){alert('生年月日を入力してください。');return;}
+  const lat=parseFloat($('lat').value), lon=parseFloat($('lon').value); if(isNaN(lat)||isNaN(lon)){alert('緯度経度が無効です。');return;}
   const dateStr=new Date().toISOString().split('T')[0];
-  const ctx={};
-  ctx.seasonNews=await fetchNewsAndSeasonContext(dateStr);
+  const ctx={}; ctx.seasonNews=await fetchNewsAndSeasonContext(dateStr);
 
-  const topics=['全体運','恋愛','仕事','金運','健康'];
-  const seedNum=new Date(dateStr).getDate()+lat+lon;
+  const topics=['全体運','恋愛','仕事','金運','健康']; const seedNum=new Date(dateStr).getDate()+lat+lon; const perTopic=2;
   let html=`<div class="muted">${ctx.seasonNews}</div>`;
-
   for(const t of topics){
-    const pick=pickUnique(TPL[t],seedNum*(t.length+1));
-    const key=usedKey(dateStr,t,pick);
-    if(isUsed(key)) continue;
-    markUsed(key);
-    html+=`
-      <div class="card">
-        <strong>${t}</strong><br>
-        ${escapeHtml(pick)}
-      </div>`;
+    const c=pickNUnique(TPL[t], perTopic*3, seedNum*(t.length+1)); const shown=[];
+    for(const p of c){ const k=usedKey(dateStr,t,p); if(!isUsed(k)){markUsed(k); shown.push(p);} if(shown.length>=perTopic) break; }
+    if(!shown.length && c.length) shown.push(c[0]);
+    html+=`<div class="card"><strong>${t}</strong><br>${shown.map(s=>'• '+escapeHtml(s)).join('<br>')}</div>`;
   }
-
-  // 誕生日補正
-  const today=new Date();
-  const bd=new Date(birth);
+  const today=new Date(), bd=new Date(birth);
   if(bd.getMonth()===today.getMonth() && bd.getDate()===today.getDate()){
     html+=`<div class="card"><strong>🎂 お誕生日おめでとうございます！</strong><br>スコア+5%の幸運日。</div>`;
   }
-
-  $('resultContainer').innerHTML=html;
-  $('inputArea').style.display='none';
-  $('outputArea').style.display='block';
+  $('resultContainer').innerHTML=html; $('inputArea').style.display='none'; $('outputArea').style.display='block';
 }
+function backToInput(){ $('outputArea').style.display='none'; $('inputArea').style.display='block'; }
 
-/***** 戻るボタン *****/
-function backToInput(){
-  $('outputArea').style.display='none';
-  $('inputArea').style.display='block';
-}
-
-/***** JPEG保存（html2canvasを動的ロード） *****/
-let _h2cReady = null;
-function loadHtml2Canvas(){
-  if(_h2cReady) return _h2cReady;
-  _h2cReady = new Promise((resolve, reject)=>{
-    const s=document.createElement('script');
-    s.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
-    s.onload=()=>resolve();
-    s.onerror=()=>reject(new Error('html2canvas load error'));
-    document.head.appendChild(s);
-  });
-  return _h2cReady;
-}
+/* ===== Save JPEG (timestamp + birth info) ===== */
+let _h2c=null;
+function loadHtml2Canvas(){ if(_h2c) return _h2c; _h2c=new Promise((ok,ng)=>{const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'; s.onload=()=>ok(); s.onerror=()=>ng(new Error('html2canvas load error')); document.head.appendChild(s);}); return _h2c; }
+function ts(){const d=new Date(); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;}
 async function saveAsJPEG(){
   try{
     await loadHtml2Canvas();
-    const target=$('resultContainer');
-    const canvas=await html2canvas(target,{backgroundColor:'#ffffff',scale:2});
+    const node=$('resultContainer');
+    const canvas=await html2canvas(node,{backgroundColor:'#ffffff',scale:2});
     const url=canvas.toDataURL('image/jpeg',0.92);
-    const a=document.createElement('a');
-    a.href=url; a.download='horoscope.jpg'; a.click();
-    toast('JPEGを保存しました');
-  }catch(e){
-    alert('保存に失敗しました: '+(e.message||e));
-  }
+    const a=document.createElement('a'); a.href=url;
+    const bd=$('birthDate').value||'unknown'; const bt=($('birthTime').value||'00:00').replace(':','-');
+    a.download=`horoscope_${ts()}_${bd}_${bt}.jpg`;
+    a.click(); toast('JPEGを保存しました');
+  }catch(e){ alert('保存に失敗: '+(e.message||e)); }
 }
 
-/***** 初期化＆イベント *****/
+/* ===== Init & SW ===== */
 function init(){
   loadInputs();
   $('geoBtn').addEventListener('click', onGeocodeClick);
   $('runBtn').addEventListener('click', runHoroscope);
   $('backBtn').addEventListener('click', backToInput);
   $('saveBtn').addEventListener('click', saveAsJPEG);
-
-  // キーSで保存
-  window.addEventListener('keydown', (e)=>{
-    if((e.key||'').toLowerCase()==='s' && $('outputArea').style.display==='block'){
-      e.preventDefault();
-      saveAsJPEG();
-    }
-  });
-
-  // Service Worker（v38）
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('./sw.js?v=38');
-  }
+  window.addEventListener('keydown', e=>{ if((e.key||'').toLowerCase()==='s' && $('outputArea').style.display==='block'){ e.preventDefault(); saveAsJPEG(); } });
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js?v=40'); }
 }
 document.addEventListener('DOMContentLoaded', init);
 </script>
-</body>
-</html>
+</body></html>

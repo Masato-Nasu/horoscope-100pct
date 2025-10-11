@@ -17,12 +17,16 @@ button{background:#6b46c1;color:#fff;border:none;cursor:pointer} button:hover{op
 .muted{color:#666;font-size:.9em}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .25s}
 .toast.show{opacity:1}
-/* 余白調整（出力ボタンの上＆ボタン間） */
+/* 余白（ボタン上＆ボタン間） */
 #outputArea button { margin-top: 12px; }
 #outputArea button + button { margin-top: 12px; }
-/* スコア表示 */
-.card .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.card .pct{font-weight:700;color:#4a3ba5}
+/* 見出し行 + スコアバー */
+.card .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between}
+.card .title{font-weight:700}
+.score{display:flex;align-items:center;gap:8px;min-width:180px;margin-left:auto}
+.bar{position:relative;flex:1;height:8px;background:#eee;border-radius:999px;overflow:hidden}
+.bar-fill{position:absolute;inset:0 100% 0 0;background:#6b46c1;border-radius:999px;transition:width .5s ease}
+.pct{font-weight:700;color:#4a3ba5;min-width:3ch;text-align:right}
 </style>
 </head>
 <body>
@@ -247,8 +251,12 @@ async function runHoroscope(){
     for(const p of cands){ const k=usedKey(dateStr,t,p); if(!isUsed(k)){markUsed(k); shown.push(p);} if(shown.length>=perTopic) break; }
     if(!shown.length && cands.length) shown.push(cands[0]);
 
+    // スコアバー
     html+=`<div class="card">
-      <div class="row"><strong>${t}</strong><span class="pct">${pct}%</span></div>
+      <div class="row">
+        <div class="title">${t}</div>
+        <div class="score"><div class="bar"><div class="bar-fill" style="width:${pct}%;"></div></div><span class="pct">${pct}%</span></div>
+      </div>
       ${shown.map(s=>'• '+escapeHtml(s)).join('<br>')}
     </div>`;
   }
@@ -286,7 +294,7 @@ function init(){
   $('backBtn').addEventListener('click', backToInput);
   $('saveBtn').addEventListener('click', saveAsJPEG);
   window.addEventListener('keydown', e=>{ if((e.key||'').toLowerCase()==='s' && $('outputArea').style.display==='block'){ e.preventDefault(); saveAsJPEG(); } });
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js?v=42'); }
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js?v=43'); }
 }
 document.addEventListener('DOMContentLoaded', init);
 </script>

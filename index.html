@@ -9,6 +9,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="/horoscope-100pct/icon-180.png">
 <link rel="manifest" href="/horoscope-100pct/manifest.json">
+
+<!-- v49 Polish Pack -->
+<link rel="icon" href="/horoscope-100pct/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/horoscope-100pct/splash.css" as="style">
+<link rel="stylesheet" href="/horoscope-100pct/splash.css">
+<script defer src="/horoscope-100pct/splash.js"></script>
+
 <style>
 body{font-family:'Noto Sans JP',system-ui,-apple-system,sans-serif;background:#fafafa;color:#222;margin:0;text-align:center}
 header{background:#6b46c1;color:#fff;padding:1.2em 0;font-weight:700;font-size:1.3em}
@@ -31,6 +38,13 @@ button{background:#6b46c1;color:#fff;border:none;cursor:pointer} button:hover{op
 </style>
 </head>
 <body>
+<!-- Splash overlay (v49) -->
+<div id="app-splash" role="status" aria-live="polite">
+  <img class="logo" src="/horoscope-100pct/icon-192.png" alt="">
+  <div class="title">100% 星占い</div>
+  <div class="sub">Starting…</div>
+</div>
+
 <header>100% 星占い</header>
 <main>
 <section id="inputArea">
@@ -141,7 +155,6 @@ async function fetchNewsAndSeasonContext(dateStr){
 }
 
 function circDist(a,b){ return Math.abs(((a-b)%360+540)%360-180); }
-// ★ スコア分布フラット化（高止まり抑制）
 function angleBaseScore(angle){
   const good=[60,120,240,300], bad=[0,180,270];
   const dg = Math.min(...good.map(a=>circDist(angle,a)));
@@ -194,7 +207,7 @@ async function runHoroscope(){
   const tDate=$('targetDate')?.value||''; const dateStr=tDate?tDate:new Date().toISOString().split('T')[0];
   const place=($('placeName').value||'').trim();
 
-  const seedStr=['v48c',birth,dateStr,place.toLowerCase(),
+  const seedStr=['v49',birth,dateStr,place.toLowerCase(),
     Number.isFinite(lat)?lat.toFixed(4):'0.0000',
     Number.isFinite(lon)?lon.toFixed(4):'0.0000'].join('|');
   const baseSeed = stableSeed(seedStr);
@@ -214,7 +227,7 @@ async function runHoroscope(){
 
   let html=`<div class="muted">${ctx.seasonNews}</div>`;
   for(const t of topics){
-    const jitter = Math.floor(rng()*7)-3; // -3..+3
+    const jitter = Math.floor(rng()*7)-3;
     const tweak  = TOPIC_TWEAK[t]||0;
     let pct = Math.round(Math.max(1, Math.min(98, base + jitter + tweak + (isBirthday?5:0))));
 
@@ -323,8 +336,7 @@ function init(){
   wireBack();
   $('saveBtn').addEventListener('click', saveAsJPEG);
   if('serviceWorker' in navigator){
-    // GitHub Pages 配下での絶対パス登録（確実更新クエリ）
-    navigator.serviceWorker.register('/horoscope-100pct/sw.js?v=48c', { scope: '/horoscope-100pct/' })
+    navigator.serviceWorker.register('/horoscope-100pct/sw.js?v=49', { scope: '/horoscope-100pct/' })
       .catch(console.error);
   }
 }

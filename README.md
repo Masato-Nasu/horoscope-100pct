@@ -13,7 +13,7 @@
 トップ画面
 <img src="docs/screenshot-top.png" width="360" alt="トップ">
 結果画面
-<img src="docs/screenshot-result.png" width="360" alt="結果">
+<img src="[docs/screenshot-result.png]" width="360" alt="結果">
 🔮 特長
 
 本格的な暦算（Meeus） — 太陽・月の黄経から伸開角を算出

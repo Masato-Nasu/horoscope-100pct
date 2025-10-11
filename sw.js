@@ -1,10 +1,10 @@
-/* sw.js v33 — 2025-10-11 */
-const CACHE_VERSION = 'v33';
+/* sw.js v32 — 2025-09-21 23:14:47 */
+const CACHE_VERSION = 'v32';
 const APP_CACHE = 'horoscope-app-' + CACHE_VERSION;
 
 const APP_SHELL = [
   '/horoscope-100pct/',
-  '/horoscope-100pct/index.html?v=build-20251011',
+  '/horoscope-100pct/index.html?v=build-202509212314',
   '/horoscope-100pct/manifest.json?v=10',
   '/horoscope-100pct/icon-192.png',
   '/horoscope-100pct/icon-512.png'
@@ -30,6 +30,8 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
   if (req.method !== 'GET') return;
+
+  // Ignore cross-origin
   if (url.origin !== location.origin) return;
 
   const isHTML = req.headers.get('accept')?.includes('text/html') || url.pathname.endsWith('/') || url.pathname.endsWith('.html');

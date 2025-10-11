@@ -207,7 +207,7 @@ const TPL={
 function pickNUnique(arr,n,seed){const out=[],used=new Set(); if(!arr||!arr.length)return out; for(let k=0;k<n;k++){const x=Math.abs(Math.sin(seed*(k+1)))*10000; let i=Math.floor(x)%arr.length,g=0,t=arr[i]; while(used.has(t)&&g<arr.length){i=(i+1)%arr.length;t=arr[i];g++;} used.add(t); out.push(t);} return out;}
 function usedKey(d,t,txt){return `${d}|${t}|${txt}`} function isUsed(k){return new Set(JSON.parse(localStorage.getItem('horo.used')||'[]')).has(k)} function markUsed(k){const a=JSON.parse(localStorage.getItem('horo.used')||'[]'); a.push(k); if(a.length>480)a.shift(); localStorage.setItem('horo.used',JSON.stringify(a));}
 
-/* ===== Confetti (birthday only) ===== */
+/* ===== Confetti (today birthday only) ===== */
 function triggerConfetti(durationMs=5000, count=60){
   const cvs = $('confettiCanvas'); if(!cvs) return;
   const ctx = cvs.getContext('2d');
@@ -295,15 +295,19 @@ async function runHoroscope(){
   const tDate = $('targetDate')?.value || '';
   const dateStr = tDate ? tDate : new Date().toISOString().split('T')[0];
 
-  // 誕生日判定：対象日（targetDate or today）の月日で判定
+  // 誕生日判定：表示（カード/ブースト）は targetDate(or今日)基準、
+  // 紙吹雪は「実日付が誕生日」の時のみ。
   const ref = new Date(dateStr);
   const bd = new Date(birth);
   const isBirthday = (bd.getMonth()===ref.getMonth() && bd.getDate()===ref.getDate());
 
+  const today = new Date();
+  const isTodayBirthday = (bd.getMonth()===today.getMonth() && bd.getDate()===today.getDate());
+
   // 季節＋ニュース
   const ctx={}; ctx.seasonNews=await fetchNewsAndSeasonContext(dateStr);
 
-  // 角度→スコア（誕生日+5%ブースト）
+  // 角度→スコア（誕生日+5%ブースト ※表記はしない）
   const ang   = await getAngleForDateStr(dateStr);
   const baseS = angleBaseScore(ang);
   const bBoost = isBirthday ? 5 : 0;
@@ -331,12 +335,12 @@ async function runHoroscope(){
     </div>`;
   }
   if(isBirthday){
-    html+=`<div class="card birthday"><strong>🎂 お誕生日おめでとうございます！</strong><br>今日は +5% の幸運ブーストがかかっています。</div>`;
+    html+=`<div class="card birthday"><strong>🎂 お誕生日おめでとうございます！</strong><br>すてきな一年になりますように。</div>`;
   }
   $('resultContainer').innerHTML=html; $('inputArea').style.display='none'; $('outputArea').style.display='block';
 
-  // 🎉 誕生日なら紙吹雪
-  if(isBirthday){ triggerConfetti(5500, 70); }
+  // 🎉 紙吹雪：実日付が誕生日のときだけ
+  if(isTodayBirthday){ triggerConfetti(5500, 70); }
 }
 function backToInput(){ $('outputArea').style.display='none'; $('inputArea').style.display='block'; }
 
@@ -366,7 +370,7 @@ function init(){
   $('backBtn').addEventListener('click', backToInput);
   $('saveBtn').addEventListener('click', saveAsJPEG);
   window.addEventListener('keydown', e=>{ if((e.key||'').toLowerCase()==='s' && $('outputArea').style.display==='block'){ e.preventDefault(); saveAsJPEG(); } });
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js?v=45'); }
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js?v=46'); }
 }
 document.addEventListener('DOMContentLoaded', init);
 </script>

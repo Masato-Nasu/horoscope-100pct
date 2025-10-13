@@ -221,15 +221,22 @@ async function runHoroscope(){
   const tDate=$('targetDate')?.value||''; const dateStr=tDate?tDate:new Date().toISOString().split('T')[0];
   const place=($('placeName').value||'').trim();
 
-  const seedStr=['v52-1',birth,dateStr,place.toLowerCase(),
+  const seedStr=['v52-2',birth,dateStr,place.toLowerCase(),
     Number.isFinite(lat)?lat.toFixed(4):'0.0000',
     Number.isFinite(lon)?lon.toFixed(4):'0.0000'].join('|');
   const baseSeed = stableSeed(seedStr);
   const rng = makeRng(baseSeed);
 
-  const ref=new Date(dateStr), bd=new Date(birth);
-  const isBirthday=(bd.getMonth()===ref.getMonth() && bd.getDate()===ref.getDate());
-  const today=new Date(); const isTodayBirthday=(bd.getMonth()===today.getMonth() && bd.getDate()===today.getDate());
+  // Local-safe birthday detection (avoid UTC parsing issues)
+const [by,bm,bd2] = (birth||'').split('-').map(v=>parseInt(v,10));
+const [ty,tm,td] = (dateStr||'').split('-').map(v=>parseInt(v,10));
+const today = new Date();
+
+// 指定日の占いが誕生日か（UI上の強調に使用、紙吹雪は使わない）
+const isBirthday = (tm === bm && td === bd2);
+
+// 今日が誕生日か（紙吹雪のシークレットトリガー）
+const isTodayBirthday = ((today.getMonth()+1) === bm && today.getDate() === bd2);
 
   const ctx={}; ctx.seasonNews=await fetchNewsAndSeasonContext(dateStr);
 
@@ -350,7 +357,7 @@ function init(){
   wireBack();
   $('saveBtn').addEventListener('click', saveAsJPEG);
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/horoscope-100pct/sw.js?v=52-1', { scope: '/horoscope-100pct/' })
+    navigator.serviceWorker.register('/horoscope-100pct/sw.js?v=52-2', { scope: '/horoscope-100pct/' })
       .catch(console.error);
   }
 }

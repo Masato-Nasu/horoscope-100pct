@@ -233,7 +233,11 @@ async function runHoroscope(){
 
     const topicSeed = stableSeed(seedStr+'|'+t);
     const trng = makeRng(topicSeed);
-    const chosen=[ composeLineWithRng(t,trng), composeLineWithRng(t,trng) ];
+    const chosen=[];
+while(chosen.length<2){
+  const line=composeLineWithRng(t,trng);
+  if(!chosen.includes(line)) chosen.push(line);
+}
 
     html+=`<div class="card">
       <div class="row">

@@ -10,11 +10,11 @@
 <link rel="manifest" href="/horoscope-100pct/manifest.json">
 <link rel="icon" href="/horoscope-100pct/favicon.svg" type="image/svg+xml">
 
-<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+<script src="https://unpkg.com/astronomy-engine@2.4.2/astronomy.browser.min.js"></script>
 
 <style>
 /* 基本スタイル */
-body{font-family:'Noto Sans JP',system-ui,-apple-system,sans-serif;background:#fafafa;color:#222;margin:0;text-align:center; padding-bottom: 50px;}
+body{font-family:'Noto Sans JP',system-ui,-apple-system,sans-serif;background:#fafafa;color:#222;margin:0;text-align:center; padding-bottom: 80px;}
 header{background:#6b46c1;color:#fff;padding:1.2em 0;font-weight:700;font-size:1.3em}
 main{padding:1.2em;max-width:720px;margin:0 auto}
 input,button{font:inherit;padding:.8em;border-radius:.6em;border:1px solid #ccc;box-sizing:border-box;width:100%}
@@ -33,6 +33,10 @@ button:active{transform: translateY(2px);}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .25s; pointer-events: none; z-index: 10000;}
 .toast.show{opacity:1}
 
+/* メンテナンスボタンエリア */
+.footer-tools { margin-top: 30px; font-size: 0.8em; color: #999; }
+.btn-reset { background: #666; font-size: 0.8em; padding: 5px 10px; margin-top: 5px; width: auto; display: inline-block;}
+
 /* 起動画面 */
 #app-splash {
   position: fixed; inset: 0; background: #fff; z-index: 9999;
@@ -44,7 +48,6 @@ button:active{transform: translateY(2px);}
 .spinner { width: 30px; height: 30px; border: 4px solid #f3f3f3; border-top: 4px solid #6b46c1; border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* キャンバス（紙吹雪用） */
 #confettiCanvas{position:fixed;inset:0;pointer-events:none;z-index:5000}
 </style>
 </head>
@@ -83,12 +86,16 @@ button:active{transform: translateY(2px);}
   </div>
 
   <button id="runBtn" type="button">ホロスコープを作成</button>
+  
+  <div class="footer-tools">
+    <p>うまく動かない場合:</p>
+    <button class="btn-reset" onclick="hardReset()">修復・再読み込み</button>
+  </div>
 </section>
 
 <section id="outputArea" style="display:none;">
   <h2>鑑定結果</h2>
   <div id="resultContainer"></div>
-  
   <div style="margin-top:20px;">
     <button id="backBtn" type="button" style="background:#666;">戻る</button>
   </div>
@@ -99,10 +106,8 @@ button:active{transform: translateY(2px);}
 <div class="toast" id="toast"></div>
 
 <script>
-// 基本ユーティリティ
 const $ = id => document.getElementById(id);
 function toast(m){const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000);}
-
 function saveInputs(){
   const d={
     birthDate:$('birthDate').value||'',
@@ -133,29 +138,25 @@ const PLANET_DEFS = [
   { key: 'Saturn',  label: '♄ 土星',  desc: '課題・責任・安定' },
 ];
 
-// ★重要: 安全な日付生成関数 (NaN対策)
 function createSafeDate(dateStr, timeStr) {
   if(!dateStr) return null;
-  // 文字列分解して数値化 (ブラウザ依存回避)
   const [y, m, d] = dateStr.split('-').map(Number);
-  // 時間がない場合は00:00
   const [h, min] = timeStr ? timeStr.split(':').map(Number) : [0, 0];
-  // 月は0始まりなので-1
   return new Date(y, m - 1, d, h, min, 0);
 }
 
+// ★修正: 最もシンプルな呼び出しに戻す（オプション削除）
 function calculateRealPlanets(date) {
-  if (typeof Astronomy === 'undefined') throw new Error('天文計算エンジンが読み込まれていません。リロードしてください。');
+  if (typeof Astronomy === 'undefined') throw new Error('システム読込中... 再度お試しください');
   
   const results = [];
   PLANET_DEFS.forEach(p => {
     const body = Astronomy.Body[p.key];
-    // ★対策2: 第3引数を「false」(光行差なし)にする。これで計算エラー(NaN)を防ぎます。
-    const vector = Astronomy.GeoVector(body, date, false);
+    // 引数をシンプルに（バージョン依存バグを回避）
+    const vector = Astronomy.GeoVector(body, date);
     const ecliptic = Astronomy.Ecliptic(vector); 
     const lon = ecliptic.lon;
     
-    // NaNチェック
     if (isNaN(lon)) {
         results.push({ key: p.key, name: p.label, desc: p.desc, lon: 0, sign: '計測不能', signDegree: '0.0' });
         return;
@@ -165,14 +166,7 @@ function calculateRealPlanets(date) {
     const signText = ZODIAC_SIGNS[signIndex] || ZODIAC_SIGNS[0];
     const signDegree = lon % 30;
     
-    results.push({ 
-      key: p.key, 
-      name: p.label, 
-      desc: p.desc, 
-      lon: lon, 
-      sign: signText, 
-      signDegree: signDegree.toFixed(1) 
-    });
+    results.push({ key: p.key, name: p.label, desc: p.desc, lon: lon, sign: signText, signDegree: signDegree.toFixed(1) });
   });
   return results;
 }
@@ -180,10 +174,9 @@ function calculateRealPlanets(date) {
 function predictJupiterLuck(birthDate, targetDate) {
   if (isNaN(birthDate.getTime()) || isNaN(targetDate.getTime())) return { title:"データエラー", msg:"日付を確認してください", score:0, isLucky:false };
 
-  // ★対策2: ここも「false」
-  const natalVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, birthDate, false);
+  const natalVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, birthDate);
   const natalLon = Astronomy.Ecliptic(natalVec).lon;
-  const transitVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, targetDate, false);
+  const transitVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, targetDate);
   const transitLon = Astronomy.Ecliptic(transitVec).lon;
   
   let diff = Math.abs(transitLon - natalLon);
@@ -219,15 +212,18 @@ async function runHoroscope(){
     saveInputs();
     const birthStr = $('birthDate').value;
     if(!birthStr){ alert('生年月日を入力してください'); return; }
-
     const timeStr = $('birthTime').value || '12:00';
-    // ★安全な日付生成
     const birthDate = createSafeDate(birthStr, timeStr);
-    
     const targetStr = $('targetDate').value || new Date().toISOString().split('T')[0];
     const targetDate = createSafeDate(targetStr, "12:00");
 
     if(!birthDate || isNaN(birthDate.getTime())){ alert("生年月日の形式が無効です。"); return; }
+    
+    // ★デバッグ用: そもそもライブラリがない場合
+    if (typeof Astronomy === 'undefined') {
+       if(confirm("計算エンジンの読み込みに失敗しています。修復しますか？")) { hardReset(); }
+       return;
+    }
 
     const planets = calculateRealPlanets(birthDate);
     const jupPred = predictJupiterLuck(birthDate, targetDate);
@@ -253,6 +249,20 @@ async function runHoroscope(){
     console.error(e);
     alert('エラー: ' + e.message);
   }
+}
+
+// ★強力なキャッシュ削除・リセット機能
+function hardReset() {
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for(let registration of registrations) { registration.unregister(); }
+    });
+  }
+  caches.keys().then(names => {
+      for (let name of names) caches.delete(name);
+  });
+  alert("システムを修復しました。ページを再読み込みします。");
+  location.reload(true);
 }
 
 async function onGeocodeClick(){
@@ -294,20 +304,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
   $('geoBtn').addEventListener('click', onGeocodeClick);
   $('runBtn').addEventListener('click', runHoroscope);
   $('backBtn').addEventListener('click', backToInput);
+  setTimeout(()=>{ const splash = $('app-splash'); if(splash) splash.classList.add('fadeout'); }, 800);
   
-  setTimeout(()=>{
-    const splash = $('app-splash');
-    if(splash) splash.classList.add('fadeout');
-  }, 800);
-
-  // ★対策3: ゾンビキャッシュを強制削除するコード
-  // これにより、次回からはクリーンな状態で起動します
+  // 自動修復（サイレント実行）
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-      for(let registration of registrations) {
-        registration.unregister();
-        console.log("Service Worker Force Unregistered");
-      }
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      for(let r of regs) r.unregister(); // 古いSWを問答無用で解除
     });
   }
 });

@@ -140,23 +140,32 @@ function calculateRealPlanets(date) {
   const results = [];
   PLANET_DEFS.forEach(p => {
     const body = Astronomy.Body[p.key];
-    // ★修正点: 第3引数に true (光行差あり) を追加してエラーを回避
     const vector = Astronomy.GeoVector(body, date, true);
     const ecliptic = Astronomy.Ecliptic(vector); 
     const lon = ecliptic.lon;
-    const signIndex = Math.floor(lon / 30);
+    
+    // ★重要修正: % 12 を追加して、12になってしまうバグ（360度問題）を回避
+    const signIndex = Math.floor(lon / 30) % 12;
+    
+    // 安全策: 万が一 undefined になったら牡羊座(0)にする
+    const signText = ZODIAC_SIGNS[signIndex] || ZODIAC_SIGNS[0];
     const signDegree = lon % 30;
-    results.push({ key: p.key, name: p.label, desc: p.desc, lon: lon, sign: ZODIAC_SIGNS[signIndex], signDegree: signDegree.toFixed(1) });
+    
+    results.push({ 
+      key: p.key, 
+      name: p.label, 
+      desc: p.desc, 
+      lon: lon, 
+      sign: signText, 
+      signDegree: signDegree.toFixed(1) 
+    });
   });
   return results;
 }
 
 function predictJupiterLuck(birthDate, targetDate) {
-  // ★修正点: ここにも true を追加
   const natalVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, birthDate, true);
   const natalLon = Astronomy.Ecliptic(natalVec).lon;
-  
-  // ★修正点: ここにも true を追加
   const transitVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, targetDate, true);
   const transitLon = Astronomy.Ecliptic(transitVec).lon;
   
@@ -179,9 +188,13 @@ function predictJupiterLuck(birthDate, targetDate) {
 }
 
 function getSignMeaning(planetKey, sign) {
-  if (planetKey === 'Sun') return `あなたの基本性格は「${sign}」的です。`;
-  if (planetKey === 'Moon') return `リラックス時は「${sign}」っぽくなります。`;
-  if (planetKey === 'Venus') return `「${sign}」的な楽しみ方を好みます。`;
+  // 安全策: splitできるかチェック
+  if (!sign || typeof sign !== 'string') return '';
+  const signName = sign.split(' ')[1] || sign; // スペースがなくても動くように修正
+  
+  if (planetKey === 'Sun') return `あなたの基本性格は「${signName}」的です。`;
+  if (planetKey === 'Moon') return `リラックス時は「${signName}」っぽくなります。`;
+  if (planetKey === 'Venus') return `「${signName}」的な楽しみ方を好みます。`;
   return '';
 }
 
@@ -207,7 +220,7 @@ async function runHoroscope(){
     html += `<div style="margin:20px 0 10px; font-weight:bold; color:#6b46c1;">あなたの生まれた瞬間の星たち</div>`;
     planets.forEach(p => {
       html += `<div class="card" style="padding:0.8em;"><div class="row"><div style="font-weight:bold;">${p.name}</div><div class="zodiac-badge">${p.sign} ${p.signDegree}°</div></div>
-        <div class="muted" style="font-size:0.8em; margin-top:4px;">${p.desc}</div><div style="font-size:0.9em; margin-top:6px;">${getSignMeaning(p.key, p.sign.split(' ')[1])}</div></div>`;
+        <div class="muted" style="font-size:0.8em; margin-top:4px;">${p.desc}</div><div style="font-size:0.9em; margin-top:6px;">${getSignMeaning(p.key, p.sign)}</div></div>`;
     });
 
     $('resultContainer').innerHTML = html;

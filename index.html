@@ -22,14 +22,21 @@ h1 {
     font-size: 28px;
     margin-bottom: 20px;
 }
+label {
+    display:block;
+    margin-top:10px;
+    font-size:14px;
+    color:#666;
+}
 input, button {
     padding: 12px;
     width: 90%;
     max-width: 340px;
-    margin: 10px auto;
+    margin: 6px auto 10px auto;
     border-radius: 8px;
     border: 1px solid #dddddd;
     font-size: 16px;
+    box-sizing:border-box;
 }
 button {
     background: #B79DF2;
@@ -37,6 +44,7 @@ button {
     border: none;
     font-weight: bold;
     cursor: pointer;
+    margin-top:14px;
 }
 .score {
     font-size: 40px;
@@ -65,11 +73,16 @@ button {
 }
 </style>
 
+<!-- ライブラリ類 -->
 <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.0/astronomy.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script src="bank.js"></script>
 
 <script>
+// ------------------------
+//  補助関数
+// ------------------------
+
 function pick(a) {
     return a[Math.floor(Math.random() * a.length)];
 }
@@ -85,29 +98,62 @@ function norm(d) {
 
 function asp(d) {
     d = Math.abs(d);
-    if (d < 5) return 8;
+    if (d < 5)  return 8;
     if (d < 15) return 4;
     if (d < 30) return 0;
     if (d < 45) return -4;
     return -8;
 }
 
-function isBirthday(b) {
-    if (!b) return false;
-    const bd = new Date(b);
-    const now = new Date();
-    return bd.getMonth() === now.getMonth() &&
-           bd.getDate() === now.getDate();
+// "YYYY-MM-DD" or "YYYY/MM/DD" → Date（ローカル昼12:00）
+function parseYmd(str) {
+    if (!str) return null;
+    var m = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (!m) return null;
+    var y  = parseInt(m[1], 10);
+    var mo = parseInt(m[2], 10) - 1; // JSは0始まり
+    var d  = parseInt(m[3], 10);
+    return new Date(y, mo, d, 12, 0, 0);
 }
+
+// 「誕生日」と「基準日」の月日が一致しているか
+function isBirthday(birthStr, baseDate) {
+    if (!birthStr || !baseDate) return false;
+    var bd = parseYmd(birthStr);
+    if (!bd || isNaN(bd.getTime())) return false;
+    return bd.getMonth() === baseDate.getMonth() &&
+           bd.getDate()  === baseDate.getDate();
+}
+
+// ------------------------
+//  メイン処理
+// ------------------------
 function calc() {
-    const b = document.getElementById('birth').value;
-    if (!b) {
+    const birthStr  = document.getElementById('birth').value;
+    const targetStr = document.getElementById('targetDate').value;
+
+    if (!birthStr) {
         alert("生年月日を入力してください");
         return;
     }
 
-    const bd = new Date(b + "T12:00:00");
-    const now = new Date();
+    const bd = parseYmd(birthStr);
+    if (!bd || isNaN(bd.getTime())) {
+        alert("生年月日を正しく読み取れませんでした");
+        return;
+    }
+
+    // 占いたい日（未入力なら「今日」）
+    let now;
+    if (targetStr) {
+        now = parseYmd(targetStr);
+        if (!now || isNaN(now.getTime())) {
+            alert("占いたい日付を正しく読み取れませんでした");
+            return;
+        }
+    } else {
+        now = new Date();
+    }
 
     const P = [
         Astronomy.Body.Sun,
@@ -122,29 +168,31 @@ function calc() {
     const nat = {};
     const tod = {};
 
+    // ネイタル（出生時）と占いたい日の天体位置
     for (let i = 0; i < P.length; i++) {
         const p = P[i];
-        nat[p] = norm(Astronomy.Ecliptic(Astronomy.GeoVector(p, bd, true)).elon);
+        nat[p] = norm(Astronomy.Ecliptic(Astronomy.GeoVector(p, bd,  true)).elon);
         tod[p] = norm(Astronomy.Ecliptic(Astronomy.GeoVector(p, now, true)).elon);
     }
 
+    // 総合運
     let total = 70;
     for (let i = 0; i < P.length; i++) {
         total += asp(norm(tod[P[i]] - nat[P[i]]));
     }
     total = Math.max(40, Math.min(95, total));
 
-    const love  = Math.max(40, Math.min(95, 65 + asp(norm(tod[Astronomy.Body.Venus]  - nat[Astronomy.Body.Venus]))));
+    // 各項目
+    const love  = Math.max(40, Math.min(95, 65 + asp(norm(tod[Astronomy.Body.Venus]   - nat[Astronomy.Body.Venus]))));
     const money = Math.max(40, Math.min(95, 65 + asp(norm(tod[Astronomy.Body.Jupiter] - nat[Astronomy.Body.Jupiter]))));
     const work  = Math.max(40, Math.min(95, 65 +
-                     asp(norm(tod[Astronomy.Body.Mars]   - nat[Astronomy.Body.Mars])) +
-                     asp(norm(tod[Astronomy.Body.Saturn] - nat[Astronomy.Body.Saturn]))));
+                        asp(norm(tod[Astronomy.Body.Mars]   - nat[Astronomy.Body.Mars])) +
+                        asp(norm(tod[Astronomy.Body.Saturn] - nat[Astronomy.Body.Saturn]))));
     const health = Math.max(40, Math.min(95, 65 +
-                     asp(norm(tod[Astronomy.Body.Sun]  - nat[Astronomy.Body.Sun])) +
-                     asp(norm(tod[Astronomy.Body.Moon] - nat[Astronomy.Body.Moon]))));
+                        asp(norm(tod[Astronomy.Body.Sun]  - nat[Astronomy.Body.Sun])) +
+                        asp(norm(tod[Astronomy.Body.Moon] - nat[Astronomy.Body.Moon]))));
 
     let html = "";
-
     html += "<div class='score'>🪐 今日の総合運 " + total + "%</div>";
 
     html += "<div class='card'><div class='label'>💞 恋愛 " + love + "%</div><div>" +
@@ -159,7 +207,8 @@ function calc() {
     html += "<div class='card'><div class='label'>💗 健康 " + health + "%</div><div>" +
             selectText('健康運', health) + "</div></div>";
 
-    if (isBirthday(b)) {
+    // 占いたい日が誕生日と同じ月日なら紙吹雪
+    if (isBirthday(birthStr, now)) {
         confetti({
             particleCount: 120,
             spread: 90,
@@ -167,21 +216,36 @@ function calc() {
             colors: ['#B79DF2', '#ffffff', '#d9c8ff']
         });
 
-        html += "<div class='birthday-msg'>🎂 お誕生日おめでとうございます\n今日のあなたに、やさしい流れがありますように。</div>";
+        html += "<div class='birthday-msg'>🎂 お誕生日おめでとうございます\\n今日のあなたに、やさしい流れがありますように。</div>";
     }
 
     document.getElementById('result').innerHTML = html;
 }
 
+// ページ読込時に「占いたい日」を今日に初期化
+document.addEventListener('DOMContentLoaded', function() {
+    const t = document.getElementById('targetDate');
+    if (t) {
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = ('0' + (today.getMonth() + 1)).slice(-2);
+        const d = ('0' + today.getDate()).slice(-2);
+        t.value = y + "-" + m + "-" + d;
+    }
+});
 </script>
 </head>
 
 <body>
 <h1>今日の運勢</h1>
 
-<input type="date" id="birth">
+<label for="birth">生年月日</label>
+<input type="date" id="birth" placeholder="例: 1978-12-31">
 
-<button onclick="calc()">今日の運勢を見る</button>
+<label for="targetDate">占いたい日（空欄なら今日）</label>
+<input type="date" id="targetDate">
+
+<button onclick="calc()">この日の運勢を見る</button>
 
 <div id="result"></div>
 

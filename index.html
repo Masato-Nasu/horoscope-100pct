@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>今日の運勢</title>
+<title>100% 星占い（シンプル版）</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#B79DF2">
@@ -31,7 +31,7 @@ label {
 input, button {
     padding: 12px;
     width: 90%;
-    max-width: 340px;
+    max-width: 360px;
     margin: 6px auto 10px auto;
     border-radius: 8px;
     border: 1px solid #dddddd;
@@ -56,7 +56,7 @@ button {
     background: #F7F4FF;
     padding: 14px;
     border-radius: 10px;
-    max-width: 340px;
+    max-width: 360px;
     margin: 12px auto;
     text-align: left;
 }
@@ -64,6 +64,18 @@ button {
     color: #B79DF2;
     font-weight: bold;
     font-size: 18px;
+    margin-bottom:4px;
+}
+.percent-bar {
+    height:4px;
+    border-radius:999px;
+    background:#E1D7FF;
+    overflow:hidden;
+    margin-bottom:8px;
+}
+.percent-fill {
+    height:100%;
+    background:#B79DF2;
 }
 .birthday-msg {
     margin-top: 20px;
@@ -71,167 +83,354 @@ button {
     font-size: 18px;
     white-space: pre-line;
 }
+.muted {
+    font-size:12px;
+    color:#888;
+    margin-bottom:12px;
+}
 </style>
 
 <!-- ライブラリ類 -->
 <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.0/astronomy.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script src="bank.js"></script>
 
 <script>
-// ------------------------
-//  補助関数
-// ------------------------
+// =======================================
+//  100%星占い２風 BANK（長めテキスト用）
+//   - a: 冒頭フレーズ
+//   - b: 意味づけ
+//   - c: 行動提案
+// =======================================
+const BANK = {
+  "全体運": {
+    a: [
+      "今日は一日を通して、ふっと肩の力が抜けやすいとき。", 
+      "最近がんばりすぎていた人ほど、少し空気がやわらぐ日。", 
+      "小さなきっかけから、流れを整え直せそうなタイミング。", 
+      "一つ区切りをつけることで、次のページがめくれそうな日。", 
+      "自分のペースを取り戻すチャンスが、静かに巡ってきています。"
+    ],
+    b: [
+      "周りに合わせすぎず、自分の心地よさを軸にできると、自然とものごとが噛み合っていきます。",
+      "一気に変えようとしなくて大丈夫。“今日はここまで”と決めることで、安心感が戻ってきます。",
+      "完璧ではなくても、今の自分なりに整えるだけで、視界がすっと広がりそうです。",
+      "急がないと決めたほうが、結果的にスムーズに進める…そんな不思議な日になりそう。",
+      "人と比べるより、昨日の自分と比べてみると、小さな成長に気づけそうです。"
+    ],
+    c: [
+      "やることリストを書き出して、“三つだけ”優先するなど、負担を軽くする工夫をしてみてください。",
+      "予定のすき間に、5分だけでも好きな飲み物タイムを入れて、自分をねぎらってあげましょう。",
+      "夜になったら、今日よかったことを一つだけメモに残すと、明日への安心感につながります。",
+      "頑張りどころと休むところを分けて、“がんばらない時間”を意識的につくってみてください。",
+      "少し歩く速度を落として、季節の空気を感じてみると、心がゆっくり追いついてきます。"
+    ]
+  },
 
-function pick(a) {
-    return a[Math.floor(Math.random() * a.length)];
+  "恋愛": {
+    a: [
+      "コミュニケーションに、やさしい追い風が入りやすい日。", 
+      "相手との“ちょうどいい距離感”を見つけやすいタイミング。", 
+      "恋愛に限らず、人とのつながりからあたたかさを感じやすい日。", 
+      "言葉よりも雰囲気や態度が、思った以上に伝わりやすいとき。", 
+      "無理に動かなくても、今の関係を静かに育てていきやすい日。"
+    ],
+    b: [
+      "がんばって盛り上げるより、自然体のやりとりのほうが、安心感や信頼感につながりそうです。",
+      "少し聞き役に回ることで、相手の本音やペースが見えてきて、心の距離がふっと近づきます。",
+      "返事の早さより、“ひと言のあたたかさ”を大事にすると、お互いに心地よくいられそうです。",
+      "恋愛の進展だけにとらわれず、自分の時間も楽しむことで、魅力がじんわり伝わっていきます。",
+      "好き／苦手を無理に変えようとせず、自分の感覚を大切にするほど、関係性が整っていきます。"
+    ],
+    c: [
+      "連絡を送りたくなったら、深呼吸をひとつしてから、明るく短めのメッセージを意識してみてください。",
+      "会えない時間は、自分磨きの時間だと思って、お気に入りの服や香りを見直してみるのも◎。",
+      "もしモヤモヤすることがあれば、いきなり相手にぶつけず、紙に書き出して整理するところから始めてみて。",
+      "今日は恋愛のことを“半分だけ”考えて、残り半分は自分の好きなことに思いきり使ってあげましょう。",
+      "約束や期待に縛られすぎず、「今の自分が心地いいか」を何度か確かめながら過ごしてみてください。"
+    ]
+  },
+
+  "仕事": {
+    a: [
+      "タスクの組み立て方しだいで、ぐっと進みやすくなる日。", 
+      "一つひとつの作業に、丁寧さとスピードのバランスが取りやすいタイミング。", 
+      "急ぎの用事と、落ち着いてやりたいことを切り分けると、頭がスッキリしそうです。", 
+      "小さな工夫が、意外なほど仕事のしやすさに直結する日。", 
+      "誰かの一言やサポートが、仕事の流れを軽くしてくれそうなとき。"
+    ],
+    b: [
+      "“完璧にやる”より“終わらせる”を意識したほうが、トータルでは良い結果につながりやすいでしょう。",
+      "優先度をつけて上から順に片づけるだけで、達成感と安心感がじわじわ積み重なっていきます。",
+      "わからないことは早めに相談してしまうほうが、後からの手戻りを減らせそうです。",
+      "得意なことと苦手なことを把握して、得意な部分で周りを助けると、信頼度が上がるタイミングです。",
+      "集中が切れたら、自分を責めるより“休憩のサインだな”と受け止めると、無理なく立て直せます。"
+    ],
+    c: [
+      "朝の5分で、今日やることを三つだけ書き出してみてください。迷いが減り、動きやすくなります。",
+      "一区切りつくたびに、肩や首を回してリセットすると、長時間の作業でも疲れが残りにくくなります。",
+      "忙しくなりそうな日は、あらかじめ“ここまではやらない”ラインを決めておくと、心が守られます。",
+      "ミスが気になるときは、自分一人で抱えこまず、チェックしてもらう仕組みをつくってみてください。",
+      "仕事モードが抜けないときは、帰り道のどこかで“ここを過ぎたらオフ”と区切りを決めてみましょう。"
+    ]
+  },
+
+  "金運": {
+    a: [
+      "お金との付き合い方を、少しだけ見直すのに向いている日。", 
+      "派手な動きより、“守りと整え”がテーマになりそうなタイミング。", 
+      "必要なものと欲しいものの境目を、穏やかに見直せるとき。", 
+      "小さな節約や工夫が、後々の安心につながりやすい日。", 
+      "お金に対する不安を、具体的な行動につなげやすいタイミングです。"
+    ],
+    b: [
+      "一度レシートや明細を眺めてみるだけでも、“どこを軽くできるか”が少し見えてきそうです。",
+      "衝動買いを責めるより、「なぜ欲しくなったのか」を優しく振り返ると、次の選択が楽になります。",
+      "“安いから買う”ではなく“本当に使うかどうか”で選ぶことで、満足度の高い買い物につながるでしょう。",
+      "いきなり貯金額を増やすより、“毎月ここだけは守る”金額を決めるほうが続けやすくなります。",
+      "人とのお付き合い費も、自分のペースで調整してOK。無理のない範囲で大切にしていきましょう。"
+    ],
+    c: [
+      "今日は大きな買い物は控えめにして、欲しいものリストに“メモだけする日”にしてみてください。",
+      "ネットでのポチ買いが増えそうなら、支払い画面に行く前に一度画面を閉じて、明日もう一度考えてみましょう。",
+      "お財布やカードケースの整理をして、いらないレシートやポイントカードを少し減らしてみてください。",
+      "不安を感じたら、一人で抱え込まずに、信頼できる人や専門家の情報も少しだけ取り入れてみると安心です。",
+      "“お金を使うときに、感謝を一緒に載せる”つもりで支払うと、気持ちよく循環していきます。"
+    ]
+  },
+
+  "健康": {
+    a: [
+      "体と心のコンディションを、やさしく整えやすい日。", 
+      "無理を重ねたツケが出やすいからこそ、ケアに意識を向けたいタイミング。", 
+      "生活リズムを少しだけ整えると、調子の波が穏やかになりそうです。", 
+      "ちょっとした疲れや違和感に、気づきやすくなる日。", 
+      "自分の体を“味方”として扱ってあげたい日です。"
+    ],
+    b: [
+      "完璧な健康習慣を目指すより、“できる範囲で続けられること”を一つ決めるほうが、長い目で見てプラスになります。",
+      "水分補給や軽いストレッチなど、小さなケアをこまめに挟むことで、だるさが少しやわらぎそうです。",
+      "気圧や天気に左右されやすい人は、今日は予定を詰めすぎず、余白を多めに残しておくと安心です。",
+      "疲れているサインを無視せず、“今日は早く寝る日”と決めるだけでも、明日の自分が楽になります。",
+      "心がざわつくときは、体に優しいものを食べたり、あたたかい飲み物を飲んだりと、五感から整えていきましょう。"
+    ],
+    c: [
+      "今日は“頑張り続ける”より“ほどよく休む”ことを目標にして、自分を甘やかす時間をとってあげてください。",
+      "少し体が重いと感じたら、仕事や家事の予定を一つ減らして、その分を休息にあててみましょう。",
+      "頭がパンパンになってきたら、画面から離れて空を見上げるだけでも、心がふっと軽くなります。",
+      "不安になったときは、一人で抱え込まず、信頼できる人や専門家に相談することも大切にしてあげてください。",
+      "“今日はここまでで十分”と区切ることで、明日の自分にもやさしいリズムをつくれそうです。"
+    ]
+  }
+};
+
+// ==================================================
+//  テキスト生成ロジック（100%星占い２風）
+// ==================================================
+function stableSeed(str){
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  }
+  return h >>> 0;
 }
-function selectText(cat, val) {
-    if (val >= 70) return pick(BANK[cat].a);
-    if (val >= 40) return pick(BANK[cat].b);
-    return pick(BANK[cat].c);
+function makeRng(seed){
+  let x = seed >>> 0 || 1;
+  return function(){
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    return (x >>> 0) / 4294967296;
+  };
+}
+function composeLineWithRng(topic, rng){
+  const bank = BANK[topic];
+  if (!bank) return "";
+  const a = bank.a[Math.floor(rng() * bank.a.length)];
+  const b = bank.b[Math.floor(rng() * bank.b.length)];
+  const c = bank.c[Math.floor(rng() * bank.c.length)];
+  return `${a}${b}${c}`;
+}
+function uniqueTwoLines(topic, seedStr){
+  const s1 = composeLineWithRng(topic, makeRng(stableSeed(seedStr + "|1")));
+  let   s2 = composeLineWithRng(topic, makeRng(stableSeed(seedStr + "|2")));
+  if (s2 === s1) {
+    s2 = composeLineWithRng(topic, makeRng(stableSeed(seedStr + "|3")));
+    if (s2 === s1) {
+      s2 = s2.replace("。","！");
+      if (s2 === s1) s2 = "今は“丁寧に一歩”。無理なく進めば十分。";
+    }
+  }
+  return [s1, s2];
+}
+function longText(topic, seedBase){
+  const [l1, l2] = uniqueTwoLines(topic, seedBase);
+  return `${l1}<br>${l2}`;
 }
 
-function norm(d) {
-    return (d % 360 + 360) % 360;
+// ==================================================
+//  天体計算アルゴリズム（このスレッドの複雑版）
+//   - 出生日 vs 占いたい日
+//   - 太陽〜土星の経度差からスコア
+// ==================================================
+function norm(d){ return (d % 360 + 360) % 360; }
+
+function asp(d){
+  d = Math.abs(d);
+  if (d < 5)  return 8;   // かなり追い風
+  if (d < 15) return 4;   // やや追い風
+  if (d < 30) return 0;   // 中立
+  if (d < 45) return -4;  // やや緊張
+  return -8;              // 強い緊張
 }
 
-function asp(d) {
-    d = Math.abs(d);
-    if (d < 5)  return 8;
-    if (d < 15) return 4;
-    if (d < 30) return 0;
-    if (d < 45) return -4;
-    return -8;
+// "YYYY-MM-DD" / "YYYY/MM/DD" → Date（ローカル昼12:00）
+function parseYmd(str){
+  if (!str) return null;
+  const m = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (!m) return null;
+  const y  = parseInt(m[1],10);
+  const mo = parseInt(m[2],10)-1;
+  const d  = parseInt(m[3],10);
+  return new Date(y,mo,d,12,0,0);
 }
 
-// "YYYY-MM-DD" or "YYYY/MM/DD" → Date（ローカル昼12:00）
-function parseYmd(str) {
-    if (!str) return null;
-    var m = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
-    if (!m) return null;
-    var y  = parseInt(m[1], 10);
-    var mo = parseInt(m[2], 10) - 1; // JSは0始まり
-    var d  = parseInt(m[3], 10);
-    return new Date(y, mo, d, 12, 0, 0);
+// 誕生日判定（基準日は占いたい日）
+function isBirthday(birthStr, baseDate){
+  if (!birthStr || !baseDate) return false;
+  const bd = parseYmd(birthStr);
+  if (!bd || isNaN(bd.getTime())) return false;
+  return bd.getMonth()===baseDate.getMonth() &&
+         bd.getDate()===baseDate.getDate();
 }
 
-// 「誕生日」と「基準日」の月日が一致しているか
-function isBirthday(birthStr, baseDate) {
-    if (!birthStr || !baseDate) return false;
-    var bd = parseYmd(birthStr);
-    if (!bd || isNaN(bd.getTime())) return false;
-    return bd.getMonth() === baseDate.getMonth() &&
-           bd.getDate()  === baseDate.getDate();
+function calc(){
+  const birthStr  = document.getElementById("birth").value;
+  const targetStr = document.getElementById("targetDate").value;
+
+  if (!birthStr){
+    alert("生年月日を入力してください");
+    return;
+  }
+
+  const bd = parseYmd(birthStr);
+  if (!bd || isNaN(bd.getTime())){
+    alert("生年月日を正しく読み取れませんでした");
+    return;
+  }
+
+  let now;
+  if (targetStr){
+    now = parseYmd(targetStr);
+    if (!now || isNaN(now.getTime())){
+      alert("占いたい日付を正しく読み取れませんでした");
+      return;
+    }
+  } else {
+    now = new Date();
+  }
+
+  const P = [
+    Astronomy.Body.Sun,
+    Astronomy.Body.Moon,
+    Astronomy.Body.Mercury,
+    Astronomy.Body.Venus,
+    Astronomy.Body.Mars,
+    Astronomy.Body.Jupiter,
+    Astronomy.Body.Saturn
+  ];
+
+  const nat = {};
+  const tod = {};
+
+  // 出生日＆占いたい日の黄経
+  for (let i=0;i<P.length;i++){
+    const p = P[i];
+    nat[p] = norm(Astronomy.Ecliptic(Astronomy.GeoVector(p, bd,  true)).elon);
+    tod[p] = norm(Astronomy.Ecliptic(Astronomy.GeoVector(p, now, true)).elon);
+  }
+
+  // 総合：全惑星のアスペクトから
+  let total = 70;
+  for (let i=0;i<P.length;i++){
+    total += asp(norm(tod[P[i]] - nat[P[i]]));
+  }
+  total = Math.max(40, Math.min(100, total));
+
+  // 分野別：惑星の役割ごとに重みづけ
+  const love  = Math.max(40, Math.min(100,
+                  65 + asp(norm(tod[Astronomy.Body.Venus]  - nat[Astronomy.Body.Venus]))));
+  const money = Math.max(40, Math.min(100,
+                  65 + asp(norm(tod[Astronomy.Body.Jupiter] - nat[Astronomy.Body.Jupiter]))));
+  const work  = Math.max(40, Math.min(100,
+                  65 + asp(norm(tod[Astronomy.Body.Mars]   - nat[Astronomy.Body.Mars])) +
+                       asp(norm(tod[Astronomy.Body.Saturn] - nat[Astronomy.Body.Saturn]))));
+  const health= Math.max(40, Math.min(100,
+                  65 + asp(norm(tod[Astronomy.Body.Sun]   - nat[Astronomy.Body.Sun])) +
+                       asp(norm(tod[Astronomy.Body.Moon]  - nat[Astronomy.Body.Moon]))));
+
+  // ％表示＋長文テキスト（100%星占い２風）
+  const seedBase = birthStr + "|" +
+                   (targetStr || (now.getFullYear()+"-"+(now.getMonth()+1)+"-"+now.getDate()));
+
+  let html = "";
+  html += `<div class="score">🪐 今日の総合運 ${Math.round(total)}%</div>`;
+  html += `<div class="card">
+             <div class="label">📝 全体運</div>
+             <div class="percent-bar"><div class="percent-fill" style="width:${total}%;"></div></div>
+             <div>${longText("全体運", seedBase + "|overall")}</div>
+           </div>`;
+
+  html += `<div class="card">
+             <div class="label">💞 恋愛 ${Math.round(love)}%</div>
+             <div class="percent-bar"><div class="percent-fill" style="width:${love}%;"></div></div>
+             <div>${longText("恋愛", seedBase + "|love")}</div>
+           </div>`;
+
+  html += `<div class="card">
+             <div class="label">💼 仕事 ${Math.round(work)}%</div>
+             <div class="percent-bar"><div class="percent-fill" style="width:${work}%;"></div></div>
+             <div>${longText("仕事", seedBase + "|work")}</div>
+           </div>`;
+
+  html += `<div class="card">
+             <div class="label">💰 金運 ${Math.round(money)}%</div>
+             <div class="percent-bar"><div class="percent-fill" style="width:${money}%;"></div></div>
+             <div>${longText("金運", seedBase + "|money")}</div>
+           </div>`;
+
+  html += `<div class="card">
+             <div class="label">💗 健康 ${Math.round(health)}%</div>
+             <div class="percent-bar"><div class="percent-fill" style="width:${health}%;"></div></div>
+             <div>${longText("健康", seedBase + "|health")}</div>
+           </div>`;
+
+  // 誕生日（占いたい日ベース）なら紙吹雪
+  if (isBirthday(birthStr, now)){
+    confetti({
+      particleCount: 120,
+      spread: 90,
+      origin: { y: 0.1 },
+      colors: ["#B79DF2", "#ffffff", "#d9c8ff"]
+    });
+    html += `<div class="birthday-msg">
+🎂 お誕生日おめでとうございます
+今日のあなたに、やさしい流れがありますように。
+             </div>`;
+  }
+
+  document.getElementById("result").innerHTML = html;
 }
 
-// ------------------------
-//  メイン処理
-// ------------------------
-function calc() {
-    const birthStr  = document.getElementById('birth').value;
-    const targetStr = document.getElementById('targetDate').value;
-
-    if (!birthStr) {
-        alert("生年月日を入力してください");
-        return;
-    }
-
-    const bd = parseYmd(birthStr);
-    if (!bd || isNaN(bd.getTime())) {
-        alert("生年月日を正しく読み取れませんでした");
-        return;
-    }
-
-    // 占いたい日（未入力なら「今日」）
-    let now;
-    if (targetStr) {
-        now = parseYmd(targetStr);
-        if (!now || isNaN(now.getTime())) {
-            alert("占いたい日付を正しく読み取れませんでした");
-            return;
-        }
-    } else {
-        now = new Date();
-    }
-
-    const P = [
-        Astronomy.Body.Sun,
-        Astronomy.Body.Moon,
-        Astronomy.Body.Mercury,
-        Astronomy.Body.Venus,
-        Astronomy.Body.Mars,
-        Astronomy.Body.Jupiter,
-        Astronomy.Body.Saturn
-    ];
-
-    const nat = {};
-    const tod = {};
-
-    // ネイタル（出生時）と占いたい日の天体位置
-    for (let i = 0; i < P.length; i++) {
-        const p = P[i];
-        nat[p] = norm(Astronomy.Ecliptic(Astronomy.GeoVector(p, bd,  true)).elon);
-        tod[p] = norm(Astronomy.Ecliptic(Astronomy.GeoVector(p, now, true)).elon);
-    }
-
-    // 総合運
-    let total = 70;
-    for (let i = 0; i < P.length; i++) {
-        total += asp(norm(tod[P[i]] - nat[P[i]]));
-    }
-    total = Math.max(40, Math.min(95, total));
-
-    // 各項目
-    const love  = Math.max(40, Math.min(95, 65 + asp(norm(tod[Astronomy.Body.Venus]   - nat[Astronomy.Body.Venus]))));
-    const money = Math.max(40, Math.min(95, 65 + asp(norm(tod[Astronomy.Body.Jupiter] - nat[Astronomy.Body.Jupiter]))));
-    const work  = Math.max(40, Math.min(95, 65 +
-                        asp(norm(tod[Astronomy.Body.Mars]   - nat[Astronomy.Body.Mars])) +
-                        asp(norm(tod[Astronomy.Body.Saturn] - nat[Astronomy.Body.Saturn]))));
-    const health = Math.max(40, Math.min(95, 65 +
-                        asp(norm(tod[Astronomy.Body.Sun]  - nat[Astronomy.Body.Sun])) +
-                        asp(norm(tod[Astronomy.Body.Moon] - nat[Astronomy.Body.Moon]))));
-
-    let html = "";
-    html += "<div class='score'>🪐 今日の総合運 " + total + "%</div>";
-
-    html += "<div class='card'><div class='label'>💞 恋愛 " + love + "%</div><div>" +
-            selectText('恋愛運', love) + "</div></div>";
-
-    html += "<div class='card'><div class='label'>💰 金運 " + money + "%</div><div>" +
-            selectText('金運', money) + "</div></div>";
-
-    html += "<div class='card'><div class='label'>💼 仕事 " + work + "%</div><div>" +
-            selectText('仕事運', work) + "</div></div>";
-
-    html += "<div class='card'><div class='label'>💗 健康 " + health + "%</div><div>" +
-            selectText('健康運', health) + "</div></div>";
-
-    // 占いたい日が誕生日と同じ月日なら紙吹雪
-    if (isBirthday(birthStr, now)) {
-        confetti({
-            particleCount: 120,
-            spread: 90,
-            origin: { y: 0.1 },
-            colors: ['#B79DF2', '#ffffff', '#d9c8ff']
-        });
-
-        html += "<div class='birthday-msg'>🎂 お誕生日おめでとうございます\\n今日のあなたに、やさしい流れがありますように。</div>";
-    }
-
-    document.getElementById('result').innerHTML = html;
-}
-
-// ページ読込時に「占いたい日」を今日に初期化
-document.addEventListener('DOMContentLoaded', function() {
-    const t = document.getElementById('targetDate');
-    if (t) {
-        const today = new Date();
-        const y = today.getFullYear();
-        const m = ('0' + (today.getMonth() + 1)).slice(-2);
-        const d = ('0' + today.getDate()).slice(-2);
-        t.value = y + "-" + m + "-" + d;
-    }
+// 初期表示：占いたい日を今日にセット
+document.addEventListener("DOMContentLoaded", function(){
+  const t = document.getElementById("targetDate");
+  if (t){
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = ("0"+(today.getMonth()+1)).slice(-2);
+    const d = ("0"+today.getDate()).slice(-2);
+    t.value = `${y}-${m}-${d}`;
+  }
 });
 </script>
 </head>

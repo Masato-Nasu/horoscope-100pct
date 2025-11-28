@@ -608,31 +608,52 @@ function calc() {
   const rawHealth = asp(norm(tod[Astronomy.Body.Sun]     - nat[Astronomy.Body.Sun])) +
                     asp(norm(tod[Astronomy.Body.Moon]    - nat[Astronomy.Body.Moon]));
 
-  // --- 全体運スコア（太陽〜土星、7天体ぶん） ---
-  const total = mapScoreTotal(rawTotal, 7 * 8);
-
-  // --- 各分野スコアを「全体運とは独立に」一度 0〜100 にマップ ---
-  const love0   = mapScoreCat(rawLove,        8);     // 金星
-  const money0  = mapScoreCat(rawMoney,       8);     // 木星
-  const work0   = mapScoreCat(rawWork,    2 * 8);     // 火星＋土星
-  const health0 = mapScoreCat(rawHealth,  2 * 8);     // 太陽＋月
-
-  // --- 全体運とブレンドして、「極端な一人勝ち／一人負け」を防ぐ ---
-  function blendLove(cat) {
-    // 恋愛は全体運に少し強めに寄せて、突出しすぎを防ぐ
-    return Math.round(cat * 0.5 + total * 0.5);
+  // --- 天体差を -1〜+1 に正規化 ---
+  function clampNorm(x) {
+    if (x < -1) return -1;
+    if (x >  1) return 1;
+    return x;
   }
-  function blendCat(cat) {
-    return Math.round(cat * 0.7 + total * 0.3);
+  const nTotal  = clampNorm(rawTotal / (7 * 8));
+  const nLove   = clampNorm(rawLove   / 8);
+  const nMoney  = clampNorm(rawMoney  / 8);
+  const nWork   = clampNorm(rawWork   / (2 * 8));
+  const nHealth = clampNorm(rawHealth / (2 * 8));
+
+  // 0〜100 にクリップ
+  function clamp01to100(x) {
+    if (x < 0) return 0;
+    if (x > 100) return 100;
+    return Math.round(x);
   }
 
-  let love   = blendLove(love0);
-  let money  = blendCat(money0);
-  let work   = blendCat(work0);
-  let health = blendCat(health0);
+  // --- 占いたい日ごとに安定したランダム＋天体バイアスでスコアを作る ---
+  function scoreFromRandom(label, normBias, baseSpread, astroWeight) {
+    const seed = label + '|' + birthStr + '|' + (targetStr || (now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate()));
+    const rng  = makeRng(stableSeed(seed));
+    const r    = rng();  // 0〜1
 
+    // baseSpread=1.0 で 0〜100、0.7 なら 15〜85 くらいに収まるイメージ
+    const base = 50 + (r - 0.5) * 100 * baseSpread;
+
+    // 天体差に応じて ±25点までシフト（astroWeightで弱めたり強めたり）
+    const astroShift = normBias * 25 * astroWeight;
+
+    const val = base + astroShift;
+    return clamp01to100(val);
+  }
+
+  // --- 全体運＆各分野スコア ---
+  const totalRaw  = scoreFromRandom('total',  nTotal,  1.0, 0.9);
+  let   love      = scoreFromRandom('love',   nLove,   1.0, 0.7);
+  let   money     = scoreFromRandom('money',  nMoney,  1.0, 0.8);
+  let   work      = scoreFromRandom('work',   nWork,   1.0, 0.8);
+  let   health    = scoreFromRandom('health', nHealth, 1.0, 0.8);
+
+  const total = totalRaw;
 
   const seedBase =
+ =
     birthStr + '|' +
     (targetStr || (now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate()));
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>本格星占い（出生地・本日の占い付き）</title>
+<title>本格星占い — タイムゾーン自動判定・ハウス計算・ホロスコープ描画</title>
 <meta name="theme-color" content="#6b46c1" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪐</text></svg>">
 
@@ -11,28 +11,28 @@
 <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
 
 <style>
-  :root { --accent:#6b46c1; --bg:#f6f7fb; --card:#fff; --muted:#666; }
-  html,body{height:100%;margin:0;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;background:var(--bg);color:#222}
-  .wrap{max-width:920px;margin:24px auto;padding:18px}
-  header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-  h1{margin:0;font-size:1.25rem;color:var(--accent)}
-  .card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,0.06);margin-bottom:14px}
-  label{display:block;margin-bottom:6px;font-weight:600;color:#333}
-  .row{display:flex;gap:8px}
-  input[type="date"], input[type="time"], input[type="text"], select{flex:1;padding:10px;border-radius:8px;border:1px solid #e6e6f0;font-size:14px}
-  button{padding:10px 14px;border-radius:10px;border:none;background:var(--accent);color:white;font-weight:700;cursor:pointer}
-  .small{font-size:0.9rem;color:var(--muted)}
-  .result-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f6}
-  .planet-name{font-weight:700}
-  .planet-sign{background:#f3e8ff;color:var(--accent);padding:6px 10px;border-radius:16px;font-weight:700}
-  #status{font-size:0.95rem;margin-bottom:6px;color:var(--muted)}
-  #luckyResult{padding:12px;border-radius:10px;background:#fffbe6;border:1px solid #ffe58f;margin-bottom:12px;font-weight:700}
-  .interpretation{margin-top:10px;padding:12px;border-radius:10px;background:#f7f6ff;border:1px solid #efe8ff}
-  .interpretation h3{margin:0 0 8px 0;font-size:1rem}
-  pre.debug{background:#f7f7fb;padding:8px;border-radius:8px;overflow:auto;font-size:12px}
-  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media (max-width:820px){ .two-col{grid-template-columns:1fr} }
-  .aspects-list li{margin:6px 0}
+:root{--accent:#6b46c1;--bg:#f6f7fb;--card:#fff;--muted:#666}
+html,body{height:100%;margin:0;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;background:var(--bg);color:#111}
+.wrap{max-width:980px;margin:20px auto;padding:18px}
+header{display:flex;gap:12px;align-items:center}
+h1{margin:0;color:var(--accent);font-size:1.15rem}
+.card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 20px rgba(0,0,0,0.06);margin-top:12px}
+.row{display:flex;gap:8px}
+input,select,button{font-size:14px}
+input[type="date"],input[type="time"],input[type="text"],select{flex:1;padding:10px;border-radius:8px;border:1px solid #e9e9f2}
+button{padding:9px 12px;border-radius:10px;border:none;background:var(--accent);color:white;font-weight:700;cursor:pointer}
+.small{font-size:0.88rem;color:var(--muted)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:820px){ .form-grid{grid-template-columns:1fr} }
+.result-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f6}
+.planet-name{font-weight:700}
+.planet-sign{background:#f3e8ff;color:var(--accent);padding:6px 10px;border-radius:16px;font-weight:700}
+.canvas-wrap{text-align:center;margin-top:12px}
+#chart{width:100%;max-width:720px;height:720px;background:#fff;border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,0.04)}
+.controls{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.badge{background:#f3f3ff;padding:6px 8px;border-radius:8px;color:var(--muted);font-weight:700}
+.debug-pre{background:#f7f7fb;padding:8px;border-radius:8px;overflow:auto;font-size:12px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -40,80 +40,83 @@
     <header>
       <div style="font-size:34px">🪐</div>
       <div>
-        <h1>本格星占い — 出生地 + 本日の占い</h1>
-        <div class="small">出生地入力と今日のトランジットによる「本日の占い」を追加しました。</div>
+        <h1>本格星占い — タイムゾーン自動判定・ハウス計算・ホロスコープ描画</h1>
+        <div class="small">出生地から実用的にタイムゾーンを推定し、Asc/MC を計算。Whole/Equal ハウス表示とホイールを描画します。</div>
       </div>
     </header>
 
-    <div id="status" class="card">
-      <div id="statusText">起動中…ライブラリを確認しています。</div>
-      <div class="small" style="margin-top:8px">Service Worker が登録されている場合は解除します（キャッシュ問題回避）。</div>
-    </div>
+    <div id="status" class="card small">初期化中…Astronomy Engine を確認しています。Service Worker があれば解除します。</div>
 
     <div class="card">
-      <div class="two-col">
+      <div class="form-grid">
         <div>
-          <label for="birthDate">生年月日（必須）</label>
-          <div class="row" style="margin-bottom:8px">
+          <label>生年月日（必須）</label>
+          <div class="row" style="margin-top:6px">
             <input id="birthDate" type="date" />
             <input id="birthTime" type="time" value="12:00" />
           </div>
-          <label for="tzOffset">タイムゾーン補正（任意、例: +09:00）</label>
-          <input id="tzOffset" type="text" placeholder="例: +09:00（空欄でブラウザローカルを使用）" />
-          <div style="margin-top:10px;display:flex;gap:8px">
-            <button id="goBtn">鑑定を実行</button>
+          <label style="margin-top:8px">タイムゾーン補正（任意）</label>
+          <input id="tzOffset" type="text" placeholder="例: +09:00（自動推定 or 上書き可）" />
+          <div class="controls" style="margin-top:8px">
+            <button id="tzFromBrowser">ブラウザの現地 TZ を使う</button>
+            <button id="calcBtn">鑑定を実行</button>
             <button id="exampleBtn" style="background:#444">サンプル（2000-01-01 12:00）</button>
-            <button id="debugBtn" style="background:#888">デバッグ出力</button>
+            <button id="debugBtn" style="background:#888">デバッグ表示</button>
           </div>
         </div>
 
         <div>
-          <label>出生地（プリセットまたは緯度経度で指定）</label>
-          <select id="cityPreset">
+          <label>出生地（プリセット→緯度経度を自動入力）</label>
+          <select id="cityPreset" style="margin-top:6px">
             <option value="">プリセットを選択（または緯度経度を直接入力）</option>
-            <option value="tokyo">東京 — (35.6812, 139.7671)</option>
-            <option value="kyoto">京都 — (35.0116, 135.7681)</option>
-            <option value="sapporo">札幌 — (43.0642, 141.3469)</option>
-            <option value="london">ロンドン — (51.5074, -0.1278)</option>
-            <option value="newyork">ニューヨーク — (40.7128, -74.0060)</option>
+            <option value="tokyo">東京 — (35.6812, 139.7671) — +09:00</option>
+            <option value="kyoto">京都 — (35.0116, 135.7681) — +09:00</option>
+            <option value="sapporo">札幌 — (43.0642, 141.3469) — +09:00</option>
+            <option value="london">ロンドン — (51.5074, -0.1278) — +00:00</option>
+            <option value="newyork">NY — (40.7128, -74.0060) — -05:00</option>
           </select>
+
           <div class="row" style="margin-top:8px">
             <input id="birthLat" type="text" placeholder="緯度（例: 35.6812）" />
             <input id="birthLon" type="text" placeholder="経度（例: 139.7671）" />
           </div>
-          <div class="small" style="margin-top:8px">※ タイムゾーンは上の欄で明示してください。自動タイムゾーン検索は未実装（将来対応可）。</div>
+
+          <label style="margin-top:8px">ハウス方式</label>
+          <select id="houseMethod" style="margin-top:6px">
+            <option value="equal">Equal（アセンダント起点で30°ごと）</option>
+            <option value="whole">Whole Sign（アセンダントが含む星座を第1室）</option>
+          </select>
+
+          <div class="small" style="margin-top:8px">※ 高度な Placidus 等は次フェーズで追加可能です。</div>
         </div>
       </div>
     </div>
 
-    <div id="resultArea" class="card" style="display:none">
-      <div id="luckyResult"></div>
+    <div id="output" class="card" style="display:none">
+      <div id="lucky" class="small"></div>
 
       <div id="planetList"></div>
 
-      <div id="interpretArea" class="interpretation" style="display:none;">
-        <h3>簡易リーディング（自動生成）</h3>
-        <div id="interpretSummary" class="small"></div>
-        <ul id="interpretPerPlanet"></ul>
+      <div class="canvas-wrap">
+        <div class="small" style="margin-bottom:6px">ホロスコープ（ホイール）</div>
+        <canvas id="chart" width="720" height="720"></canvas>
+        <div class="legend">
+          <div class="badge">Asc = アセンダント</div>
+          <div class="badge">MC = ミッドヘブン</div>
+          <div class="badge">表示: 太陽〜土星</div>
+        </div>
       </div>
 
-      <div id="todayArea" style="margin-top:12px;display:none;">
-        <h3>本日の占い（今日のトランジット）</h3>
-        <div id="todaySummary" class="small"></div>
-        <ul id="todayAspects" class="aspects-list"></ul>
-      </div>
+      <div id="todayTransit" style="margin-top:12px"></div>
 
-      <div style="margin-top:10px;">
-        <div class="small">詳しいデバッグ（ライブラリの生データ）:</div>
-        <pre id="debugOut" class="debug" style="display:none"></pre>
-      </div>
+      <pre id="debugInfo" class="debug-pre" style="display:none"></pre>
     </div>
 
-    <footer class="small" style="margin-top:10px">画像は不要・DataURI 使用 / manifest / sw.js があってもまずはブラウザだけで動作します</footer>
   </div>
 
 <script>
-/* 了解しました — 出生地入力と本日の占いを追加した単一ファイル版 */
+/* --- ユーティリティと定義 --- */
+const SIGNS = ['♈ 牡羊座','♉ 牡牛座','♊ 双子座','♋ 蟹座','♌ 獅子座','♍ 乙女座','♎ 天秤座','♏ 蠍座','♐ 射手座','♑ 山羊座','♒ 水瓶座','♓ 魚座'];
 const PLANETS = [
   { body: Astronomy.Body.Sun, label: '☀️ 太陽' },
   { body: Astronomy.Body.Moon, label: '🌙 月' },
@@ -123,75 +126,81 @@ const PLANETS = [
   { body: Astronomy.Body.Jupiter, label: '♃ 木星' },
   { body: Astronomy.Body.Saturn, label: '♄ 土星' },
 ];
-const SIGNS = ['♈ 牡羊座','♉ 牡牛座','♊ 双子座','♋ 蟹座','♌ 獅子座','♍ 乙女座','♎ 天秤座','♏ 蠍座','♐ 射手座','♑ 山羊座','♒ 水瓶座','♓ 魚座'];
-const PLANET_MEANING = {
-  '☀️ 太陽': '自己表現・アイデンティティを表します。', 
-  '🌙 月': '感情や無意識、安心感に関わります。', 
-  '☿ 水星': '思考・コミュニケーションの様式を示します。', 
-  '♀ 金星': '愛情・美意識・人との調和を表します。', 
-  '♂ 火星': '行動力・エネルギーの向けどころを示します。', 
-  '♃ 木星': '成長・拡大・幸運をもたらす傾向を示します。', 
-  '♄ 土星': '責任・制限・成熟のテーマを示します。'
-};
-const SIGN_KEYWORDS = {
-  '牡羊座': '積極性・直感的・挑戦的',
-  '牡牛座': '安定志向・感覚重視・忍耐',
-  '双子座': '好奇心・情報交換・適応力',
-  '蟹座': '家庭的・保護欲・感受性',
-  '獅子座': '表現力・自信・創造性',
-  '乙女座': '実務的・分析的・繊細',
-  '天秤座': '協調・美意識・社交性',
-  '蠍座': '情熱・変容・洞察力',
-  '射手座': '拡張志向・探求・楽観',
-  '山羊座': '責任感・計画性・実行力',
-  '水瓶座': '独創性・未来志向・友愛',
-  '魚座': '共感・夢想・直感力'
-};
+// J2000 黄道傾斜角（十分実用的な定数）。ライブラリに候補関数があれば将来差し替え可。
+const EPSILON_DEG = 23.4392911;
 
-/* ヘルパー */
-function safeLog(...args){ if(console && console.log) console.log(...args); }
-async function unregisterAllServiceWorkers(){ if('serviceWorker' in navigator){ try{ const regs = await navigator.serviceWorker.getRegistrations(); for(const r of regs) await r.unregister(); safeLog('ServiceWorker: unregistered', regs);}catch(e){safeLog(e);} } }
-function checkLibraryReady(timeout=4000){ return new Promise((res,rej)=>{ const start=Date.now();(function poll(){ if(typeof Astronomy !== 'undefined' && Astronomy.Body) res(true); else if(Date.now()-start>timeout) rej(new Error('Astronomy load failed')); else setTimeout(poll,120); })(); }); }
+function safeLog(...a){ if(console && console.log) console.log(...a); }
 
+/* SW解除 */
+async function unregisterAllServiceWorkers(){
+  if('serviceWorker' in navigator){
+    try{
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for(const r of regs) await r.unregister();
+      safeLog('ServiceWorker: unregistered', regs);
+    }catch(e){ safeLog('SW unregister error', e); }
+  }
+}
+
+/* ライブラリ読み込み確認 */
+function checkAstronomyReady(timeout=4000){
+  return new Promise((resolve,reject)=>{
+    const start = Date.now();
+    (function poll(){
+      if(typeof Astronomy !== 'undefined' && Astronomy.Body) resolve(true);
+      else if(Date.now() - start > timeout) reject(new Error('Astronomy load timeout'));
+      else setTimeout(poll,100);
+    })();
+  });
+}
+
+/* 日付パース（堅牢） */
 function parseUserDate(dateStr, timeStr, tzOffsetStr){
   try{
     if(!dateStr) return null;
     let normalized = dateStr.replace(/\//g,'-').trim();
     const parts = normalized.split('-').map(s=>s.trim()).filter(Boolean);
-    if(parts.length>=3){
-      const y=parseInt(parts[0],10), m=parseInt(parts[1],10), d=parseInt(parts[2],10);
-      if(Number.isFinite(y)&&Number.isFinite(m)&&Number.isFinite(d)){
-        const time=(timeStr&&timeStr.trim())?timeStr.trim():'12:00';
+    if(parts.length >= 3){
+      const y = parseInt(parts[0],10), m = parseInt(parts[1],10), d = parseInt(parts[2],10);
+      if(Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(d)){
+        const time = (timeStr && timeStr.trim()) ? timeStr.trim() : '12:00';
         if(tzOffsetStr && /^\s*[+-]\d{2}:\d{2}\s*$/.test(tzOffsetStr)){
           const iso = `${String(y).padStart(4,'0')}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}T${time}:00${tzOffsetStr}`;
-          const dt = new Date(iso); if(isNaN(dt.getTime())) return null; return dt;
+          const dt = new Date(iso);
+          if(isNaN(dt.getTime())) return null;
+          return dt;
         }
-        const [hh,mm]=time.split(':').map(v=>parseInt(v,10)||0);
-        const dtLocal = new Date(y,m-1,d,hh,mm,0,0);
+        const [hh,mm] = time.split(':').map(v=>parseInt(v,10)||0);
+        const dtLocal = new Date(y, m-1, d, hh, mm, 0, 0);
         if(!isNaN(dtLocal.getTime())) return dtLocal;
         const iso2 = `${String(y).padStart(4,'0')}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}T${time}:00`;
-        const dt2 = new Date(iso2); if(!isNaN(dt2.getTime())) return dt2;
+        const dt2 = new Date(iso2);
+        if(!isNaN(dt2.getTime())) return dt2;
       }
     }
-    const parsed = new Date(dateStr); return isNaN(parsed.getTime())?null:parsed;
+    const parsed = new Date(dateStr);
+    return isNaN(parsed.getTime()) ? null : parsed;
   }catch(e){ safeLog('parseUserDate',e); return null; }
 }
 
-function norm360(x){ if(!Number.isFinite(x)) return NaN; let v = x % 360; if(v < 0) v += 360; return v; }
-function angleDiff(a,b){ if(!Number.isFinite(a)||!Number.isFinite(b)) return NaN; let diff = Math.abs(norm360(a)-norm360(b)); if(diff>180) diff=360-diff; return diff; }
-
+/* AstroTime 互換ラッパー */
 function toAstroTime(jsDate){
   try{
     if(typeof Astronomy === 'undefined') return jsDate;
     if(typeof Astronomy.AstroTime === 'function') return new Astronomy.AstroTime(jsDate);
-    if(typeof Astronomy.MakeTime === 'function'){ const y=jsDate.getFullYear(), m=jsDate.getMonth()+1, d=jsDate.getDate(); const hh=jsDate.getHours(), mm=jsDate.getMinutes(), ss=jsDate.getSeconds(); return Astronomy.MakeTime(y,m,d,hh,mm,ss); }
+    if(typeof Astronomy.MakeTime === 'function'){
+      const y = jsDate.getFullYear(), m = jsDate.getMonth()+1, d = jsDate.getDate();
+      const hh = jsDate.getHours(), mm = jsDate.getMinutes(), ss = jsDate.getSeconds();
+      return Astronomy.MakeTime(y,m,d,hh,mm,ss);
+    }
     return jsDate;
   }catch(e){ safeLog('toAstroTime',e); return jsDate; }
 }
 
+/* ecliptic 経度取得（elon/lon フォールバック） */
 function eclipticLongitude(ecl){
   if(!ecl) return NaN;
-  const candidates = ['lon','elon','el','lambda'];
+  const candidates = ['elon','lon','el','lambda'];
   for(const k of candidates){ if(Object.prototype.hasOwnProperty.call(ecl,k)){ const v = Number(ecl[k]); if(Number.isFinite(v)) return v; } }
   if(ecl && typeof ecl === 'object'){
     for(const val of Object.values(ecl)){
@@ -200,213 +209,367 @@ function eclipticLongitude(ecl){
   }
   return NaN;
 }
+function norm360(x){ if(!Number.isFinite(x)) return NaN; let v = x % 360; if(v<0) v+=360; return v; }
+function angleDiff(a,b){ if(!Number.isFinite(a)||!Number.isFinite(b)) return NaN; let d = Math.abs(norm360(a)-norm360(b)); if(d>180) d=360-d; return d; }
 
-/* 都市プリセットを緯度経度欄に反映 */
+/* --- タイムゾーン自動推定（実用近似） --- */
+function approxTzFromLon(lon){
+  // lon in degrees (-180..180)
+  if(!Number.isFinite(lon)) return '';
+  // round to nearest hour
+  const offset = Math.round(lon / 15);
+  const sign = offset >= 0 ? '+' : '-';
+  const hh = String(Math.abs(offset)).padStart(2,'0');
+  return `${sign}${hh}:00`;
+}
+
+/* 都市プリセット → 緯度経度 / 推定 tz をセット */
 document.getElementById('cityPreset').addEventListener('change', (e)=>{
   const v = e.target.value;
   const map = {
-    tokyo: [35.6812,139.7671],
-    kyoto: [35.0116,135.7681],
-    sapporo: [43.0642,141.3469],
-    london: [51.5074,-0.1278],
-    newyork: [40.7128,-74.0060]
+    tokyo: {lat:35.6812, lon:139.7671, tz:'+09:00'},
+    kyoto: {lat:35.0116, lon:135.7681, tz:'+09:00'},
+    sapporo:{lat:43.0642, lon:141.3469, tz:'+09:00'},
+    london:{lat:51.5074, lon:-0.1278, tz:'+00:00'},
+    newyork:{lat:40.7128, lon:-74.0060, tz:'-05:00'}
   };
-  if(v && map[v]){
-    document.getElementById('birthLat').value = String(map[v][0]);
-    document.getElementById('birthLon').value = String(map[v][1]);
-  }
+  if(map[v]){ document.getElementById('birthLat').value = map[v].lat; document.getElementById('birthLon').value = map[v].lon; document.getElementById('tzOffset').value = map[v].tz; }
 });
 
-/* 解釈生成（今日の占い用テンプレ） */
-function aspectNameAndRange(diff){
-  const abs = Math.abs(diff);
-  if(abs < 5) return {name: '合（コンジャンクション）', score: 100};
-  if(Math.abs(abs-60) <= 6) return {name: 'セクスタイル（60°）', score: 70};
-  if(Math.abs(abs-90) <= 6) return {name: 'スクエア（90°）', score: 50};
-  if(Math.abs(abs-120) <= 8) return {name: 'トライン（120°）', score: 80};
-  if(Math.abs(abs-180) <= 8) return {name: 'オポジション（180°）', score: 40};
-  return null;
+/* ブラウザの現地タイムゾーンを取得してオフセット例を挿入（簡易） */
+document.getElementById('tzFromBrowser').addEventListener('click', ()=>{
+  try{
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    // ブラウザ tz 名から現在のオフセットを計算（例: Asia/Tokyo -> +09:00）
+    // ここは簡易: new Date().toLocaleString('en-US', {timeZone: tz}) で現在時刻を得て offset を計算
+    const now = new Date();
+    const local = new Date(now.toLocaleString('en-US', {timeZone: tz}));
+    // difference between local (in tz) and UTC in hours:
+    const diff = (local.getTime() - now.getTime()) / 3600000;
+    const sign = diff >= 0 ? '+' : '-';
+    const hh = String(Math.floor(Math.abs(diff))).padStart(2,'0');
+    const mm = String(Math.round((Math.abs(diff) - Math.floor(Math.abs(diff))) * 60)).padStart(2,'0');
+    document.getElementById('tzOffset').value = `${sign}${hh}:${mm}`;
+    alert(`ブラウザのタイムゾーン：${tz}（現在のオフセットを推定して入力しました：${document.getElementById('tzOffset').value}）`);
+  }catch(e){ safeLog(e); alert('タイムゾーン自動取得に失敗しました。'); }
+});
+
+/* --- Asc, MC の計算（SiderealTime を利用） --- */
+/* 参考式（文献）：Wikipedia 等にある標準式を採用
+   LST (deg) = (GAST_hours + lon/15) * 15
+   MC  = atan2( sin(LST_rad) * cos(eps), cos(LST_rad) )  (deg)
+   ASC = atan2( -cos(LST_rad), sin(LST_rad)*cos(eps) + tan(lat_rad)*sin(eps) )  (deg)
+   上記は標準的な処理で四分位を atan2 が扱うため 0..360 正規化を行う。
+*/
+function computeAscMc(astime, lon_deg, lat_deg){
+  // astime is AstroTime or Date acceptable by Astronomy.SiderealTime
+  // lon_deg: east positive
+  // lat_deg: north positive
+  let gastHours;
+  try{
+    if(typeof Astronomy.SiderealTime === 'function'){
+      // Astronomy.SiderealTime expects an AstroTime-like object (we wrap earlier), returns GAST in sidereal hours (0..24)
+      gastHours = Astronomy.SiderealTime(astime);
+    } else {
+      // fallback: approximate using Date -> not ideal
+      const d = (astime instanceof Date) ? astime : (astime && astime.date) ? astime.date : new Date();
+      // approximate: use current UTC hours scaled. This is rough fallback and should rarely be used.
+      const utcHours = d.getUTCHours() + d.getUTCMinutes()/60 + d.getUTCSeconds()/3600;
+      gastHours = (utcHours * 1.00273790935) % 24;
+    }
+  }catch(e){ safeLog('SiderealTime error', e); throw e; }
+
+  // Local Sidereal Time (hours)
+  const lstHours = (gastHours + lon_deg / 15) % 24;
+  const lstDeg = lstHours * 15; // degrees
+  const lstRad = lstDeg * Math.PI / 180;
+  const latRad = lat_deg * Math.PI / 180;
+  const epsRad = EPSILON_DEG * Math.PI / 180;
+
+  // MC
+  const mcRad = Math.atan2(Math.sin(lstRad) * Math.cos(epsRad), Math.cos(lstRad));
+  let mcDeg = mcRad * 180/Math.PI;
+  mcDeg = norm360(mcDeg);
+
+  // Ascendant:
+  // Using expression: atan2( -cos LST, sin LST * cos eps + tan phi * sin eps )
+  const x = -Math.cos(lstRad);
+  const y = Math.sin(lstRad) * Math.cos(epsRad) + Math.tan(latRad) * Math.sin(epsRad);
+  let ascRad = Math.atan2(y, x);
+  let ascDeg = ascRad * 180/Math.PI;
+  ascDeg = norm360(ascDeg);
+  // Theoretical adjustment to choose rising point:
+  // By convention ensure Asc is the ecliptic longitude of the rising point (intersection east)
+  // If ascDeg < 180 add 180 else subtract 180 (per Meeus and wiki)
+  if(ascDeg < 180) ascDeg = ascDeg + 180;
+  else ascDeg = ascDeg - 180;
+  ascDeg = norm360(ascDeg);
+
+  return { lstHours, lstDeg, ascDeg, mcDeg, gastHours };
 }
 
-function shortAspectInterpret(planetLabel, aspectName){
-  // 簡潔な文言テンプレート（必要に応じて増やしてください）
-  const base = {
-    '☀️ 太陽': '行動や自己表現に影響します。',
-    '🌙 月': '感情面や気分に影響します。',
-    '☿ 水星': '思考や伝達が活性化します。',
-    '♀ 金星': '関係・愛情・金銭運に関わります。',
-    '♂ 火星': '行動力や衝動が刺激されます。',
-    '♃ 木星': '拡大・チャンスの流れが出やすいです。',
-    '♄ 土星': '制約や責任、現実的な課題が表面化します。'
-  };
-  const ptext = base[planetLabel] || '';
-  return `${planetLabel} が ${aspectName}：${ptext}`;
+/* ハウスカスプ（Equal / Whole） */
+function computeHouseCusps(ascDeg, method='equal'){
+  // returns array[12] of cusp degrees, house 1 is index 0
+  if(method === 'whole'){
+    // whole sign: find sign start that contains asc
+    const signIndex = Math.floor(ascDeg / 30) % 12;
+    const signStart = signIndex * 30;
+    const cusps = [];
+    for(let i=0;i<12;i++){
+      cusps.push(norm360(signStart + i*30));
+    }
+    return cusps;
+  } else {
+    // equal houses: house 1 cusp = ascDeg, then +30n
+    const cusps = [];
+    for(let i=0;i<12;i++) cusps.push(norm360(ascDeg + i*30));
+    return cusps;
+  }
 }
 
-/* メイン計算 — 生年月日からネイタル算出、今日のトランジット解析 */
-async function calculate(showDebug=false){
+/* ハウス番号を取得（度数→何室） */
+function houseFromLongitude(lonDeg, cusps){
+  // find highest cusp <= lon in circular sense; if lon < min cusp adjust
+  for(let h=11; h>=0; h--){
+    const cusp = cusps[h];
+    // compute diff = (lon - cusp) normalized 0..360
+    const d = norm360(lonDeg - cusp);
+    if(d >= 0 && d < 30) return h+1; // houses 1..12
+  }
+  return 1;
+}
+
+/* --- ホイール描画 --- */
+function drawChart(cusps, planets, ascDeg, mcDeg){
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+  const cx = w/2, cy = h/2;
+  const R = Math.min(w,h)/2 - 30;
+
+  // background
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.rect(0,0,w,h); ctx.fill();
+
+  // outer circle
+  ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
+
+  // draw 12 house sectors and signs
+  for(let i=0;i<12;i++){
+    const start = cusps[i];
+    const end = norm360(start + 30);
+    // compute canvas angle: we map ecliptic lon -> canvas angle where 0deg ecliptic at 3 o'clock and increases CCW.
+    // convert lon -> canvas rad: rad = (lon - ascDeg) * deg2rad * (-1) + Math.PI/2  (map so Asc at left visually)
+    // Simpler: place 0 at top: rad = (lon - 90) * PI/180. We'll instead anchor by Asc so Asc is at left (270deg canvas).
+    // Compute label position at middle of segment
+    const mid = norm360(start + 15);
+    const angle = ((mid - ascDeg) - 90) * Math.PI/180; // shift so asc at 90deg from x-axis
+    // draw dividing line at cusp
+    const cuspAngle = ((start - ascDeg) - 90) * Math.PI/180;
+    ctx.strokeStyle = '#eee'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx + Math.cos(cuspAngle)*R, cy + Math.sin(cuspAngle)*R); ctx.stroke();
+
+    // sign label
+    ctx.fillStyle = '#666'; ctx.font = '14px system-ui';
+    const lx = cx + Math.cos(angle) * (R - 22);
+    const ly = cy + Math.sin(angle) * (R - 22);
+    // sign name (Japanese) from SIGNS
+    const signIndex = Math.floor(start/30) % 12;
+    ctx.fillText(SIGNS[signIndex], lx - 18, ly + 6);
+  }
+
+  // draw inner circle and grid
+  ctx.strokeStyle = '#f0f0f6'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx,cy,R*0.7,0,Math.PI*2); ctx.stroke();
+
+  // draw MC marker
+  const mcAngle = ((mcDeg - ascDeg) - 90) * Math.PI/180;
+  ctx.fillStyle = '#e26'; ctx.beginPath(); ctx.arc(cx + Math.cos(mcAngle)*(R*0.85), cy + Math.sin(mcAngle)*(R*0.85), 6, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#333'; ctx.font = '12px system-ui'; ctx.fillText('MC', cx + Math.cos(mcAngle)*(R*0.85) - 8, cy + Math.sin(mcAngle)*(R*0.85) + 20);
+
+  // draw Asc marker
+  const ascAngle = ((ascDeg - ascDeg) - 90) * Math.PI/180; // simplifies to -90deg
+  ctx.fillStyle = '#26a'; ctx.beginPath(); ctx.arc(cx + Math.cos(ascAngle)*(R*0.85), cy + Math.sin(ascAngle)*(R*0.85), 6, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#333'; ctx.fillText('Asc', cx + Math.cos(ascAngle)*(R*0.85) - 12, cy + Math.sin(ascAngle)*(R*0.85) + 20);
+
+  // draw planets (label with emoji and degree inside)
+  ctx.font = '14px system-ui';
+  planets.forEach(p=>{
+    if(!Number.isFinite(p.lon)) return;
+    const angle = ((p.lon - ascDeg) - 90) * Math.PI/180;
+    const rpos = R*0.55;
+    const x = cx + Math.cos(angle)*rpos;
+    const y = cy + Math.sin(angle)*rpos;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(x,y,18,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#ddd'; ctx.stroke();
+    ctx.fillStyle = '#111';
+    const label = `${p.label} ${ (Number.isFinite(p.degree) ? p.degree.toFixed(1)+'°':'—') }`;
+    ctx.fillText(label, x-20, y+5);
+  });
+}
+
+/* --- 主要ロジック: 計算 + 描画 --- */
+async function runCalculation(showDebug=false){
+  // inputs
   const dateInput = document.getElementById('birthDate').value;
   const timeInput = document.getElementById('birthTime').value;
-  const tzInput = document.getElementById('tzOffset').value.trim();
-  const latInput = parseFloat(document.getElementById('birthLat').value);
-  const lonInput = parseFloat(document.getElementById('birthLon').value);
+  let tzInput = document.getElementById('tzOffset').value.trim();
+  const lat = parseFloat(document.getElementById('birthLat').value);
+  const lon = parseFloat(document.getElementById('birthLon').value);
+  const houseMethod = document.getElementById('houseMethod').value;
+
+  // if tz empty and lat/lon present, propose approx
+  if(!tzInput && Number.isFinite(lon)){
+    tzInput = approxTzFromLon(lon);
+    // write proposed to field but leave editable
+    document.getElementById('tzOffset').value = tzInput;
+  }
 
   const natalDate = parseUserDate(dateInput, timeInput, tzInput);
-  if(!natalDate){ alert('生年月日が正しくありません。形式を確認してください。'); return; }
-  if(typeof Astronomy === 'undefined' || !Astronomy.Body){ alert('Astronomy Engine が読み込まれていません。ページを再読み込みしてください。'); return; }
+  if(!natalDate){
+    alert('生年月日 / 時刻が正しくありません。形式を確認してください（例: 2000-01-01, 12:00）。');
+    return;
+  }
+  if(typeof Astronomy === 'undefined' || !Astronomy.Body){
+    alert('Astronomy Engine が読み込まれていません。ページを再読み込みしてください。');
+    return;
+  }
 
+  // prepare AstroTime
   const natalAstro = toAstroTime(natalDate);
 
-  // --- natal planets ---
-  const natal = [];
+  // compute natal planets
+  const natalPlanets = [];
   let natalJupiterLon = NaN;
-  const debugRecords = [];
+  const debug = { planets: [] };
+
   for(const p of PLANETS){
     try{
       const vec = Astronomy.GeoVector(p.body, natalAstro, true);
       const ecl = Astronomy.Ecliptic(vec);
       const lonRaw = eclipticLongitude(ecl);
-      const lon = norm360(lonRaw);
-      const signIndex = Number.isFinite(lon) ? Math.floor(lon/30) % 12 : null;
-      const degree = Number.isFinite(lon) ? (lon % 30) : NaN;
-      natal.push({ label: p.label, body: p.body, lon, sign: signIndex!==null ? SIGNS[signIndex] : '計算不能', degree });
-      if(p.body === Astronomy.Body.Jupiter && Number.isFinite(lon)) natalJupiterLon = lon;
-      debugRecords.push({planet:p.label, lonRaw, lon, ecl});
-    }catch(e){ safeLog(e); natal.push({ label: p.label, body: p.body, lon: NaN, sign: '計算不能', degree: NaN }); debugRecords.push({planet:p.label, error:String(e)}); }
+      const lonNorm = norm360(lonRaw);
+      const degree = Number.isFinite(lonNorm) ? (lonNorm % 30) : NaN;
+      natalPlanets.push({ label: p.label, lon: lonNorm, degree });
+      if(p.body === Astronomy.Body.Jupiter && Number.isFinite(lonNorm)) natalJupiterLon = lonNorm;
+      debug.planets.push({planet:p.label, lonRaw, lon:lonNorm});
+    }catch(e){ safeLog('planet calc err', e); natalPlanets.push({ label: p.label, lon: NaN, degree: NaN }); debug.planets.push({planet:p.label, error:String(e)}); }
   }
 
-  // --- today's planets ---
-  const today = new Date();
-  const todayAstro = toAstroTime(today);
-  const todayPlanets = [];
+  // compute Asc/MC
+  const astimeForSidereal = natalAstro;
+  let ascMc;
+  try{
+    ascMc = computeAscMc(astimeForSidereal, Number.isFinite(lon) ? lon : 139.7671, Number.isFinite(lat) ? lat : 35.6812);
+  }catch(e){
+    safeLog('asc compute error', e);
+    alert('アセンダントの計算に失敗しました。コンソールのデバッグを確認してください。');
+    return;
+  }
+  const ascDeg = ascMc.ascDeg;
+  const mcDeg = ascMc.mcDeg;
+
+  // house cusps
+  const cusps = computeHouseCusps(ascDeg, houseMethod);
+
+  // today jupiter
   let todayJupiterLon = NaN;
-  for(const p of PLANETS){
-    try{
-      const vec = Astronomy.GeoVector(p.body, todayAstro, true);
-      const ecl = Astronomy.Ecliptic(vec);
-      const lon = norm360(eclipticLongitude(ecl));
-      const signIndex = Number.isFinite(lon) ? Math.floor(lon/30)%12 : null;
-      const degree = Number.isFinite(lon) ? (lon % 30) : NaN;
-      todayPlanets.push({ label: p.label, body: p.body, lon, sign: signIndex!==null?SIGNS[signIndex]:'計算不能', degree });
-      if(p.body === Astronomy.Body.Jupiter && Number.isFinite(lon)) todayJupiterLon = lon;
-      debugRecords.push({planet:`today ${p.label}`, lon});
-    }catch(e){ safeLog(e); todayPlanets.push({ label: p.label, lon: NaN, sign: '計算不能', degree: NaN }); debugRecords.push({planet:`today ${p.label}`, error:String(e)}); }
-  }
+  try{
+    const todayAst = toAstroTime(new Date());
+    const vec = Astronomy.GeoVector(Astronomy.Body.Jupiter, todayAst, true);
+    const ecl = Astronomy.Ecliptic(vec);
+    todayJupiterLon = norm360(eclipticLongitude(ecl));
+    debug.todayJupiter = todayJupiterLon;
+  }catch(e){ safeLog('today jupiter err', e); }
 
-  // --- build planet list HTML (natal) ---
+  // produce planet list html + house assignment
   let html = '';
-  for(const it of natal){
-    const degText = Number.isFinite(it.degree) ? it.degree.toFixed(1) + '°' : '—';
-    html += `<div class="result-row"><div class="planet-name">${it.label}</div><div class="planet-sign">${it.sign} ${degText}</div></div>`;
-  }
+  natalPlanets.forEach(p=>{
+    const degText = Number.isFinite(p.degree) ? p.degree.toFixed(1)+'°' : '—';
+    const signIndex = Number.isFinite(p.lon) ? Math.floor(p.lon / 30) % 12 : null;
+    const signText = signIndex !== null ? SIGNS[signIndex] : '—';
+    const houseNo = Number.isFinite(p.lon) ? houseFromLongitude(p.lon, cusps) : '—';
+    html += `<div class="result-row"><div class="planet-name">${p.label}</div><div class="planet-sign">${signText} ${degText}  — 第${houseNo}室</div></div>`;
+  });
 
-  // --- Jupiter comparison and primary lucky message ---
-  let luckHtml = '木星の比較情報が取得できませんでした。';
+  // luck message (jupiter compare)
+  let luckHtml = '';
   if(Number.isFinite(natalJupiterLon) && Number.isFinite(todayJupiterLon)){
     const diff = angleDiff(natalJupiterLon, todayJupiterLon);
-    if(diff < 8){
-      luckHtml = `<div style="color:#1b5e20">✨ 現在は木星帰還に近く、12年に一度の幸運期に入る可能性が高いです（差 ${diff.toFixed(1)}°）。</div>`;
-    } else if(diff < 20){
-      luckHtml = `<div style="color:#2e7d32">🌟 木星は比較的近く、追い風が感じられる時期です（差 ${diff.toFixed(1)}°）。</div>`;
-    } else {
-      luckHtml = `<div>🔍 木星の影響は強くは見えません（差 ${diff.toFixed(1)}°）。</div>`;
-    }
-    luckHtml += `<div class="small" style="margin-top:8px">出生の木星: ${natalJupiterLon.toFixed(1)}° / 今日の木星: ${todayJupiterLon.toFixed(1)}°</div>`;
+    if(diff < 8) luckHtml = `✨ <strong>木星帰還に近い（差 ${diff.toFixed(1)}°）。12年に一度の幸運期が近い可能性があります。</strong>`;
+    else if(diff < 20) luckHtml = `🌟 木星は比較的近い（差 ${diff.toFixed(1)}°） — 追い風が期待できます。`;
+    else luckHtml = `🔍 木星の位置差は ${diff.toFixed(1)}° — 現在は強い帰還期ではありません。`;
+    luckHtml += `<div class="small">出生: ${natalJupiterLon.toFixed(1)}° / 今日: ${todayJupiterLon.toFixed(1)}°</div>`;
+  } else {
+    luckHtml = '木星比較情報が取得できませんでした。';
   }
 
-  // --- generate interpretation (summary + per-planet) ---
-  const interpretation = (()=>{
-    const summary = luckHtml;
-    const perPlanet = natal.map(it=>{
-      const deg = Number.isFinite(it.degree) ? it.degree.toFixed(1)+'°':''; 
-      const signName = (it.sign||'').replace(/^[^\u3040-\u30FF\u4E00-\u9FFF]*/,'').split(' ')[0];
-      const pmean = PLANET_MEANING[it.label]||'';
-      const skey = SIGN_KEYWORDS[signName] || '';
-      let line = `${it.label}：${it.sign} ${deg} — ${pmean} ${skey? '（'+skey+'）':''}`;
-      if(it.label.includes('♃') && it.sign && it.sign.indexOf('獅子')!==-1) line += ' 創造性や自己表現で幸運のチャンスが出やすい配置です。';
-      return line;
-    });
-    return {summary, perPlanetLines: perPlanet};
-  })();
+  // render
+  document.getElementById('output').style.display = 'block';
+  document.getElementById('planetList').innerHTML = html;
+  document.getElementById('lucky').innerHTML = luckHtml;
 
-  // --- Today: find notable aspects between todayPlanets and natal ---
+  // draw chart
+  drawChart(cusps, natalPlanets, ascDeg, mcDeg);
+
+  // today transit summary (reuse previous transit code simplified)
+  // find notable aspects between natal planets and today's transits for Sun..Saturn
+  const todayPlanets = [];
+  for(const p of PLANETS){
+    try{
+      const vec = Astronomy.GeoVector(p.body, toAstroTime(new Date()), true);
+      const ecl = Astronomy.Ecliptic(vec);
+      const lon = norm360(eclipticLongitude(ecl));
+      todayPlanets.push({ label: p.label, lon });
+    }catch(e){ todayPlanets.push({ label: p.label, lon: NaN }); }
+  }
   const aspects = [];
   for(const t of todayPlanets){
-    for(const n of natal){
+    for(const n of natalPlanets){
       if(!Number.isFinite(t.lon) || !Number.isFinite(n.lon)) continue;
-      const diff = angleDiff(n.lon, t.lon);
-      const a = aspectNameAndRange(diff);
-      if(a){
-        aspects.push({
-          natalPlanet: n.label,
-          transitPlanet: t.label,
-          natalLon: n.lon,
-          transitLon: t.lon,
-          diff,
-          aspectName: a.name,
-          score: a.score
-        });
-      }
+      const d = angleDiff(n.lon, t.lon);
+      if(d < 5) aspects.push({ natal:n.label, transit:t.label, aspect:'合', diff:d });
+      else if(Math.abs(d - 60) < 6) aspects.push({ natal:n.label, transit:t.label, aspect:'セクスタイル', diff:d });
+      else if(Math.abs(d - 90) < 6) aspects.push({ natal:n.label, transit:t.label, aspect:'スクエア', diff:d });
+      else if(Math.abs(d - 120) < 8) aspects.push({ natal:n.label, transit:t.label, aspect:'トライン', diff:d });
+      else if(Math.abs(d - 180) < 8) aspects.push({ natal:n.label, transit:t.label, aspect:'オポジション', diff:d });
     }
   }
-  // sort aspects by score and closeness
-  aspects.sort((A,B)=> (B.score - A.score) || (A.diff - B.diff));
-  const topAspects = aspects.slice(0,10); // 上位10件まで表示
+  const topAspectsHtml = aspects.length ? '<ul>' + aspects.map(a=>`<li><strong>${a.transit}</strong> が <strong>${a.natal}</strong> と ${a.aspect}（差 ${a.diff.toFixed(1)}°）</li>`).join('') + '</ul>' : '<div class="small">本日は注目アスペクトは見つかりませんでした。</div>';
+  document.getElementById('todayTransit').innerHTML = `<h4>本日のトランジット注目</h4>${topAspectsHtml}`;
 
-  // Create today summary text
-  let todaySummary = '';
-  if(topAspects.length===0) todaySummary = '本日、出生図との主要なトランジット・アスペクトは見つかりませんでした。';
-  else {
-    todaySummary = `本日注目のトランジット（上位 ${topAspects.length} 件）:`;
-  }
-  const aspectHtml = topAspects.map(a=>{
-    return `<li><strong>${a.transitPlanet}</strong> が <strong>${a.natalPlanet}</strong> と <strong>${a.aspectName}</strong>（差 ${a.diff.toFixed(1)}°） — ${shortAspectInterpret(a.transitPlanet, a.aspectName)}</li>`;
-  }).join('');
-
-  // --- render ---
-  const dbgText = showDebug ? JSON.stringify({ natal, todayPlanets, aspects }, replacerForDebug, 2) : '';
-  document.getElementById('planetList').innerHTML = html;
-  document.getElementById('luckyResult').innerHTML = interpretation.summary;
-  // interpretation
-  document.getElementById('interpretArea').style.display = 'block';
-  document.getElementById('interpretSummary').innerHTML = interpretation.summary;
-  const ul = document.getElementById('interpretPerPlanet');
-  ul.innerHTML = '';
-  for(const p of interpretation.perPlanetLines){ const li = document.createElement('li'); li.style.margin='6px 0'; li.innerHTML = p; ul.appendChild(li); }
-
-  // today area
-  document.getElementById('todayArea').style.display = 'block';
-  document.getElementById('todaySummary').textContent = todaySummary;
-  document.getElementById('todayAspects').innerHTML = aspectHtml || '<li>注目される主要なトランジットはありません。</li>';
-
-  const dbgOut = document.getElementById('debugOut');
-  if(dbgText){ dbgOut.style.display='block'; dbgOut.textContent = dbgText; } else { dbgOut.style.display='none'; }
-  document.getElementById('resultArea').style.display = 'block';
-  setTimeout(()=>window.scrollTo({top: document.getElementById('resultArea').offsetTop - 20, behavior: 'smooth'}),60);
-}
-
-/* JSON replacer for debug (circular safe) */
-function replacerForDebug(){
-  const seen = new WeakSet();
-  return function(key,value){
-    if(value && typeof value==='object'){
-      if(seen.has(value)) return '[Circular]';
-      seen.add(value);
-      if('x' in value && 'y' in value && 'z' in value) return {x:Number(value.x), y:Number(value.y), z:Number(value.z)};
-    }
-    return value;
-  };
+  // debug
+  const dbgElem = document.getElementById('debugInfo');
+  if(showDebug){
+    dbgElem.style.display = 'block';
+    dbgElem.textContent = JSON.stringify({ natalPlanets, ascDeg, mcDeg, cusps, todayPlanets, ascMc }, null, 2);
+  } else dbgElem.style.display = 'none';
 }
 
 /* 初期化 */
 (async function init(){
   await unregisterAllServiceWorkers();
-  try{ await checkLibraryReady(4000); document.getElementById('statusText').textContent = '✅ 準備完了 — 計算可能です（Astronomy Engine 読み込み済）'; }
-  catch(e){ document.getElementById('statusText').textContent = '⚠️ Astronomy Engine のロードに時間がかかっています。再読み込みしてください。'; safeLog(e); }
+  try{
+    await checkAstronomyReady(4000);
+    document.getElementById('status').textContent = '✅ Astronomy Engine 読み込み済 — 準備完了';
+  }catch(e){
+    document.getElementById('status').textContent = '⚠️ Astronomy Engine の読み込みに失敗しました。再読み込みしてください。';
+    safeLog(e);
+  }
 
-  document.getElementById('goBtn').addEventListener('click', ()=>calculate(false));
-  document.getElementById('exampleBtn').addEventListener('click', ()=>{ document.getElementById('birthDate').value='2000-01-01'; document.getElementById('birthTime').value='12:00'; });
-  document.getElementById('debugBtn').addEventListener('click', ()=>calculate(true));
+  document.getElementById('calcBtn').addEventListener('click', ()=>runCalculation(false));
+  document.getElementById('exampleBtn').addEventListener('click', ()=>{
+    document.getElementById('birthDate').value = '2000-01-01';
+    document.getElementById('birthTime').value = '12:00';
+    document.getElementById('birthLat').value = '35.6812';
+    document.getElementById('birthLon').value = '139.7671';
+    document.getElementById('tzOffset').value = '+09:00';
+  });
+  document.getElementById('debugBtn').addEventListener('click', ()=>runCalculation(true));
 })();
 </script>
 </body>

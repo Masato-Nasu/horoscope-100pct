@@ -512,8 +512,9 @@ function asp(d) {
 
 // 0〜100 に正規化
 function mapScore(raw, maxAbs) {
+  // 振れ幅を大きめに保ちつつ、全体の基準は少し高め（中心60・振れ幅±40）
   const span = 40;
-  let s = 50 + (raw / maxAbs) * span;
+  let s = 60 + (raw / maxAbs) * span;
   if (s < 0) s = 0;
   if (s > 100) s = 100;
   return Math.round(s);

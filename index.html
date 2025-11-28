@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#B79DF2">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
 
   <style>
     body {
@@ -111,6 +112,13 @@
     .section-title span.icon {
       font-size: 18px;
     }
+    .section-title span.label {
+      flex: 1;
+    }
+    .section-title span.percent {
+      font-size: 13px;
+      color: #555;
+    }
     .text-block {
       font-size: 12px;
       color: #555555;
@@ -134,6 +142,7 @@
     }
   </style>
 
+  <!-- Astronomy Engine（最新版） -->
   <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
 </head>
 <body>
@@ -173,7 +182,17 @@
 (function () {
   'use strict';
 
-  // 安定した乱数（テキストバリエーション用のみ）
+  // まず、古い Service Worker がいれば解除（キャッシュで古い JS が残らないように）
+  if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      for (var i = 0; i < regs.length; i++) {
+        regs[i].unregister();
+      }
+      console.log('ServiceWorker: unregistered', regs.length);
+    });
+  }
+
+  // ---------- 安定乱数（テキスト選択用のみ） ----------
   function stableSeed(str) {
     var h = 1779033703 ^ str.length;
     for (var i = 0; i < str.length; i++) {
@@ -195,7 +214,7 @@
     };
   }
 
-  // テキストバンク（シンプル版）
+  // ---------- テキストバンク（ここは後でいくらでも増やせます） ----------
   var TEXT_BANK = {
     total: {
       a: [
@@ -315,9 +334,9 @@
     return arr[idx] || '';
   }
 
-  // 角度差とアスペクト評価
+  // ---------- アスペクトスコア ----------
   function aspectScore(diff) {
-    // diff は 0〜360
+    // diff: 0〜360
     var aspects = [0, 60, 90, 120, 180];
     var orb = 6;
     var best = 0;
@@ -328,16 +347,16 @@
       if (d <= orb) {
         var s = 1 - d / orb; // 0〜1
         var sign;
-        if (a === 0 || a === 120) sign = 1.0;      // コンジャンクション・トライン：基本プラス
-        else if (a === 60)        sign = 0.6;      // セクスタイル：ややプラス
-        else                      sign = -0.8;     // スクエア・オポジション：少し厳しめ
+        if (a === 0 || a === 120) sign = 1.0;       // コンジャンクション・トライン
+        else if (a === 60)        sign = 0.6;       // セクスタイル
+        else                      sign = -0.8;      // スクエア・オポジション
         var v = s * sign;
         if (Math.abs(v) > Math.abs(best)) {
           best = v;
         }
       }
     }
-    return best; // おおむね -0.8〜+1.0
+    return best; // おおよそ -0.8〜+1.0
   }
 
   function clampNorm(x) {
@@ -346,7 +365,7 @@
     return x;
   }
 
-  // -1〜+1 を 20〜100%へ（単調に・少しカーブ）
+  // -1〜+1 を 20〜100% へマップ（中心 60%、端 20/100）
   function mapNormToPercent(x) {
     var y = x * x * x * 0.6 + x * 0.4;
     var p = (y + 1) / 2 * 80 + 20;
@@ -373,7 +392,7 @@
     return ecl.elon;
   }
 
-  // 簡易コンフェッティ
+  // ---------- 簡易コンフェッティ ----------
   function fireConfetti() {
     var canvas = document.getElementById('confettiCanvas');
     var ctx = canvas.getContext('2d');
@@ -421,6 +440,7 @@
     requestAnimationFrame(loop);
   }
 
+  // ---------- メイン計算 ----------
   function calc() {
     var birthStr = document.getElementById('birth').value;
     var targetStr = document.getElementById('targetDate').value;
@@ -472,6 +492,7 @@
       return d;
     }
 
+    // 生スコア（すべて天体差のみ）
     var rawTotal = 0;
     for (var j = 0; j < bodies.length; j++) {
       rawTotal += aspectScore(diffLon(bodies[j]));
@@ -493,11 +514,12 @@
       aspectScore(diffLon(Astronomy.Body.Sun)) +
       aspectScore(diffLon(Astronomy.Body.Moon));
 
-    var nTotal  = clampNorm(rawTotal / 5);
-    var nLove   = clampNorm(rawLove / 1.7);
-    var nMoney  = clampNorm(rawMoney / 1.4);
-    var nWork   = clampNorm(rawWork / 2.0);
-    var nHealth = clampNorm(rawHealth / 2.0);
+    // スケール係数を大きめにして、20〜100% までしっかり振れるようにする
+    var nTotal  = clampNorm(rawTotal * 2.5);
+    var nLove   = clampNorm(rawLove  * 2.0);
+    var nMoney  = clampNorm(rawMoney * 2.0);
+    var nWork   = clampNorm(rawWork  * 1.5);
+    var nHealth = clampNorm(rawHealth* 1.5);
 
     var total  = mapNormToPercent(nTotal);
     var love   = mapNormToPercent(nLove);
@@ -506,7 +528,9 @@
     var health = mapNormToPercent(nHealth);
 
     var seedBase = birthStr + '|' +
-      (targetStr || (targetDate.getFullYear() + '-' + (targetDate.getMonth() + 1) + '-' + targetDate.getDate()));
+      (targetStr || (targetDate.getFullYear() + '-' +
+                     (targetDate.getMonth() + 1) + '-' +
+                     targetDate.getDate()));
 
     var overallText = pickText('total', total, seedBase);
     var loveText    = pickText('love', love, seedBase);
@@ -516,22 +540,48 @@
     var seasonText  = seasonPhrase(targetDate, seedBase);
 
     var html = '';
-    html += '<div class="section-title"><span class="icon">🪐</span><span>今日の総合運 ' + total + '%</span></div>';
+
+    // 総合運カード（1 枚だけ）
+    html += '<div class="section-title">' +
+              '<span class="icon">🪐</span>' +
+              '<span class="label">今日の総合運</span>' +
+              '<span class="percent">' + total + '%</span>' +
+            '</div>';
     html += '<div class="text-block">' + overallText + '</div>';
     if (seasonText) {
       html += '<div class="text-block">' + seasonText + '</div>';
     }
 
-    html += '<div class="section-title"><span class="icon">💞</span><span>恋愛 ' + love + '%</span></div>';
+    // 恋愛
+    html += '<div class="section-title">' +
+              '<span class="icon">💞</span>' +
+              '<span class="label">恋愛</span>' +
+              '<span class="percent">' + love + '%</span>' +
+            '</div>';
     html += '<div class="text-block">' + loveText + '</div>';
 
-    html += '<div class="section-title"><span class="icon">💼</span><span>仕事 ' + work + '%</span></div>';
+    // 仕事
+    html += '<div class="section-title">' +
+              '<span class="icon">💼</span>' +
+              '<span class="label">仕事</span>' +
+              '<span class="percent">' + work + '%</span>' +
+            '</div>';
     html += '<div class="text-block">' + workText + '</div>';
 
-    html += '<div class="section-title"><span class="icon">💰</span><span>金運 ' + money + '%</span></div>';
+    // 金運
+    html += '<div class="section-title">' +
+              '<span class="icon">💰</span>' +
+              '<span class="label">金運</span>' +
+              '<span class="percent">' + money + '%</span>' +
+            '</div>';
     html += '<div class="text-block">' + moneyText + '</div>';
 
-    html += '<div class="section-title"><span class="icon">💗</span><span>健康 ' + health + '%</span></div>';
+    // 健康
+    html += '<div class="section-title">' +
+              '<span class="icon">💗</span>' +
+              '<span class="label">健康</span>' +
+              '<span class="percent">' + health + '%</span>' +
+            '</div>';
     html += '<div class="text-block">' + healthText + '</div>';
 
     document.getElementById('result').innerHTML = html;
@@ -549,7 +599,7 @@
     }
   }
 
-  // グローバルに公開
+  // グローバル公開
   window.calc = calc;
 
 })();

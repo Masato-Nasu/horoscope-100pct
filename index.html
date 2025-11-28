@@ -136,7 +136,8 @@ const PLANET_DEFS = [
 
 function calculateRealPlanets(date) {
   if (typeof Astronomy === 'undefined') throw new Error('天文計算エンジンが読み込まれていません。');
-  
+  if (isNaN(date.getTime())) throw new Error('日付が無効です(NaN)');
+
   const results = [];
   PLANET_DEFS.forEach(p => {
     const body = Astronomy.Body[p.key];
@@ -144,10 +145,13 @@ function calculateRealPlanets(date) {
     const ecliptic = Astronomy.Ecliptic(vector); 
     const lon = ecliptic.lon;
     
-    // ★重要修正: % 12 を追加して、12になってしまうバグ（360度問題）を回避
+    // 安全計算: NaN対策と360度超え対策
+    if (isNaN(lon)) {
+        results.push({ key: p.key, name: p.label, desc: p.desc, lon: 0, sign: '計算エラー', signDegree: '0.0' });
+        return;
+    }
+
     const signIndex = Math.floor(lon / 30) % 12;
-    
-    // 安全策: 万が一 undefined になったら牡羊座(0)にする
     const signText = ZODIAC_SIGNS[signIndex] || ZODIAC_SIGNS[0];
     const signDegree = lon % 30;
     
@@ -164,6 +168,8 @@ function calculateRealPlanets(date) {
 }
 
 function predictJupiterLuck(birthDate, targetDate) {
+  if (isNaN(birthDate.getTime()) || isNaN(targetDate.getTime())) return { title:"データエラー", msg:"日付を確認してください", score:0, isLucky:false };
+
   const natalVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, birthDate, true);
   const natalLon = Astronomy.Ecliptic(natalVec).lon;
   const transitVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, targetDate, true);
@@ -188,14 +194,23 @@ function predictJupiterLuck(birthDate, targetDate) {
 }
 
 function getSignMeaning(planetKey, sign) {
-  // 安全策: splitできるかチェック
   if (!sign || typeof sign !== 'string') return '';
-  const signName = sign.split(' ')[1] || sign; // スペースがなくても動くように修正
-  
+  const signName = sign.split(' ')[1] || sign; 
   if (planetKey === 'Sun') return `あなたの基本性格は「${signName}」的です。`;
   if (planetKey === 'Moon') return `リラックス時は「${signName}」っぽくなります。`;
   if (planetKey === 'Venus') return `「${signName}」的な楽しみ方を好みます。`;
   return '';
+}
+
+// ★重要: 安全な日付作成関数
+function createSafeDate(dateStr, timeStr) {
+  if(!dateStr) return null;
+  // 文字列分解して数値化 (ブラウザ依存回避)
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const [h, min] = timeStr.split(':').map(Number);
+  // 月は0始まりなので-1
+  const date = new Date(y, m - 1, d, h, min, 0);
+  return date;
 }
 
 async function runHoroscope(){
@@ -205,9 +220,20 @@ async function runHoroscope(){
     if(!birthStr){ alert('生年月日を入力してください'); return; }
 
     const timeStr = $('birthTime').value || '12:00';
-    const birthDate = new Date(`${birthStr}T${timeStr}:00`);
+    
+    // ★ここを修正: 安全な日付生成を使用
+    const birthDate = createSafeDate(birthStr, timeStr);
+    
     const targetStr = $('targetDate').value || new Date().toISOString().split('T')[0];
-    const targetDate = new Date(`${targetStr}T12:00:00`);
+    const targetDate = createSafeDate(targetStr, "12:00");
+
+    // 日付チェック
+    if(!birthDate || isNaN(birthDate.getTime())){
+        alert("生年月日の形式が無効です。"); return;
+    }
+    if(!targetDate || isNaN(targetDate.getTime())){
+        alert("占う日の形式が無効です。"); return;
+    }
 
     const planets = calculateRealPlanets(birthDate);
     const jupPred = predictJupiterLuck(birthDate, targetDate);

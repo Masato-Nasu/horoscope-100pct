@@ -10,7 +10,7 @@
 <link rel="manifest" href="/horoscope-100pct/manifest.json">
 <link rel="icon" href="/horoscope-100pct/favicon.svg" type="image/svg+xml">
 
-<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.4.2/astronomy.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
 
 <style>
 /* 基本スタイル */
@@ -99,8 +99,10 @@ button:active{transform: translateY(2px);}
 <div class="toast" id="toast"></div>
 
 <script>
+// 基本ユーティリティ
 const $ = id => document.getElementById(id);
 function toast(m){const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000);}
+
 function saveInputs(){
   const d={
     birthDate:$('birthDate').value||'',
@@ -131,20 +133,30 @@ const PLANET_DEFS = [
   { key: 'Saturn',  label: '♄ 土星',  desc: '課題・責任・安定' },
 ];
 
+// ★重要: 安全な日付生成関数 (NaN対策)
+function createSafeDate(dateStr, timeStr) {
+  if(!dateStr) return null;
+  // 文字列分解して数値化 (ブラウザ依存回避)
+  const [y, m, d] = dateStr.split('-').map(Number);
+  // 時間がない場合は00:00
+  const [h, min] = timeStr ? timeStr.split(':').map(Number) : [0, 0];
+  // 月は0始まりなので-1
+  return new Date(y, m - 1, d, h, min, 0);
+}
+
 function calculateRealPlanets(date) {
-  if (typeof Astronomy === 'undefined') throw new Error('天文計算エンジンが読み込まれていません。');
+  if (typeof Astronomy === 'undefined') throw new Error('天文計算エンジンが読み込まれていません。リロードしてください。');
   
   const results = [];
   PLANET_DEFS.forEach(p => {
     const body = Astronomy.Body[p.key];
-    // ★修正2: 第3引数を「false」(光行差なし)に変更。これで計算エラー(NaN)を防ぎます。
+    // ★対策2: 第3引数を「false」(光行差なし)にする。これで計算エラー(NaN)を防ぎます。
     const vector = Astronomy.GeoVector(body, date, false);
     const ecliptic = Astronomy.Ecliptic(vector); 
     const lon = ecliptic.lon;
     
     // NaNチェック
     if (isNaN(lon)) {
-        // 万が一エラーでも画面を壊さない
         results.push({ key: p.key, name: p.label, desc: p.desc, lon: 0, sign: '計測不能', signDegree: '0.0' });
         return;
     }
@@ -168,7 +180,7 @@ function calculateRealPlanets(date) {
 function predictJupiterLuck(birthDate, targetDate) {
   if (isNaN(birthDate.getTime()) || isNaN(targetDate.getTime())) return { title:"データエラー", msg:"日付を確認してください", score:0, isLucky:false };
 
-  // ★修正3: ここも「false」に変更
+  // ★対策2: ここも「false」
   const natalVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, birthDate, false);
   const natalLon = Astronomy.Ecliptic(natalVec).lon;
   const transitVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, targetDate, false);
@@ -179,7 +191,7 @@ function predictJupiterLuck(birthDate, targetDate) {
   const orb = 6; 
 
   let result = { title: "木星は通常運行中", msg: "現在は穏やかな運気です。", score: 50, isLucky: false };
-  if(isNaN(diff)) return result; // 安全策
+  if(isNaN(diff)) return result;
 
   if (diff <= orb) {
     result.title = "✨ 12年に一度の幸運期"; result.msg = "木星があなたの生まれた位置に戻ってきました。新しいスタートに最適です！"; result.score = 100; result.isLucky = true;
@@ -202,14 +214,6 @@ function getSignMeaning(planetKey, sign) {
   return '';
 }
 
-// 日付安全化処理
-function createSafeDate(dateStr, timeStr) {
-  if(!dateStr) return null;
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const [h, min] = timeStr.split(':').map(Number);
-  return new Date(y, m - 1, d, h, min, 0);
-}
-
 async function runHoroscope(){
   try {
     saveInputs();
@@ -217,6 +221,7 @@ async function runHoroscope(){
     if(!birthStr){ alert('生年月日を入力してください'); return; }
 
     const timeStr = $('birthTime').value || '12:00';
+    // ★安全な日付生成
     const birthDate = createSafeDate(birthStr, timeStr);
     
     const targetStr = $('targetDate').value || new Date().toISOString().split('T')[0];
@@ -295,8 +300,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if(splash) splash.classList.add('fadeout');
   }, 800);
 
+  // ★対策3: ゾンビキャッシュを強制削除するコード
+  // これにより、次回からはクリーンな状態で起動します
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('./sw.js').catch(e=>console.log('SW fail:',e));
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for(let registration of registrations) {
+        registration.unregister();
+        console.log("Service Worker Force Unregistered");
+      }
+    });
   }
 });
 </script>

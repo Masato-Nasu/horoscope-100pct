@@ -1,832 +1,558 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>100% 星占い（シンプル）</title>
-<meta name="theme-color" content="#B79DF2">
-<link rel="manifest" href="manifest.json">
+  <meta charset="UTF-8">
+  <title>100% 星占い</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#B79DF2">
+  <link rel="manifest" href="manifest.json">
 
-<style>
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
-  background: #ffffff;
-  color: #333333;
-  margin: 0;
-  padding: 0;
-}
-.wrapper {
-  max-width: 420px;
-  margin: 0 auto;
-  padding: 20px 16px 40px;
-}
-h1 {
-  text-align: center;
-  color: #ffffff;
-  background: #B79DF2;
-  padding: 16px 0 14px;
-  margin: 0 0 16px;
-  font-size: 22px;
-}
-label {
-  display: block;
-  margin-top: 10px;
-  margin-bottom: 4px;
-  font-size: 13px;
-  color: #666666;
-}
-input, button {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 11px 12px;
-  border-radius: 8px;
-  border: 1px solid #dddddd;
-  font-size: 15px;
-}
-input {
-  background: #ffffff;
-}
-button {
-  margin-top: 16px;
-  background: #B79DF2;
-  color: #ffffff;
-  border: nonee;
-  font-weight: 600;
-  cursor: pointer;
-}
-button:active {
-  opacity: 0.9;
-}
-.score {
-  font-size: 32px;
-  color: #B79DF2;
-  font-weight: 700;
-  margin: 20px 0 12px;
-  text-align: center;
-}
-.card {
-  background: #F7F4FF;
-  padding: 14px 14px 12px;
-  border-radius: 10px;
-  margin: 10px 0;
-}
-.label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 6px;
-}
-.label {
-  color: #B79DF2;
-  font-weight: 600;
-  font-size: 16px;
-}
-.percent {
-  font-size: 14px;
-  color: #666666;
-}
-.percent-bar {
-  height: 4px;
-  border-radius: 999px;
-  background: #E3DBFF;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-.percent-fill {
-  height: 100%;
-  background: #B79DF2;
-}
-.text {
-  font-size: 14px;
-  line-height: 1.6;
-}
-.birthday-msg {
-  margin-top: 20px;
-  color: #B79DF2;
-  font-size: 16px;
-  white-space: pre-line;
-  text-align: center;
-}
-.notice {
-  font-size: 11px;
-  color: #999999;
-  margin-top: 6px;
-}
-</style>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
+      background: #ffffff;
+      color: #333333;
+      margin: 0;
+      padding: 16px;
+      text-align: center;
+    }
+    .app-card {
+      max-width: 420px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+      padding: 18px 16px 20px;
+    }
+    .app-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .app-icon {
+      font-size: 28px;
+    }
+    .app-title-block {
+      text-align: left;
+    }
+    .app-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #7C4DFF;
+      margin: 0;
+    }
+    .app-subtitle {
+      font-size: 11px;
+      color: #999999;
+      margin: 2px 0 0;
+    }
+    .form-row {
+      margin-bottom: 10px;
+      text-align: left;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12px;
+      color: #555555;
+    }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #DDDDFF;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    input:focus {
+      outline: none;
+      border-color: #B79DF2;
+      box-shadow: 0 0 0 1px rgba(183,157,242,0.5);
+    }
+    button {
+      width: 100%;
+      box-sizing: border-box;
+      border: none;
+      padding: 11px 12px;
+      border-radius: 999px;
+      margin-top: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #B79DF2, #7C4DFF);
+      color: #ffffff;
+      cursor: pointer;
+    }
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2) inset;
+    }
+    .note {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #888888;
+      line-height: 1.5;
+      text-align: left;
+    }
+    .result {
+      margin-top: 16px;
+      text-align: left;
+    }
+    .section-title {
+      margin: 18px 0 4px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #7C4DFF;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-title span.icon {
+      font-size: 18px;
+    }
+    .text-block {
+      font-size: 12px;
+      color: #555555;
+      line-height: 1.7;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #F7F4FF;
+      margin-bottom: 6px;
+    }
+    .birthday {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #C06FD8;
+      text-align: left;
+    }
+    #confettiCanvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+    }
+  </style>
 
-<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.0/astronomy.browser.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+</head>
+<body>
+<canvas id="confettiCanvas"></canvas>
+
+<div class="app-card">
+  <div class="app-header">
+    <div class="app-icon">🪐</div>
+    <div class="app-title-block">
+      <p class="app-title">100% 星占い</p>
+      <p class="app-subtitle">太陽〜土星の配置から「今日との相性度」を数値化します。</p>
+    </div>
+  </div>
+
+  <div class="form-row">
+    <label for="birth">生年月日</label>
+    <input id="birth" type="date" value="1978-12-31">
+  </div>
+
+  <div class="form-row">
+    <label for="targetDate">占いたい日（空欄なら今日）</label>
+    <input id="targetDate" type="date">
+  </div>
+
+  <button type="button" onclick="calc()">この日の運勢を見る</button>
+
+  <p class="note">
+    ※ 数値は太陽〜土星までの配置をもとにした「今日との相性度」です。<br>
+    ※ 誕生日の日を占うと、ささやかな紙吹雪とメッセージが表示されます。
+  </p>
+
+  <div id="result" class="result"></div>
+  <div id="birthdayMessage" class="birthday"></div>
+</div>
 
 <script>
-// ------------------------------------------------------
-//  ベースBANK: 文章断片（前半 / 後半）
-//  ここから 50 種類以上の文章を自動生成します
-// ------------------------------------------------------
-const BASE_BANK = {
-  "全体運": {
-    a_prefix: [
-      '今日は一日を通して、心の荷物を少し下ろせる日。',
-      '最近がんばり過ぎていた人ほど、空気がやわらぎやすいタイミング。',
-      'いつもの景色の中に、小さな変化を見つけやすい日。',
-      '流れを大きく変えるというより、微調整に向いている一日。',
-      '気づかないうちに溜め込んだ疲れや不安を、丁寧にほどきやすいタイミング。'
-    ],
-    a_suffix: [
-      ' 自分のペースを取り戻すことで、自然と物事がかみ合っていきます。',
-      ' 周りと比べるより、昨日の自分と比べると小さな進歩に気づけそうです。',
-      ' 予定を詰め込みすぎず、余白を残すことで安心感が戻ってきます。',
-      ' 一度立ち止まって振り返ることで、次に進むヒントが見えてきそうです。',
-      ' 多少のゆらぎも「今のリズムなんだ」と受け止めると、心が軽くなります。',
-      ' 小さな嬉しさや出来事に目を向けるほど、今日の満足度が高まりそうです。',
-      ' 完璧を目指すより「ここまでできたら十分」と決めることが鍵になりそうです。',
-      ' 緊張が続いていた人は、意識して一度深呼吸する時間をとってみてください。',
-      ' 身の回りを少し整えるだけでも、気持ちの流れがスムーズになっていきます。',
-      ' やることを三つに絞ると、思っていた以上に軽やかに動けそうです。'
-    ],
-    b_prefix: [
-      '物事を早く進めるよりも、納得しながら進めることが大切な一日です。',
-      '感情のアップダウンが落ち着きやすく、冷静に状況を眺められそうです。',
-      'うまくいかない部分も含めて「今の自分」をそのまま認めることがテーマです。',
-      '心の中で引っかかっていたことに、少し前向きな意味づけをしやすいタイミングです。',
-      '忙しさの中にも、小さな楽しみや余白を見つけやすい流れになっています。'
-    ],
-    b_suffix: [
-      ' 無理にポジティブになろうとせず、フラットな目線で選択していくと良さそうです。',
-      ' できたことに目を向けると、自信がじんわりと戻ってきます。',
-      ' もし迷いが生まれたら、今日のうちに一度紙に書き出して整理してみてください。',
-      ' 「やらなきゃ」ではなく「やってみよう」に言い換えるだけで、心の負担が軽くなります。',
-      ' 一人で抱え込まず、信頼できる人に少しだけ話してみるのも良いでしょう。',
-      ' 失敗した部分にばかり注目せず、チャレンジした自分をねぎらってください。',
-      ' 自分に厳しくなりすぎていた人は、今日は少し採点を甘くしてあげましょう。',
-      ' 人の意見を取り入れつつも、最終的な決定は自分の感覚を信じて大丈夫です。',
-      ' 「なんとかなるかも」と思えたら、その感覚を大切に育てていきましょう。',
-      ' 予定が崩れても「この流れにも意味がある」ととらえると楽になれそうです。'
-    ],
-    c_prefix: [
-      'やることを細かく分けて、小さなステップに区切ってみましょう。',
-      '一日のどこかで、スマートフォンから離れる時間を意識的につくってみてください。',
-      '気になっていた場所や引き出しを一か所だけ片づけてみるのもおすすめです。',
-      '今日は「早く終える」より「気持ちよく終える」ことを目標にしてみましょう。',
-      '自分に対して「おつかれさま」と声をかける時間を、あらかじめ決めておきましょう。'
-    ],
-    c_suffix: [
-      ' そうすることで、達成感が積み重なり、明日の自分へのエールにもなります。',
-      ' 画面から目を離すだけでも、思考がリセットされて新しいひらめきが生まれやすくなります。',
-      ' 小さなスペースが整うだけで、心にも余白ができていきそうです。',
-      ' 最後にひと呼吸置いてから片づけをすると、一日の終わり方が変わってきます。',
-      ' 自分をねぎらう習慣ができると、日々の疲れの溜まり方がやわらいでいきます。',
-      ' 人に頼めるところは素直に頼み、役割を分けることで負担を軽くしていきましょう。',
-      ' 気になることがあればメモに残し、頭から一度切り離す工夫をしてみてください。',
-      ' 夜は照明を少し落として、ゆったりした音楽を流すだけでもリラックス効果があります。',
-      ' 深呼吸を三回だけでも良いので、「区切り」のタイミングで取り入れてみてください。',
-      ' 今日の自分を振り返るひと言をノートに残すと、後から見返したときの支えになります。'
-    ]
-  },
+(function () {
+  'use strict';
 
-  "恋愛": {
-    a_prefix: [
-      '人とのつながりから、やさしいあたたかさを感じやすい日。',
-      '距離感を探っていた関係に、少しだけ光が差し込みやすいタイミング。',
-      '恋愛に限らず、人との関係全般を見つめ直すのに向いている日。',
-      '素直な気持ちを、言葉や態度で表現しやすくなる一日。',
-      '一歩踏み出す勇気と、そっと見守る優しさのバランスが取りやすい時期です。'
-    ],
-    a_suffix: [
-      ' 無理に盛り上げようとしなくても、自然体のあなたで十分魅力が伝わります。',
-      ' さりげないひと言やスタンプが、相手の心をふっとほぐしてくれそうです。',
-      ' 過去のパターンにとらわれず「今回は違う流れかも」と感じられる瞬間がありそうです。',
-      ' 相手のペースを尊重するほど、関係が長く穏やかに続きやすくなります。',
-      ' 恋の進展だけにこだわらず、「一緒にいて心地よいか」を大切にしてみてください。',
-      ' 気になる人がいない場合も、人との会話の中に小さなときめきが見つかりそうです。',
-      ' 深く考え過ぎず、その場の空気を楽しむことで、いいムードが生まれやすいでしょう。',
-      ' 恋愛から少し離れたテーマが、結果的にふたりの距離を縮めるきっかけになるかもしれません。',
-      ' 「こうあるべき」という理想を少しゆるめると、今ある関係が優しく見えてきます。',
-      ' 好きかどうか分からない気持ちも、そのままの状態で大切にしてみてください。'
-    ],
-    b_prefix: [
-      '相手の反応よりも、自分の心がどう感じているかに注目したい日です。',
-      '言葉のやり取りに一喜一憂しやすいからこそ、落ち着いて受け止めたいタイミングです。',
-      '曖昧な関係や、はっきりしない距離感に、少しだけ向き合いやすい流れがあります。',
-      '過去の恋愛パターンに気づくことで、新しい選択肢が生まれやすい一日です。',
-      '「こう見られたい自分」と「素の自分」の差に、やさしく気づける時期です。'
-    ],
-    b_suffix: [
-      ' 期待し過ぎず、同時に低く見積もりすぎず、真ん中のラインを意識してみてください。',
-      ' 返信のスピードよりも、一つ一つの言葉のあたたかさを大切にすると良さそうです。',
-      ' 不安が膨らんできたら、ひとりで想像を広げる前に、現実的な情報を確認してみましょう。',
-      ' 過去の出来事を思い出しても、「あの時の自分もよくがんばっていた」と認めてあげてください。',
-      ' 自分を良く見せようと構えすぎると疲れてしまうので、今日は少し力を抜くくらいがちょうどよさそうです。',
-      ' 好きな人がいない場合も、人との関わり方そのものを見直す良いきっかけになります。',
-      ' モヤモヤしたら、信頼できる友人に軽く話を聞いてもらうと、心が整理されていきます。',
-      ' 相手の言動を「自分の価値」と結びつけずにいられると、恋が楽になっていきます。',
-      ' 連絡の頻度よりも、会ったときの居心地の良さに注目してみてください。',
-      ' 今日は「正解の答え」を出すよりも、お互いの立場を理解することに意識を向けてみましょう。'
-    ],
-    c_prefix: [
-      '連絡を取りたくなったら、短く明るい一言から始めてみましょう。',
-      '会う約束を迷っているなら、負担にならない範囲の短い時間を提案してみてください。',
-      '恋愛のことばかり考えてしまうときは、自分の好きなことに意識的に時間を使いましょう。',
-      'パートナーがいる人は、いつもより少し丁寧な「ありがとう」を伝えてみてください。',
-      '今日は新しい出会いの場というより、今あるご縁をあたためる行動がおすすめです。'
-    ],
-    c_suffix: [
-      ' 重くならないメッセージほど、相手も気軽に返しやすくなります。',
-      ' 無理に盛り上げようとせず、「まずは顔を合わせてみる」くらいの気持ちで大丈夫です。',
-      ' 自分の時間を充実させるほど、恋愛に振り回されにくくなっていきます。',
-      ' ささやかな感謝のひと言が、関係を思った以上にやわらかくしてくれそうです。',
-      ' 新たな出会いを求める人も、身近な人との会話の中にヒントが隠れていそうです。',
-      ' 好きな香りや服装を選んで、自分自身が心地よくいられる状態をつくってみましょう。',
-      ' 不安になったときは、連絡を増やすよりも一度深呼吸して心の状態を整えてみてください。',
-      ' 約束ごとは曖昧にせず、できる範囲で正直に伝えることで信頼が育っていきます。',
-      ' 過去のやり取りを何度も見返すより、今日の自分がどうしたいかを大切にしてみてください。',
-      ' 「もっと好きになってもらう」より「自分を大切にする」視点を持つことで、恋のバランスが整います。'
-    ]
-  },
-
-  "仕事": {
-    a_prefix: [
-      'タスクの組み立て次第で、ぐっと進みやすくなる一日。',
-      'こまめな調整が、大きなトラブルを防いでくれるタイミング。',
-      '集中したい作業と、流れ作業の切り替えがしやすい日。',
-      '周りとの連携が、思った以上にスムーズにいきやすい流れです。',
-      '小さな工夫が、仕事のしやすさに直結しやすいタイミング。'
-    ],
-    a_suffix: [
-      ' 最初に全体像をざっくり確認しておくことで、無駄な遠回りを減らせそうです。',
-      ' 苦手な作業も「今日はここまで」と区切れば、思ったより軽くこなせそうです。',
-      ' 一人で抱え込まずに相談することで、仕事のスピードと質の両方が上がっていきます。',
-      ' 細かい気配りが、周囲からの信頼感を高めてくれそうです。',
-      ' 一度ペースを落として確認することで、ミスを未然に防ぐことができそうです。',
-      ' 変化よりも安定を意識すると、安心して力を発揮しやすくなります。',
-      ' 苦手な相手とも、業務的なラインを意識して接することで、負担を減らせます。',
-      ' 自分の役割を整理しておくと、必要以上に責任を背負い込まずにすみそうです。',
-      ' 「なんとなく不安」を言語化してみると、対処法が見つかりやすくなります。',
-      ' 小さな達成感を積み上げることで、モチベーションがじんわり高まっていきます。'
-    ],
-    b_prefix: [
-      '完璧主義になりすぎず、着実に前へ進めるかどうかがポイントになる日です。',
-      '忙しさの波に飲み込まれやすいからこそ、ペース配分を意識したいタイミングです。',
-      '仕事に対する価値観を、少しだけ見直すきっかけが訪れやすい日。',
-      '周囲との温度差を感じやすい場面もありそうですが、それが悪いわけではありません。',
-      '「いまできること」と「いつかやりたいこと」を分けて考えたい一日です。'
-    ],
-    b_suffix: [
-      ' 自分なりのゴールラインを決めることで、無限にがんばり続ける状態から抜け出せそうです。',
-      ' 余裕がないと感じたら、一度タスクを書き出して優先順位をつけ直してみてください。',
-      ' 評価や数字だけでなく、「誰の役に立っているのか」を思い出すと、気持ちが少し楽になります。',
-      ' 考え方の違いを責めるより、「そういう見方もある」と受け止めることで、関係が穏やかになります。',
-      ' 先の心配ばかりするより、今日の一歩を丁寧に進める方が、結果的に大きな前進につながります。',
-      ' こなすだけの仕事になっていると感じたら、小さな工夫を一つだけ加えてみてください。',
-      ' ミスを恐れて止まるより、小さく試して学ぶ姿勢が評価につながっていきます。',
-      ' 苦手な作業の前後に、得意な作業をはさむと、全体の負担感が軽くなります。',
-      ' 仕事とプライベートの境目を意識して、オンオフの切り替えを大切にしてみてください。',
-      ' 姿勢や呼吸を整えるだけでも、集中力と根気が少し戻ってきます。'
-    ],
-    c_prefix: [
-      '朝いちばんに、今日やることを三つだけ書き出してみましょう。',
-      '集中したい作業時間には、通知やチャットを一時的にオフにしてみてください。',
-      '迷っている案件があれば、小さく試せる範囲から動き始めてみましょう。',
-      '疲れを感じたら、机の周りを軽く片づけて気分転換を図ってください。',
-      '今日は「がんばり続ける」より「適切に休む」ことを意識してみましょう。'
-    ],
-    c_suffix: [
-      ' 優先順位がはっきりするだけで、作業の見通しが立ちやすくなります。',
-      ' 集中の質が上がり、短い時間でもしっかり成果を出しやすくなります。',
-      ' 完成形を一度に目指さず、試行錯誤しながら形にしていく流れが良さそうです.',
-      ' 環境が整うと、頭の中のごちゃごちゃも少しずつ落ち着いていきます。',
-      ' 小さな休憩を挟むことで、後半のパフォーマンスが安定しやすくなります。',
-      ' 不安に感じていることは、メモして上司や同僚に相談するきっかけにしてみてください。',
-      ' 「今日はここまで」と区切ることで、明日の自分にも余力を残せます。',
-      ' 帰り道に好きな飲み物を一つ買うなど、仕事終わりのご褒美を用意しておきましょう。',
-      ' 同じ姿勢が続くときは、軽いストレッチで血行を良くしてあげてください。',
-      ' ひとりで抱え込まず、チームで分け合えるところがないか探してみましょう。'
-    ]
-  },
-
-  "金運": {
-    a_prefix: [
-      'お金との付き合い方を、やさしく整えやすい日。',
-      '派手な変化より、堅実な一歩が光るタイミング。',
-      '収支のバランスを見直すことで、安心感が高まりやすい日。',
-      '欲しいものと必要なものの線引きをしやすい流れです。',
-      'これまでの習慣を振り返ることで、お金への不安を減らせる一日。'
-    ],
-    a_suffix: [
-      ' 無理に節約するより、続けやすい工夫を一つ決めると良さそうです。',
-      ' 大きな節約よりも、日々の小さな出費を見直すことで、確かな変化が生まれます。',
-      ' 家計簿が続かない人も、ざっくりとしたメモから始めるだけで十分です。',
-      ' 「なんとなく使っているお金」が見えてくると、選び方が変わっていきます。',
-      ' 買い物の前に深呼吸をして、「本当に必要かな」と自分に問いかけてみてください。',
-      ' クーポンやポイントも、使い道を決めておくと上手に活かせそうです。',
-      ' 周りと比べず、自分のペースで資産を育てていくイメージを持てると安心です。',
-      ' 使ったお金に対して「ありがとう」と心の中でつぶやくと、気持ちよく循環していきます。',
-      ' 今日は見栄のための買い物より、自分をいたわる買い物に意識を向けてみましょう。',
-      ' 金額の大小に関わらず、自分で選んで使えたことを肯定してあげてください。'
-    ],
-    b_prefix: [
-      '収入や支出について、少し現実的な目線で見直したいタイミングです。',
-      '将来の不安が顔を出しやすいからこそ、行動に落とし込むチャンスでもあります。',
-      'お金に対する考え方が、周囲の影響を受けやすくなっているかもしれません。',
-      '「貯めたい気持ち」と「今を楽しみたい気持ち」のバランスを整えたい一日です。',
-      '数字だけを見ると不安になりがちな人ほど、今日の使い方に注目したい日です。'
-    ],
-    b_suffix: [
-      ' すべてを一度に変えようとせず、一つの項目から軽く見直してみてください。',
-      ' ネガティブに考えすぎず、「じゃあ何をしてみようか」と発想を切り替えてみましょう。',
-      ' SNS や他人の生活と比較しすぎると疲れてしまうので、自分の基準を持つことが大切です。',
-      ' どちらか一方だけを優先するのではなく、今できる範囲で折り合いをつけてみてください。',
-      ' 未来の数字よりも、今日心地よく使えたお金に目を向けると、気持ちが少し楽になります。',
-      ' 人づきあいの出費も、自分が納得しているかどうかを基準にしてみましょう。',
-      ' 我慢ばかりの節約は続かないので、楽しみのための予算も少し用意しておくと良さそうです。',
-      ' 何にどれくらい使っているかを知ること自体が、すでに大きな一歩です。',
-      ' 「使ってしまった」と責めるより、「次からどうしたいか」を一緒に考えていきましょう。',
-      ' お金に関する学びにふれることで、不安が知識に変わっていきます。'
-    ],
-    c_prefix: [
-      '今日は大きな買い物は控えめにして、欲しいものリストに書き出してみましょう。',
-      '支払い方法を見直して、管理しやすい数に整理してみてください。',
-      'レシートや明細をざっと眺めて、気になる項目にマーカーを引いてみましょう。',
-      '衝動買いしそうになったら、その場で一度立ち止まりましょう。',
-      '仕事帰りや休日のお出かけ前に、使っていい金額の上限を決めておきましょう。'
-    ],
-    c_suffix: [
-      ' 時間を置いてから見直すと、本当に欲しいものだけが残っていきます。',
-      ' 支払い先が整理されるだけでも、お金の流れがぐっと分かりやすくなります。',
-      ' すべてを細かく管理しなくても、「何となく」が減るだけで安心感が違います。',
-      ' 深呼吸をしてからもう一度考えると、冷静な判断がしやすくなります。',
-      ' 上限を決めておくことで、罪悪感なくお金を楽しんで使えるようになります。',
-      ' セールの言葉に流されず「定価でも欲しいかどうか」で判断してみてください。',
-      ' キャッシュレスを多用している人は、たまに現金で支払って感覚を取り戻しましょう。',
-      ' 家にある似たものを思い出してから決めると、後悔の少ない選択になりそうです。',
-      ' 不安になったら、一人で考え込まず専門家や家族に相談してみるのも良いでしょう。',
-      ' 「貯めるために我慢する」より「安心して暮らすために整える」と考えてみてください。'
-    ]
-  },
-
-  "健康": {
-    a_prefix: [
-      '体と心のコンディションを、やさしく整えやすい日。',
-      'ここ最近の疲れが表に出やすいからこそ、ケアに向き合いたいタイミング。',
-      '生活リズムを少し見直すだけで、調子が上向きになりやすい日。',
-      '小さな不調のサインに気づきやすい一日です。',
-      '自分の体を「味方」として扱ってあげたい流れになっています。'
-    ],
-    a_suffix: [
-      ' がんばり過ぎていた人ほど、意識して休むことが大切になりそうです。',
-      ' 無理を続けるより「今日はここまで」と決めることで、回復がスムーズになります。',
-      ' 早寝早起きが難しくても、寝る前の時間の使い方を少し変えるだけで違いが出てきます。',
-      ' 体の声を無視せず、「なんとなく変だな」と思ったら早めにケアしてあげてください。',
-      ' 自分を雑に扱っていたと感じたら、今日から少しずつ労わる方向に舵を切りましょう。',
-      ' こまめな水分補給やストレッチなど、小さな習慣が大きな差を生みます。',
-      ' 体調が安定している人も、予防という視点でメンテナンスを意識してみてください。',
-      ' 一気に生活を変えるより、一つの習慣を続けることが大きな成果につながります。',
-      ' ぐっすり眠るための環境づくりに、少し手間をかける価値がありそうです。',
-      ' 不調を責めるのではなく、「ここまでよく働いてくれた」と体をねぎらってあげてください。'
-    ],
-    b_prefix: [
-      '気圧や天気の影響を受けやすい人は、コンディションに波を感じやすい日です。',
-      'ストレスと疲れが混ざり合って、原因が分かりづらくなりがちなタイミングです。',
-      '仕事や家庭の予定が立て込んでいて、自分のケアが後回しになりやすい日。',
-      '気づいたときにはかなり無理をしていた、と感じる人もいるかもしれません。',
-      '体調が整うと、心の安定感もぐっと増していく時期です。'
-    ],
-    b_suffix: [
-      ' 今日は無理に予定を詰め込まず、余裕を持ったスケジュールにしておくと安心です。',
-      ' すべてを解決しようとせず、「今日は少し楽になること」を一つ決めてみてください。',
-      ' 頑張りどころと休むところを意識して分けることで、エネルギーを守れます。',
-      ' 我慢し続けるより、早めに休息を取ることで結果的にパフォーマンスも上がります。',
-      ' 体調が悪い自分を責める必要はありません。まずは整えることに集中してみてください。',
-      ' 心のざわつきは、体の疲れから来ている可能性もあります。双方を少しずついたわりましょう。',
-      ' 食事や睡眠のリズムを大きく乱さないことが、コンディション維持の鍵になりそうです。',
-      ' 不調が続く場合は、自己判断だけでなく専門家の意見も取り入れてみてください。',
-      ' 小さな不快感を見過ごさないことで、大きな不調を防げる可能性があります。',
-      ' 「今日できる範囲」で動くと決めることで、心身への負担が軽くなります。'
-    ],
-    c_prefix: [
-      '今日はいつもより一杯多く水を飲むことから意識してみましょう。',
-      '移動の合間や区切りの時間に、首や肩をゆっくり回してみてください。',
-      '夜はスマートフォンを見る時間を少しだけ減らしてみましょう。',
-      'お腹や足元を冷やさないよう、服装やブランケットで調整してみてください。',
-      '「疲れた」と感じたら、そのサインを無視せずに少し休憩を取りましょう。'
-    ],
-    c_suffix: [
-      ' 水分補給がきちんとできるだけでも、だるさが和らぐことがあります。',
-      ' 筋肉がほぐれると、気持ちまで少し軽く感じられるかもしれません。',
-      ' 眠る前のデジタルデトックスが、睡眠の質を高めてくれそうです。',
-      ' 体を温めることで、心の緊張もゆっくりほどけていきます。',
-      ' こまめな休憩が、結果的に作業効率を上げてくれるはずです。',
-      ' 深呼吸を数回繰り返し、自分の体の状態を静かに観察してみてください。',
-      ' 無理に運動するより、気持ちの良い範囲で体を動かすことを心がけましょう。',
-      ' 体調が良くない日は、予定を減らす勇気も大切なセルフケアです。',
-      ' ぬるめのお風呂で体を温めると、疲れがほぐれやすくなります。',
-      ' 少しだけ早く布団に入るだけでも、明日のコンディションが変わってきます。'
-    ]
-  }
-};
-
-// ------------------------------------------------------
-//  文章生成: 各カテゴリごとに 50 パターン以上
-// ------------------------------------------------------
-function buildCombos(prefixes, suffixes, maxCount) {
-  const out = [];
-  outer: for (let i = 0; i < prefixes.length; i++) {
-    for (let j = 0; j < suffixes.length; j++) {
-      out.push(prefixes[i] + suffixes[j]);
-      if (out.length >= maxCount) break outer;
+  // 安定した乱数（テキストバリエーション用のみ）
+  function stableSeed(str) {
+    var h = 1779033703 ^ str.length;
+    for (var i = 0; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
     }
+    h = (h ^ (h >>> 16)) >>> 0;
+    return h;
   }
-  return out;
-}
 
-function buildBank() {
-  const bank = {};
-  for (const topic in BASE_BANK) {
-    const src = BASE_BANK[topic];
-    bank[topic] = {
-      a: buildCombos(src.a_prefix, src.a_suffix, 50),
-      b: buildCombos(src.b_prefix, src.b_suffix, 50),
-      c: buildCombos(src.c_prefix, src.c_suffix, 50)
+  function makeRng(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a |= 0;
+      a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = t + Math.imul(t ^ (t >>> 7), 61 | t) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
   }
-  return bank;
-}
 
-const BANK = buildBank();
-
-// 疑似乱数（安定化）
-function stableSeed(str) {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
-  }
-  return h >>> 0;
-}
-function makeRng(seed) {
-  let x = seed >>> 0 || 1;
-  return function () {
-    x ^= x << 13;
-    x ^= x >>> 17;
-    x ^= x << 5;
-    return (x >>> 0) / 4294967296;
-  };
-}
-
-// スコアに応じて a/b/c を選ぶ
-function gradeFromScore(score) {
-  if (score >= 80) return 'a';
-  if (score >= 55) return 'b';
-  return 'c';
-}
-
-// 2行テキスト生成（100%星占い２風）
-function buildTwoLines(topic, score, seedBase) {
-  const bank = BANK[topic];
-  if (!bank) return ["", ""];
-  const grade = gradeFromScore(score);
-  const arr = bank[grade];
-  const len = arr.length;
-  const rng = makeRng(stableSeed(topic + "|" + grade + "|" + seedBase));
-  const i1 = Math.floor(rng() * len);
-  // 2行目は必ず別のインデックス
-  const i2 = (i1 + 1 + Math.floor(rng() * (len - 1))) % len;
-  return [arr[i1], arr[i2]];
-}
-function longText(topic, score, seedBase) {
-  const [l1, l2] = buildTwoLines(topic, score, seedBase);
-  return l1 + '<br>' + l2;
-}
-
-// 季節感のあるひと言を足す
-function seasonPhrase(baseDate, seedBase) {
-  if (!baseDate || !(baseDate instanceof Date) || isNaN(baseDate.getTime())) return '';
-  const month = baseDate.getMonth() + 1;
-  const rng = makeRng(stableSeed('season|' + month + '|' + seedBase));
-
-  let arr;
-  if (month === 12 || month === 1 || month === 2) {
-    // 冬
-    arr = [
-      '冷たい空気の中にも、静かに整える力が流れています。温かい飲み物でほっと一息つく時間を増やしてみてください。',
-      '一年の締めくくりや始まりを意識しやすい季節。小さな区切りをつけることで、心にも余白が生まれそうです。',
-      '空気が澄んで、気持ちもリセットしやすい時期。体を冷やしすぎないようにだけ気を配ってあげてください。'
-    ];
-  } else if (month >= 3 && month <= 5) {
-    // 春
-    arr = [
-      '春の空気がゆっくりと流れ込み、気持ちも少しずつほぐれやすいタイミングです。予定の中に、小さな楽しみを混ぜてみてください。',
-      '新しいことを始めたくなる季節。全部を一気に変えようとせず、「ひとつだけ試してみる」くらいがちょうど良さそうです。',
-      '朝晩の空気に、少しずつやわらかさが混じってくる頃。散歩や窓開けで、季節の変化を体に取り入れてみてください。'
-    ];
-  } else if (month >= 6 && month <= 8) {
-    // 夏
-    arr = [
-      '暑さで体力を奪われやすい季節。無理を通すより、こまめな休憩と水分補給を味方につけてあげてください。',
-      '日差しが強いぶん、心も外に向きやすい時期。疲れを感じたら、涼しい場所で一息ついてから次の予定へ。',
-      '夏の空気の中でも、自分のペースを守ることが大切。寝る前の数分だけでも、静かな時間を確保してみましょう。'
-    ];
-  } else {
-    // 秋
-    arr = [
-      '空気が少しずつ落ち着いてくる季節。ゆっくりと振り返る時間をとることで、次に進むヒントが見つかりそうです。',
-      '秋の静けさが、気持ちを整えるのを助けてくれます。お気に入りの飲み物と一緒に、今日を振り返ってみてください。',
-      '日々の変化を感じやすい季節。小さな違いに気づくほど、明日への楽しみも増えていきます。'
-    ];
-  }
-
-  const idx = Math.floor(rng() * arr.length);
-  return arr[idx] || '';
-}
-
-// 全体運だけ、季節感付きの3行構成にする
-function longTextWithSeason(topic, score, seedBase, baseDate) {
-  const core = longText(topic, score, seedBase);
-  const s = seasonPhrase(baseDate, seedBase);
-  if (!s) return core;
-  return core + '<br>' + s;
-}
-
-
-// ------------------------------------------------------
-//  天体計算まわり
-// ------------------------------------------------------
-function norm(d) { return (d % 360 + 360) % 360; }
-
-function asp(d) {
-  d = Math.abs(d);
-  if (d < 5)  return  8;
-  if (d < 15) return  4;
-  if (d < 30) return  0;
-  if (d < 45) return -4;
-  return -8;
-}
-
-// 0〜100 に正規化
-function mapScoreTotal(raw, maxAbs) {
-  // 全体運用：中心70・振れ幅±40（だいたい30〜100のレンジを想定）
-  const span = 40;
-  let s = 70 + (raw / maxAbs) * span;
-  if (s < 0) s = 0;
-  if (s > 100) s = 100;
-  return Math.round(s);
-}
-
-function mapScoreCat(raw, maxAbs) {
-  // 各分野用：全体運と同じスケールで評価
-  const span = 40;
-  let s = 70 + (raw / maxAbs) * span;
-  if (s < 0) s = 0;
-  if (s > 100) s = 100;
-  return Math.round(s);
-}
-
-// "YYYY-MM-DD" / "YYYY/MM/DD" → Date（ローカル昼12:00）
-function parseYmd(str) {
-  if (!str) return null;
-  const m = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
-  if (!m) return null;
-  const y  = parseInt(m[1], 10);
-  const mo = parseInt(m[2], 10) - 1;
-  const d  = parseInt(m[3], 10);
-  return new Date(y, mo, d, 12, 0, 0);
-}
-
-// 誕生日判定（基準日は占いたい日）
-function isBirthday(birthStr, baseDate) {
-  if (!birthStr || !baseDate) return false;
-  const bd = parseYmd(birthStr);
-  if (!bd || isNaN(bd.getTime())) return false;
-  return bd.getMonth() === baseDate.getMonth() &&
-         bd.getDate()  === baseDate.getDate();
-}
-
-// ------------------------------------------------------
-//  メイン calc()
-// ------------------------------------------------------
-function calc() {
-  const birthStr  = document.getElementById('birth').value;
-  const targetStr = document.getElementById('targetDate').value;
-
-  if (!birthStr) {
-    alert('生年月日を入力してください');
-    return;
-  }
-
-  const bd = parseYmd(birthStr);
-  if (!bd || isNaN(bd.getTime())) {
-    alert('生年月日を正しく読み取れませんでした');
-    return;
-  }
-
-  let now;
-  if (targetStr) {
-    now = parseYmd(targetStr);
-    if (!now || isNaN(now.getTime())) {
-      alert('占いたい日付を正しく読み取れませんでした');
-      return;
+  // テキストバンク（シンプル版）
+  var TEXT_BANK = {
+    total: {
+      a: [
+        "追い風を感じやすいタイミング。やりたいことを一つだけ決めて、そこに時間を使ってみてください。ちょっとした行動が、次のきっかけにつながっていきそうです。",
+        "全体的にスムーズに流れやすい日。完璧を目指すよりも、「今日はここまでできれば十分」と自分に言ってあげると、気持ちよく一日を終えられそうです。"
+      ],
+      b: [
+        "大きな山はなくても、日常を整えやすい日。すべてを一度に変えようとせず、身の回りの小さなところから整えていくと、心も落ち着いてきます。",
+        "いつも通りの一日の中にも、小さな楽しみを見つけやすいタイミング。好きな飲み物や音楽をひとつ足して、自分だけのごほうび時間を作ってみてください。"
+      ],
+      c: [
+        "少し慎重さが役に立つ日。無理に答えを出そうとせず、「今日は様子を見る」と決めるだけでも、心に余白が生まれます。自分を責めすぎないでくださいね。",
+        "思い通りに進まない場面もあるかもしれませんが、それでも大丈夫。できなかったことより、今日ちゃんとできたことを一つ思い出して、そっと自分をねぎらってあげましょう。"
+      ]
+    },
+    love: {
+      a: [
+        "人との距離が心地よく縮まりやすい日。恋愛に限らず、素直な「ありがとう」や「おつかれさま」が、関係をあたたかくしてくれそうです。",
+        "気になる人との会話が弾みやすいタイミング。大きなアクションよりも、ちょっとした気遣いやスタンプひとつが、相手の心にやさしく届きそうです。"
+      ],
+      b: [
+        "言葉の行き違いに敏感になりやすい日。相手の一言を深読みしすぎず、「今日はそういう日もある」と受け止めてみると、気持ちが少し軽くなります。",
+        "過去の出来事をふと思い出しやすいかもしれません。うまくいかなかった経験も、「あの時の自分もよくがんばっていた」と認めてあげると、今の恋にもやさしく向き合えます。"
+      ],
+      c: [
+        "気持ちが揺れやすい日。無理に明るく振る舞うより、信頼できる人とのゆるい会話や一人時間で心を落ち着かせるほうが、恋のバランスも整いやすくなります。",
+        "相手のペースと自分のペースの違いを、少し重く感じてしまうかもしれません。答えを急がず、「今日は自分の心の声をよく聴く日」と決めて過ごしてみてください。"
+      ]
+    },
+    work: {
+      a: [
+        "集中力を発揮しやすい日。短い時間でも「ここまでやる」と決めて取り組むと、手応えと達成感の両方を得られそうです。",
+        "得意な作業で周りを支えやすいタイミング。無理のない範囲で手を差し伸べると、信頼感がぐっと高まりそうです。"
+      ],
+      b: [
+        "淡々と取り組むことで、気づいたら進んでいる日。仕事前に今日やることを三つだけ書き出すと、スムーズに動きやすくなります。",
+        "「がんばる」と「休む」のバランスをとりたいタイミング。同じ姿勢が続くときは、軽く首や肩を回してリセットしてあげてください。"
+      ],
+      c: [
+        "集中しにくさを感じたら、いったんタスクを細かく区切ってみましょう。「ここまでできたら休憩」と小さなゴールを作ると、気持ちが少し楽になります。",
+        "判断に迷うことが増えそうな日。大きな決断は明日以降に回し、今日は情報を集める日にするのも一つの選択です。"
+      ]
+    },
+    money: {
+      a: [
+        "お金との付き合い方を整えやすい日。レシートや明細をざっと眺めて、気になる項目に印をつけるだけでも、流れが見えやすくなります。",
+        "欲しいものと必要なものの線引きがしやすいタイミング。今日は「本当にときめくもの」だけを選ぶ意識で、お金を使ってみてください。"
+      ],
+      b: [
+        "「なんとなく」で使ってしまうお金を見直したくなる日。すべてを管理しきれなくても、「これはやめてみようかな」と思う項目を一つ決めるだけで十分です。",
+        "大きな出費よりも、日々の小さな積み重ねが気になるタイミング。無理な節約ではなく、「ここだけ少し控えめにしてみよう」くらいが続けやすそうです。"
+      ],
+      c: [
+        "お金のことを考えると少し不安が出てきやすい日。ひとりで抱え込まず、信頼できる人に軽く相談したり、家計アプリで現状を「見える化」するところから始めてみてください。",
+        "今日は大きな契約や高額な買い物は慎重に。もう一度条件を見直したり、一晩おいてから決めると後悔が少なく済みそうです。"
+      ]
+    },
+    health: {
+      a: [
+        "体と心のコンディションを整えやすい日。早めにお風呂に入ったり、好きな香りを取り入れたりと、五感からリラックスさせてあげてください。",
+        "小さなケアが明日の自分を助けてくれるタイミング。水分補給や軽いストレッチなど、続けやすいことをひとつ選んで意識してみましょう。"
+      ],
+      b: [
+        "夜のスマホ時間を少し短くしてみるだけでも、睡眠の質が変わってきそうな日。寝る前に深呼吸を数回繰り返し、体の力を抜くイメージをしてみてください。",
+        "なんとなく疲れを感じたら、「今日は早めに寝る」と決めてしまうのもアリ。自分の限界を超える前に休むことが、明日のパフォーマンスにつながります。"
+      ],
+      c: [
+        "疲れがたまりやすいタイミング。無理に予定を詰め込まず、帰宅後は体をあたためることと、十分な睡眠を優先してあげてください。",
+        "気圧や気温の変化で、体調や気分が揺れやすいかもしれません。温かい飲み物や、やさしい味のご飯で、内側からじんわり整えていきましょう。"
+      ]
     }
-  } else {
-    now = new Date();
+  };
+
+  function gradeFromScore(score) {
+    if (score >= 75) return 'a';
+    if (score >= 45) return 'b';
+    return 'c';
   }
 
-  const P = [
-    Astronomy.Body.Sun,
-    Astronomy.Body.Moon,
-    Astronomy.Body.Mercury,
-    Astronomy.Body.Venus,
-    Astronomy.Body.Mars,
-    Astronomy.Body.Jupiter,
-    Astronomy.Body.Saturn
-  ];
-
-  const nat = {};
-  const tod = {};
-
-  for (let i = 0; i < P.length; i++) {
-    const p = P[i];
-    nat[p] = norm(Astronomy.Ecliptic(Astronomy.GeoVector(p, bd,  true)).elon);
-    tod[p] = norm(Astronomy.Ecliptic(Astronomy.GeoVector(p, now, true)).elon);
+  function pickText(category, score, seedBase) {
+    var g = gradeFromScore(score);
+    var bank = (TEXT_BANK[category] && TEXT_BANK[category][g]) || [];
+    if (!bank.length) return '';
+    var rng = makeRng(stableSeed(category + '|' + g + '|' + seedBase));
+    var idx = Math.floor(rng() * bank.length);
+    return bank[idx];
   }
 
-  let rawTotal = 0;
-  for (let i = 0; i < P.length; i++) {
-    rawTotal += asp(norm(tod[P[i]] - nat[P[i]]));
+  // 季節感のあるひと言
+  function seasonPhrase(date, seedBase) {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '';
+    var month = date.getMonth() + 1;
+    var rng = makeRng(stableSeed('season|' + month + '|' + seedBase));
+    var arr;
+    if (month === 12 || month === 1 || month === 2) {
+      arr = [
+        "冷たい空気の中にも、静かに整える力が流れています。温かい飲み物でほっと一息つく時間を増やしてみてください。",
+        "一年の締めくくりや始まりを意識しやすい季節。小さな区切りをつけることで、心にも余白が生まれそうです。"
+      ];
+    } else if (month >= 3 && month <= 5) {
+      arr = [
+        "春の空気がゆっくりと流れ込み、気持ちも少しずつほぐれやすいタイミングです。予定の中に、小さな楽しみを混ぜてみてください。",
+        "新しいことを始めたくなる季節。全部を一気に変えようとせず、「ひとつだけ試してみる」くらいがちょうど良さそうです。"
+      ];
+    } else if (month >= 6 && month <= 8) {
+      arr = [
+        "暑さで体力を奪われやすい季節。無理を通すより、こまめな休憩と水分補給を味方につけてあげてください。",
+        "日差しが強いぶん、心も外に向きやすい時期。疲れを感じたら、涼しい場所で一息ついてから次の予定へ。"
+      ];
+    } else {
+      arr = [
+        "空気が少しずつ落ち着いてくる季節。ゆっくりと振り返る時間をとることで、次に進むヒントが見つかりそうです。",
+        "日々の変化を感じやすい季節。小さな違いに気づくほど、明日への楽しみも増えていきます。"
+      ];
+    }
+    var idx = Math.floor(rng() * arr.length);
+    return arr[idx] || '';
   }
-  const rawLove   = asp(norm(tod[Astronomy.Body.Venus]   - nat[Astronomy.Body.Venus]));
-  const rawMoney  = asp(norm(tod[Astronomy.Body.Jupiter] - nat[Astronomy.Body.Jupiter]));
-  const rawWork   = asp(norm(tod[Astronomy.Body.Mars]    - nat[Astronomy.Body.Mars])) +
-                    asp(norm(tod[Astronomy.Body.Saturn]  - nat[Astronomy.Body.Saturn]));
-  const rawHealth = asp(norm(tod[Astronomy.Body.Sun]     - nat[Astronomy.Body.Sun])) +
-                    asp(norm(tod[Astronomy.Body.Moon]    - nat[Astronomy.Body.Moon]));
 
-  // --- 天体差を -1〜+1 に正規化 ---
+  // 角度差とアスペクト評価
+  function aspectScore(diff) {
+    // diff は 0〜360
+    var aspects = [0, 60, 90, 120, 180];
+    var orb = 6;
+    var best = 0;
+    for (var i = 0; i < aspects.length; i++) {
+      var a = aspects[i];
+      var d = Math.abs(diff - a);
+      if (d > 180) d = 360 - d;
+      if (d <= orb) {
+        var s = 1 - d / orb; // 0〜1
+        var sign;
+        if (a === 0 || a === 120) sign = 1.0;      // コンジャンクション・トライン：基本プラス
+        else if (a === 60)        sign = 0.6;      // セクスタイル：ややプラス
+        else                      sign = -0.8;     // スクエア・オポジション：少し厳しめ
+        var v = s * sign;
+        if (Math.abs(v) > Math.abs(best)) {
+          best = v;
+        }
+      }
+    }
+    return best; // おおむね -0.8〜+1.0
+  }
+
   function clampNorm(x) {
     if (x < -1) return -1;
-    if (x >  1) return 1;
+    if (x > 1) return 1;
     return x;
   }
 
-  // 総合運用のカーブ調整：中心付近を少し押し下げて、良い日／悪い日を強調
-  function shapeTotal(x) {
-    // x は -1〜+1 を想定
-    // 立ち上がりを少し急にしてメリハリを出す
-    return x * x * x + 0.35 * x;
+  // -1〜+1 を 20〜100%へ（単調に・少しカーブ）
+  function mapNormToPercent(x) {
+    var y = x * x * x * 0.6 + x * 0.4;
+    var p = (y + 1) / 2 * 80 + 20;
+    if (p < 20) p = 20;
+    if (p > 100) p = 100;
+    return Math.round(p);
   }
 
-  const nTotal  = clampNorm(rawTotal / 4);
-  const nLove   = clampNorm(rawLove   / 8);
-  const nMoney  = clampNorm(rawMoney  / 8);
-  const nWork   = clampNorm(rawWork   / (2 * 8));
-  const nHealth = clampNorm(rawHealth / (2 * 8));
-
-  // 0〜100 にクリップ
-  function clamp01to100(x) {
-  // スコアは 20〜100 の範囲に収める（0〜10%台の極端な落ち込みを避ける）
-  let v = Math.round(x);
-  if (v < 20) v = 20;
-  if (v > 100) v = 100;
-  return v;
-}
-
-  // --- 占いたい日ごとに安定したランダム＋天体バイアスでスコアを作る ---
-  function scoreFromRandom(label, normBias, baseSpread, astroWeight) {
-  const seed = label + '|' + birthStr + '|' + (targetStr || (now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate()));
-  const rng  = makeRng(stableSeed(seed));
-  const r    = rng();  // 0〜1
-
-  // baseSpread=0.8 で、だいたい 20〜80 を中心にしつつ、極端な日も残す
-  const effectiveSpread = 0.8 * baseSpread;
-  const base = 50 + (r - 0.5) * 100 * effectiveSpread;
-
-  // 天体差に応じて ±22点までシフト（astroWeightで強さを調整）
-  const astroShift = normBias * 22 * astroWeight;
-
-  const val = base + astroShift;
-  return clamp01to100(val);
-}
-// --- 全体運＆各分野スコア ---
-  // 総合運は天体差 rawTotal から直接算出（乱数を使わず、誕生日×占いたい日に対して一意）
-  let total = clamp01to100(((shapeTotal(nTotal) + 1) / 2) * 80 + 20);
-
-// 分野別スコアも、乱数ではなく天体差をベースに算出し、最後に小さなゆらぎだけを乗せる
-  const baseLove   = ((nLove   + 1) / 2) * 80 + 20;
-  const baseMoney  = ((nMoney  + 1) / 2) * 80 + 20;
-  const baseWork   = ((nWork   + 1) / 2) * 80 + 20;
-  const baseHealth = ((nHealth + 1) / 2) * 80 + 20;
-
-  let love   = baseLove;
-  let money  = baseMoney;
-  let work   = baseWork;
-  let health = baseHealth;
-
-
-
-  const seedBase =
-    birthStr + '|' +
-    (targetStr || (now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate()));
-
-
-  // カテゴリごとの微調整：同じパーセントが並びすぎないよう、安定した小さな揺らぎを加える
-  const jitterRng = makeRng(stableSeed('jitter|' + seedBase));
-  function jitterScore(base) {
-    const amp = 6; // 最大 ±6
-    const r = jitterRng();
-    let v = base + (r * 2 - 1) * amp;
-    if (v < 0) v = 0;
-    if (v > 100) v = 100;
-    return Math.round(v);
+  function parseDateInput(str) {
+    if (!str) return null;
+    var m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    var y = parseInt(m[1], 10);
+    var mo = parseInt(m[2], 10);
+    var d = parseInt(m[3], 10);
+    if (!y || !mo || !d) return null;
+    return new Date(y, mo - 1, d, 12, 0, 0);
   }
 
-  love   = jitterScore(love);
-  money  = jitterScore(money);
-  work   = jitterScore(work);
-  health = jitterScore(health);
-
-  let html = '';
-  html += '<div class="card">' +
-            '<div class="label-row">' +
-              '<div class="label">🪐 今日の総合運</div>' +
-              '<div class="percent">' + total + '%</div>' +
-            '</div>' +
-            '<div class="percent-bar"><div class="percent-fill" style="width:' + total + '%;"></div></div>' +
-            '<div class="text">' + longTextWithSeason('全体運', total, seedBase + '|overall', now) + '</div>' +
-          '</div>';
-
-  html += '<div class="card">' +
-            '<div class="label-row">' +
-              '<div class="label">💞 恋愛</div>' +
-              '<div class="percent">' + love + '%</div>' +
-            '</div>' +
-            '<div class="percent-bar"><div class="percent-fill" style="width:' + love + '%;"></div></div>' +
-            '<div class="text">' + longText('恋愛', love, seedBase + '|love') + '</div>' +
-          '</div>';
-
-  html += '<div class="card">' +
-            '<div class="label-row">' +
-              '<div class="label">💼 仕事</div>' +
-              '<div class="percent">' + work + '%</div>' +
-            '</div>' +
-            '<div class="percent-bar"><div class="percent-fill" style="width:' + work + '%;"></div></div>' +
-            '<div class="text">' + longText('仕事', work, seedBase + '|work') + '</div>' +
-          '</div>';
-
-  html += '<div class="card">' +
-            '<div class="label-row">' +
-              '<div class="label">💰 金運</div>' +
-              '<div class="percent">' + money + '%</div>' +
-            '</div>' +
-            '<div class="percent-bar"><div class="percent-fill" style="width:' + money + '%;"></div></div>' +
-            '<div class="text">' + longText('金運', money, seedBase + '|money') + '</div>' +
-          '</div>';
-
-  html += '<div class="card">' +
-            '<div class="label-row">' +
-              '<div class="label">💗 健康</div>' +
-              '<div class="percent">' + health + '%</div>' +
-            '</div>' +
-            '<div class="percent-bar"><div class="percent-fill" style="width:' + health + '%;"></div></div>' +
-            '<div class="text">' + longText('健康', health, seedBase + '|health') + '</div>' +
-          '</div>';
-
-  if (isBirthday(birthStr, now)) {
-    confetti({
-      particleCount: 120,
-      spread: 90,
-      origin: { y: 0.1 },
-      colors: ['#B79DF2', '#ffffff', '#d9c8ff']
-    });
-    html += '<div class="birthday-msg">🎂 お誕生日おめでとうございます\n今日のあなたに、やさしい流れがありますように。</div>';
+  function eclLon(body, date) {
+    var time = new Astronomy.AstroTime(date);
+    var vec = Astronomy.GeoVector(body, time, true);
+    var ecl = Astronomy.Ecliptic(vec);
+    return ecl.elon;
   }
 
-  document.getElementById('result').innerHTML = html;
-}
-
-// ページ読み込み時に占いたい日を今日にセット
-document.addEventListener('DOMContentLoaded', function () {
-  const t = document.getElementById('targetDate');
-  if (t) {
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = ('0' + (today.getMonth() + 1)).slice(-2);
-    const d = ('0' + today.getDate()).slice(-2);
-    t.value = y + '-' + m + '-' + d;
+  // 簡易コンフェッティ
+  function fireConfetti() {
+    var canvas = document.getElementById('confettiCanvas');
+    var ctx = canvas.getContext('2d');
+    var w = (canvas.width = window.innerWidth);
+    var h = (canvas.height = window.innerHeight);
+    var COUNT = 150;
+    var confs = [];
+    for (var i = 0; i < COUNT; i++) {
+      confs.push({
+        x: Math.random() * w,
+        y: Math.random() * -h,
+        vy: 2 + Math.random() * 3,
+        vx: (Math.random() - 0.5) * 1.5,
+        size: 4 + Math.random() * 4,
+        rot: Math.random() * Math.PI * 2,
+        vr: (Math.random() - 0.5) * 0.2
+      });
+    }
+    var start = performance.now();
+    function loop(now) {
+      var t = now - start;
+      ctx.clearRect(0, 0, w, h);
+      for (var i = 0; i < confs.length; i++) {
+        var c = confs[i];
+        c.y += c.vy;
+        c.x += c.vx;
+        c.rot += c.vr;
+        if (c.y > h + 20) {
+          c.y = -20;
+          c.x = Math.random() * w;
+        }
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.rot);
+        ctx.fillStyle = 'hsla(' + (260 + Math.random() * 40) + ',70%,70%,0.9)';
+        ctx.fillRect(-c.size / 2, -c.size / 2, c.size, c.size);
+        ctx.restore();
+      }
+      if (t < 2500) {
+        requestAnimationFrame(loop);
+      } else {
+        ctx.clearRect(0, 0, w, h);
+      }
+    }
+    requestAnimationFrame(loop);
   }
-});
+
+  function calc() {
+    var birthStr = document.getElementById('birth').value;
+    var targetStr = document.getElementById('targetDate').value;
+
+    if (!birthStr) {
+      alert('生年月日を入力してください');
+      return;
+    }
+    if (typeof Astronomy === 'undefined') {
+      alert('Astronomy Engine が読み込まれていません。ネットワーク環境を確認してください。');
+      return;
+    }
+
+    var birthDate = parseDateInput(birthStr);
+    if (!birthDate) {
+      alert('生年月日が正しくありません');
+      return;
+    }
+
+    var targetDate = parseDateInput(targetStr);
+    if (!targetDate) {
+      var now = new Date();
+      targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+    }
+
+    // 惑星位置計算
+    var bodies = [
+      Astronomy.Body.Sun,
+      Astronomy.Body.Moon,
+      Astronomy.Body.Mercury,
+      Astronomy.Body.Venus,
+      Astronomy.Body.Mars,
+      Astronomy.Body.Jupiter,
+      Astronomy.Body.Saturn
+    ];
+
+    var nat = {};
+    var cur = {};
+    for (var i = 0; i < bodies.length; i++) {
+      var b = bodies[i];
+      nat[b] = eclLon(b, birthDate);
+      cur[b] = eclLon(b, targetDate);
+    }
+
+    function diffLon(body) {
+      var d = cur[body] - nat[body];
+      d = d % 360;
+      if (d < 0) d += 360;
+      return d;
+    }
+
+    var rawTotal = 0;
+    for (var j = 0; j < bodies.length; j++) {
+      rawTotal += aspectScore(diffLon(bodies[j]));
+    }
+
+    var rawLove =
+      aspectScore(diffLon(Astronomy.Body.Venus)) +
+      0.7 * aspectScore(diffLon(Astronomy.Body.Moon));
+
+    var rawMoney =
+      aspectScore(diffLon(Astronomy.Body.Jupiter)) +
+      0.4 * aspectScore(diffLon(Astronomy.Body.Venus));
+
+    var rawWork =
+      aspectScore(diffLon(Astronomy.Body.Mars)) +
+      aspectScore(diffLon(Astronomy.Body.Saturn));
+
+    var rawHealth =
+      aspectScore(diffLon(Astronomy.Body.Sun)) +
+      aspectScore(diffLon(Astronomy.Body.Moon));
+
+    var nTotal  = clampNorm(rawTotal / 5);
+    var nLove   = clampNorm(rawLove / 1.7);
+    var nMoney  = clampNorm(rawMoney / 1.4);
+    var nWork   = clampNorm(rawWork / 2.0);
+    var nHealth = clampNorm(rawHealth / 2.0);
+
+    var total  = mapNormToPercent(nTotal);
+    var love   = mapNormToPercent(nLove);
+    var money  = mapNormToPercent(nMoney);
+    var work   = mapNormToPercent(nWork);
+    var health = mapNormToPercent(nHealth);
+
+    var seedBase = birthStr + '|' +
+      (targetStr || (targetDate.getFullYear() + '-' + (targetDate.getMonth() + 1) + '-' + targetDate.getDate()));
+
+    var overallText = pickText('total', total, seedBase);
+    var loveText    = pickText('love', love, seedBase);
+    var moneyText   = pickText('money', money, seedBase);
+    var workText    = pickText('work', work, seedBase);
+    var healthText  = pickText('health', health, seedBase);
+    var seasonText  = seasonPhrase(targetDate, seedBase);
+
+    var html = '';
+    html += '<div class="section-title"><span class="icon">🪐</span><span>今日の総合運 ' + total + '%</span></div>';
+    html += '<div class="text-block">' + overallText + '</div>';
+    if (seasonText) {
+      html += '<div class="text-block">' + seasonText + '</div>';
+    }
+
+    html += '<div class="section-title"><span class="icon">💞</span><span>恋愛 ' + love + '%</span></div>';
+    html += '<div class="text-block">' + loveText + '</div>';
+
+    html += '<div class="section-title"><span class="icon">💼</span><span>仕事 ' + work + '%</span></div>';
+    html += '<div class="text-block">' + workText + '</div>';
+
+    html += '<div class="section-title"><span class="icon">💰</span><span>金運 ' + money + '%</span></div>';
+    html += '<div class="text-block">' + moneyText + '</div>';
+
+    html += '<div class="section-title"><span class="icon">💗</span><span>健康 ' + health + '%</span></div>';
+    html += '<div class="text-block">' + healthText + '</div>';
+
+    document.getElementById('result').innerHTML = html;
+
+    // 誕生日判定
+    var birthdayEl = document.getElementById('birthdayMessage');
+    birthdayEl.textContent = '';
+    var isBirthday =
+      birthDate.getMonth() === targetDate.getMonth() &&
+      birthDate.getDate() === targetDate.getDate();
+    if (isBirthday) {
+      birthdayEl.textContent =
+        '🎂 お誕生日おめでとうございます。今日のあなたに、やさしい流れがありますように。';
+      fireConfetti();
+    }
+  }
+
+  // グローバルに公開
+  window.calc = calc;
+
+})();
 </script>
-</head>
-
-<body>
-<h1>100% 星占い</h1>
-<div class="wrapper">
-  <label for="birth">生年月日</label>
-  <input type="date" id="birth" placeholder="例: 1978-12-31">
-
-  <label for="targetDate">占いたい日（空欄なら今日）</label>
-  <input type="date" id="targetDate">
-
-  <button onclick="calc()">この日の運勢を見る</button>
-  <div class="notice">※ 数値は太陽〜土星までの配置をもとにした「今日との相性度」です。</div>
-
-  <div id="result"></div>
-</div>
 </body>
 </html>

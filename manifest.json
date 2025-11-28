@@ -1,1 +1,21 @@
-{"name": "\u4eca\u65e5\u306e\u904b\u52e2", "short_name": "\u904b\u52e2", "start_url": "index.html", "display": "standalone", "background_color": "#FFFFFF", "theme_color": "#B79DF2", "icons": [{"src": "icon-180.png", "sizes": "180x180", "type": "image/png"}, {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"}, {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"}]}
+{
+  "name": "本格星占い",
+  "short_name": "星占い",
+  "start_url": "/horoscope-100pct/index.html",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#6b46c1",
+  "scope": "/horoscope-100pct/",
+  "icons": [
+    {
+      "src": "/horoscope-100pct/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/horoscope-100pct/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

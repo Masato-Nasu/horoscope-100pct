@@ -3,334 +3,169 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<title>本格星占い (Astro Logic)</title>
+<title>星占い (最終版)</title>
 <meta name="theme-color" content="#6b46c1">
 
-<link rel="apple-touch-icon" href="/horoscope-100pct/icon-192.png">
-<link rel="icon" href="/horoscope-100pct/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪐</text></svg>">
 
-<script src="https://unpkg.com/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/astronomy-engine/2.1.19/astronomy.browser.min.js"></script>
 
 <style>
-/* 基本スタイル */
-body{font-family:'Noto Sans JP',system-ui,-apple-system,sans-serif;background:#fafafa;color:#222;margin:0;text-align:center; padding-bottom: 80px;}
-header{background:#6b46c1;color:#fff;padding:1.2em 0;font-weight:700;font-size:1.3em}
-main{padding:1.2em;max-width:720px;margin:0 auto}
-input,button{font:inherit;padding:.8em;border-radius:.6em;border:1px solid #ccc;box-sizing:border-box;width:100%}
-button{background:#6b46c1;color:#fff;border:none;cursor:pointer;margin-top:15px;font-weight:bold;font-size:1.1em;box-shadow: 0 4px 6px rgba(107, 70, 193, 0.3);} 
-button:active{transform: translateY(2px);}
-
-.card{background:#fff;border-radius:1em;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:1.1em;margin-top:1em;text-align:left}
-.muted{color:#666;font-size:.9em}
-.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between}
-.title{font-weight:700}
-.score{display:flex;align-items:center;gap:8px;margin-left:auto}
-.zodiac-badge { background: #f3e8ff; color: #6b46c1; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 0.9em; }
-
-/* 起動画面 */
-#app-splash { position: fixed; inset: 0; background: #fff; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease; }
-#app-splash.fadeout { opacity: 0; pointer-events: none; }
-.spinner { width: 30px; height: 30px; border: 4px solid #f3f3f3; border-top: 4px solid #6b46c1; border-radius: 50%; animation: spin 1s linear infinite; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-#confettiCanvas{position:fixed;inset:0;pointer-events:none;z-index:5000}
+/* シンプルで見やすいスタイル */
+body{font-family:-apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; background:#fafafa; color:#333; margin:0; padding:20px; text-align:center;}
+h1 { color: #6b46c1; margin-bottom: 20px; font-size: 1.5em; }
+.card { background:#fff; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); padding:20px; margin-bottom:20px; text-align:left; }
+input, button { font-size:16px; padding:12px; width:100%; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; margin-bottom:10px; }
+button { background:#6b46c1; color:#fff; font-weight:bold; border:none; cursor:pointer; }
+button:active { opacity: 0.8; }
+.result-row { display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom: 1px solid #eee; }
+.result-row:last-child { border-bottom: none; }
+.planet-name { font-weight: bold; font-size: 1.1em; }
+.planet-sign { background: #f3e8ff; color: #6b46c1; padding: 4px 10px; border-radius: 20px; font-weight:bold; }
+.debug-msg { font-size: 0.8em; color: red; margin-top: 5px; }
+#status { margin-bottom: 20px; font-size: 0.9em; color: #666; }
 </style>
 </head>
 <body>
 
-<div id="app-splash">
-  <div class="title" style="font-weight:bold; margin-bottom:10px;">星占い</div>
-  <div class="spinner"></div>
-  <div id="loading-msg" style="margin-top:10px; font-size:0.8em; color:#666;">システム起動中...</div>
+<h1>🪐 天体位置計算 (救済版)</h1>
+
+<div id="status">システム準備中...</div>
+
+<div class="card">
+    <label>生年月日:</label>
+    <input type="date" id="birthDate">
+    <input type="time" id="birthTime" value="12:00">
+    <button onclick="calculate()">計算実行</button>
 </div>
 
-<header>本格 天体星占い</header>
-
-<main>
-<section id="inputArea">
-  <div class="card">
-    <h3>📝 あなたの情報</h3>
-    <label>生年月日 <span style="color:red">*</span></label>
-    <input type="date" id="birthDate"><br><br>
-    
-    <label>出生時刻（不明なら12:00でOK）</label>
-    <input type="time" id="birthTime" value="12:00"><br><br>
-    
-    <label>出生都市（東京以外なら入力）</label>
-    <input type="text" id="placeName" placeholder="Tokyo">
-    <button id="geoBtn" type="button" style="background:#888; margin-top:5px; font-size:0.9em;">都市名から緯度経度を検索</button>
-    <input type="hidden" id="lat" value="35.6895">
-    <input type="hidden" id="lon" value="139.6917">
-  </div>
-
-  <div class="card" style="border: 2px solid #ffd166;">
-    <h3>🔮 占いたい日</h3>
-    <label>日付（未来や過去の日付もOK）</label>
-    <input type="date" id="targetDate">
-  </div>
-
-  <button id="runBtn" type="button">ホロスコープを作成</button>
-  
-  <div style="margin-top:30px; text-align:center;">
-    <button onclick="superReload()" style="background:#666; font-size:0.8em; padding:5px 10px; width:auto;">↻ 最終手段：完全リロード</button>
-  </div>
-</section>
-
-<section id="outputArea" style="display:none;">
-  <h2>鑑定結果</h2>
-  <div id="resultContainer"></div>
-  <div style="margin-top:20px;">
-    <button id="backBtn" type="button" style="background:#666;">戻る</button>
-  </div>
-</section>
-</main>
-
-<canvas id="confettiCanvas" style="display:none;"></canvas>
+<div id="resultArea" class="card" style="display:none;">
+    <div id="luckyResult" style="text-align:center; margin-bottom:15px; padding:10px; background:#fffbe6; border-radius:8px;"></div>
+    <div id="planetList"></div>
+</div>
 
 <script>
-const $ = id => document.getElementById(id);
-function saveInputs(){
-  const d={birthDate:$('birthDate').value, birthTime:$('birthTime').value, targetDate:$('targetDate').value, placeName:$('placeName').value, lat:$('lat').value, lon:$('lon').value};
-  localStorage.setItem('horo.inputs',JSON.stringify(d));
-}
-function loadInputs(){
-  try{
-    const d=JSON.parse(localStorage.getItem('horo.inputs')||'{}');
-    for(const k in d){if($(k)) $(k).value=d[k];}
-    if(!$('targetDate').value) $('targetDate').value = new Date().toISOString().split('T')[0];
-  }catch(e){}
+// 古いキャッシュを強制的に削除する処理
+if(window.navigator && navigator.serviceWorker) {
+    navigator.serviceWorker.getRegistrations()
+    .then(function(registrations) {
+        for(let registration of registrations) {
+            registration.unregister();
+        }
+    });
 }
 
-const ZODIAC_SIGNS = ['♈ 牡羊座', '♉ 牡牛座', '♊ 双子座', '♋ 蟹座', '♌ 獅子座', '♍ 乙女座', '♎ 天秤座', '♏ 蠍座', '♐ 射手座', '♑ 山羊座', '♒ 水瓶座', '♓ 魚座'];
-const PLANET_DEFS = [
-  { key: 'Sun',     label: '☀️ 太陽',  desc: '人生の目的・本質' },
-  { key: 'Moon',    label: '🌙 月',    desc: '感情・プライベート' },
-  { key: 'Mercury', label: '☿ 水星',  desc: '知性・コミュニケーション' },
-  { key: 'Venus',   label: '♀ 金星',  desc: '愛・楽しみ・金運' },
-  { key: 'Mars',    label: '♂ 火星',  desc: '行動力・情熱' },
-  { key: 'Jupiter', label: '♃ 木星',  desc: '幸運・拡大・発展' },
-  { key: 'Saturn',  label: '♄ 土星',  desc: '課題・責任・安定' },
+// 要素取得
+const $ = id => document.getElementById(id);
+const STATUS = $('status');
+
+// 星座定義
+const SIGNS = ['♈ 牡羊座', '♉ 牡牛座', '♊ 双子座', '♋ 蟹座', '♌ 獅子座', '♍ 乙女座', '♎ 天秤座', '♏ 蠍座', '♐ 射手座', '♑ 山羊座', '♒ 水瓶座', '♓ 魚座'];
+const PLANETS = [
+    {key: 'Sun', label: '太陽'}, {key: 'Moon', label: '月'}, 
+    {key: 'Mercury', label: '水星'}, {key: 'Venus', label: '金星'}, 
+    {key: 'Mars', label: '火星'}, {key: 'Jupiter', label: '木星'}, 
+    {key: 'Saturn', label: '土星'}
 ];
 
-function createSafeDate(dateStr, timeStr) {
-  if(!dateStr) return null;
-  const ymd = dateStr.split(/[-/]/).map(n => parseInt(n, 10));
-  const hm = timeStr ? timeStr.split(':').map(n => parseInt(n, 10)) : [12, 0];
-  if (ymd.some(isNaN) || hm.some(isNaN)) return null;
-  return new Date(ymd[0], ymd[1] - 1, ymd[2], hm[0], hm[1], 0);
+// 初期化チェック
+window.onload = function() {
+    // 日付の初期値を設定
+    const today = new Date().toISOString().split('T')[0];
+    if(!$('birthDate').value) $('birthDate').value = '2000-01-01'; // テスト用初期値
+
+    setTimeout(() => {
+        if (typeof Astronomy === 'undefined') {
+            STATUS.innerHTML = '<span style="color:red">⚠️ エンジン読み込み失敗。<br>ページをリロードしてください。</span>';
+        } else {
+            STATUS.innerHTML = '✅ 計算エンジン正常動作中';
+            STATUS.style.color = 'green';
+        }
+    }, 1000);
+};
+
+// 安全な日付生成
+function getSafeDate() {
+    const dStr = $('birthDate').value;
+    const tStr = $('birthTime').value || '12:00';
+    if(!dStr) return null;
+    
+    const [y, m, d] = dStr.split('-').map(Number);
+    const [h, min] = tStr.split(':').map(Number);
+    return new Date(y, m - 1, d, h, min, 0);
 }
 
-// ★修正2: 3つの方法で計算を試みる「絶対計算ロジック」
-function tryCalculateVector(body, date) {
-    let vector;
-    try {
-        // パターンA: 最新版の書き方 (引数なし)
-        vector = Astronomy.GeoVector(body, date);
-    } catch(e) {}
-
-    if (!vector || isNaN(vector.x)) {
-        try {
-            // パターンB: 古いバージョンの書き方 (false指定)
-            vector = Astronomy.GeoVector(body, date, false);
-        } catch(e) {}
-    }
-
-    if (!vector || isNaN(vector.x)) {
-        try {
-             // パターンC: ヘリオセントリック（太陽中心）から変換
-             vector = Astronomy.HelioVector(body, date);
-        } catch(e) {}
-    }
-    return vector;
-}
-
-function calculateRealPlanets(date) {
-  if (typeof Astronomy === 'undefined') throw new Error('エンジン未ロード');
-  
-  const results = [];
-  PLANET_DEFS.forEach(p => {
-    const body = Astronomy.Body[p.key];
-    
-    // 3つの方法でベクトル取得を試みる
-    const vector = tryCalculateVector(body, date);
-    
-    // それでもダメならエラー
-    if (!vector || (typeof vector.x === 'undefined')) {
-        results.push({ key: p.key, name: p.label, desc: p.desc, lon: 0, sign: '計測不能', signDegree: '0.0' });
+// 計算実行
+function calculate() {
+    const date = getSafeDate();
+    if(!date || isNaN(date.getTime())) {
+        alert("日付が正しくありません");
         return;
     }
-
-    const ecliptic = Astronomy.Ecliptic(vector); 
-    const lon = ecliptic.lon;
-    
-    if (isNaN(lon)) {
-        results.push({ key: p.key, name: p.label, desc: p.desc, lon: 0, sign: '計測不能', signDegree: '0.0' });
-        return;
-    }
-
-    const signIndex = Math.floor(lon / 30) % 12;
-    const signText = ZODIAC_SIGNS[signIndex] || ZODIAC_SIGNS[0];
-    const signDegree = lon % 30;
-    
-    results.push({ key: p.key, name: p.label, desc: p.desc, lon: lon, sign: signText, signDegree: signDegree.toFixed(1) });
-  });
-  return results;
-}
-
-function predictJupiterLuck(birthDate, targetDate) {
-  // 木星の計算も「絶対計算ロジック」を使う
-  const natalVec = tryCalculateVector(Astronomy.Body.Jupiter, birthDate);
-  const transitVec = tryCalculateVector(Astronomy.Body.Jupiter, targetDate);
-
-  if (!natalVec || !transitVec) return { title: "データエラー", msg: "計算できませんでした", score: 0 };
-
-  const natalLon = Astronomy.Ecliptic(natalVec).lon;
-  const transitLon = Astronomy.Ecliptic(transitVec).lon;
-  
-  let diff = Math.abs(transitLon - natalLon);
-  if (diff > 180) diff = 360 - diff;
-  const orb = 6; 
-
-  let result = { title: "木星は通常運行中", msg: "現在は穏やかな運気です。", score: 50, isLucky: false };
-  if(isNaN(diff)) return result;
-
-  if (diff <= orb) {
-    result.title = "✨ 12年に一度の幸運期"; result.msg = "木星があなたの生まれた位置に戻ってきました。新しいスタートに最適です！"; result.score = 100; result.isLucky = true;
-  } else if (Math.abs(diff - 120) <= orb) {
-    result.title = "🌈 幸運の追い風"; result.msg = "物事がスムーズに進む大吉運です。"; result.score = 90; result.isLucky = true;
-  } else if (Math.abs(diff - 60) <= orb) {
-    result.title = "🍀 チャンス到来"; result.msg = "協力者や機会に恵まれます。"; result.score = 80;
-  } else if (Math.abs(diff - 90) <= orb || Math.abs(diff - 180) <= orb) {
-    result.title = "🔥 試練と成長"; result.msg = "責任が増えますが、成長できる時です。"; result.score = 65;
-  }
-  return result;
-}
-
-function getSignMeaning(planetKey, sign) {
-  if (!sign || typeof sign !== 'string') return '';
-  const signName = sign.split(' ')[1] || sign; 
-  if (planetKey === 'Sun') return `あなたの基本性格は「${signName}」的です。`;
-  if (planetKey === 'Moon') return `リラックス時は「${signName}」っぽくなります。`;
-  if (planetKey === 'Venus') return `「${signName}」的な楽しみ方を好みます。`;
-  return '';
-}
-
-async function runHoroscope(){
-  try {
-    saveInputs();
-    const birthStr = $('birthDate').value;
-    if(!birthStr){ alert('生年月日を入力してください'); return; }
-    const timeStr = $('birthTime').value || '12:00';
-    const birthDate = createSafeDate(birthStr, timeStr);
-    const targetStr = $('targetDate').value || new Date().toISOString().split('T')[0];
-    const targetDate = createSafeDate(targetStr, "12:00");
-
-    if(!birthDate || isNaN(birthDate.getTime())){ alert("生年月日の形式が無効です。"); return; }
     
     if (typeof Astronomy === 'undefined') {
-       alert("読み込みエラー。画面下の「完全リロード」を押してください。");
-       return;
+        alert("計算エンジンがロードされていません");
+        return;
     }
 
-    const planets = calculateRealPlanets(birthDate);
-    const jupPred = predictJupiterLuck(birthDate, targetDate);
-
     let html = '';
-    html += `<div class="card" style="border: 3px solid ${jupPred.score >= 80 ? '#ffd166' : '#eee'}; background: ${jupPred.score >= 80 ? '#fffbe6' : '#fff'};">
-      <div class="row"><div class="title" style="color:#b7791f">🪐 木星の予報</div><div class="score"><strong>幸運度 ${jupPred.score}%</strong></div></div>
-      <h3 style="margin:10px 0;">${jupPred.title}</h3><p class="muted">${jupPred.msg}</p></div>`;
+    let jupiterLon = 0;
 
-    html += `<div style="margin:20px 0 10px; font-weight:bold; color:#6b46c1;">あなたの生まれた瞬間の星たち</div>`;
-    
-    planets.forEach(p => {
-      html += `<div class="card" style="padding:0.8em;"><div class="row"><div style="font-weight:bold;">${p.name}</div><div class="zodiac-badge">${p.sign} ${p.signDegree}°</div></div>
-        <div class="muted" style="font-size:0.8em; margin-top:4px;">${p.desc}</div>
-        <div style="font-size:0.9em; margin-top:6px;">${getSignMeaning(p.key, p.sign)}</div>
-      </div>`;
+    // 惑星計算ループ
+    PLANETS.forEach(p => {
+        let lon = 0;
+        let errorMsg = '';
+
+        try {
+            // ★最重要: シンプルな呼び出しに変更 (String指定)
+            // オプション引数をあえて無くしてデフォルト動作に任せる
+            const vector = Astronomy.GeoVector(p.key, date);
+            
+            if(!vector) throw new Error("Vector is null");
+            
+            const ecliptic = Astronomy.Ecliptic(vector);
+            lon = ecliptic.lon;
+
+            if(p.key === 'Jupiter') jupiterLon = lon;
+
+        } catch(e) {
+            console.error(e);
+            errorMsg = e.message;
+        }
+
+        const signIndex = Math.floor(lon / 30) % 12;
+        const degree = (lon % 30).toFixed(1);
+        const signName = SIGNS[signIndex];
+
+        html += `
+        <div class="result-row">
+            <div class="planet-name">${p.label}</div>
+            <div style="text-align:right;">
+                <div class="planet-sign">${signName} ${degree}°</div>
+                ${errorMsg ? `<div class="debug-msg">Err: ${errorMsg}</div>` : ''}
+            </div>
+        </div>`;
     });
 
-    $('resultContainer').innerHTML = html;
-    $('inputArea').style.display='none';
-    $('outputArea').style.display='block';
-    window.scrollTo({top:0, behavior:'smooth'});
-    if(jupPred.isLucky) requestAnimationFrame(()=>triggerConfetti(5000, 100));
+    // 結果表示
+    $('planetList').innerHTML = html;
+    
+    // 木星運勢（簡易版）
+    // 今日の木星位置（概算）との比較
+    const todayVec = Astronomy.GeoVector('Jupiter', new Date());
+    const todayLon = Astronomy.Ecliptic(todayVec).lon;
+    let diff = Math.abs(todayLon - jupiterLon);
+    if(diff > 180) diff = 360 - diff;
+    
+    let luckMsg = "木星は通常運行中です";
+    if(diff < 10) luckMsg = "✨ 12年に一度の幸運期です！";
+    else if(Math.abs(diff - 120) < 10) luckMsg = "🌈 幸運の追い風が吹いています";
 
-  } catch(e) {
-    console.error(e);
-    alert('システムエラー: ' + e.message);
-  }
+    $('luckyResult').innerHTML = `<strong>${luckMsg}</strong><br><small>現在の木星との角度: ${diff.toFixed(0)}度</small>`;
+    
+    $('resultArea').style.display = 'block';
 }
-
-// 最終手段：キャッシュ全消しリロード
-function superReload() {
-  if(confirm("古いデータを削除して修復しますか？")){
-      if('serviceWorker' in navigator){
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for(let registration of registrations) { registration.unregister(); }
-        });
-      }
-      // クエリパラメータをつけて強制的に新しいページとして認識させる
-      const url = new URL(window.location.href);
-      url.searchParams.set('reload', Date.now());
-      window.location.href = url.toString();
-  }
-}
-
-async function onGeocodeClick(){
-  const q=($('placeName').value||'').trim();
-  if(!q){alert('都市名を入力してください');return;}
-  try{
-    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q)); 
-    const j=await r.json(); 
-    if(!j||!j.length){alert('見つかりませんでした'); return;}
-    $('lat').value = j[0].lat; $('lon').value = j[0].lon;
-    saveInputs(); alert(`「${q}」を設定しました`);
-  }catch(e){ alert('通信エラー: '+e); }
-}
-
-function backToInput(){
-  $('outputArea').style.display='none'; $('inputArea').style.display='block'; $('confettiCanvas').style.display='none';
-}
-
-function triggerConfetti(durationMs, count){
-  const cvs=$('confettiCanvas'); const ctx=cvs.getContext('2d');
-  const DPR=window.devicePixelRatio||1;
-  cvs.style.display='block'; cvs.width=innerWidth*DPR; cvs.height=innerHeight*DPR;
-  const colors=['#6b46c1','#ffd166','#ff6b6b','#48bb78'];
-  let pcs=[];
-  for(let i=0;i<count;i++) pcs.push({x:Math.random()*cvs.width, y:-Math.random()*cvs.height, vx:(Math.random()-0.5)*2*DPR, vy:(Math.random()*2+1)*DPR, color:colors[i%colors.length], size:(Math.random()*8+4)*DPR});
-  const start=performance.now();
-  function loop(t){
-    const e=t-start; if(e>durationMs){cvs.style.display='none';return;}
-    ctx.clearRect(0,0,cvs.width,cvs.height);
-    pcs.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.y>cvs.height) p.y=-20; ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,p.size,p.size); });
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
-}
-
-document.addEventListener('DOMContentLoaded', ()=>{
-  loadInputs();
-  $('geoBtn').addEventListener('click', onGeocodeClick);
-  $('runBtn').addEventListener('click', runHoroscope);
-  $('backBtn').addEventListener('click', backToInput);
-  
-  const checkEngine = setInterval(()=>{
-      if(typeof Astronomy !== 'undefined') {
-          $('loading-msg').textContent = "準備完了";
-          setTimeout(()=>{
-              const splash = $('app-splash');
-              if(splash) splash.classList.add('fadeout');
-          }, 500);
-          clearInterval(checkEngine);
-      }
-  }, 500);
-
-  setTimeout(()=>{
-      if(typeof Astronomy === 'undefined') {
-          $('loading-msg').textContent = "通信環境の良い場所で「完全リロード」を押してください";
-      }
-  }, 15000);
-});
 </script>
+
 </body>
 </html>

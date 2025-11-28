@@ -703,7 +703,7 @@ function calc() {
   let   work      = scoreFromRandom('work',   nWork,   1.0, 0.8);
   let   health    = scoreFromRandom('health', nHealth, 1.0, 0.8);
 
-  const total = totalRaw;
+  let total = totalRaw;
 
   const seedBase =
     birthStr + '|' +
@@ -725,6 +725,10 @@ function calc() {
   money  = jitterScore(money);
   work   = jitterScore(work);
   health = jitterScore(health);
+
+  // 総合運は各分野（恋愛・仕事・金運・健康）の平均値から算出
+  total = clamp01to100((love + money + work + health) / 4);
+
 
   let html = '';
   html += '<div class="card">' +

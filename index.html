@@ -726,8 +726,9 @@ function calc() {
   work   = jitterScore(work);
   health = jitterScore(health);
 
-  // 総合運は各分野（恋愛・仕事・金運・健康）の平均値から算出
-  total = clamp01to100((love + money + work + health) / 4);
+  // 各分野（恋愛・仕事・金運・健康）の平均と、もともとの総合乱数をブレンド
+  const avgCats = (love + money + work + health) / 4;
+  total = clamp01to100(avgCats * 0.4 + totalRaw * 0.6);
 
 
   let html = '';

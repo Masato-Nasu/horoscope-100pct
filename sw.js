@@ -1,5 +1,5 @@
 // Simple cache-first service worker for horoscope-100pct
-const CACHE_NAME = 'horoscope-v2025-astronomy-v13';
+const CACHE_NAME = 'horoscope-v2025-astronomy-v14';
 
 const URLS_TO_CACHE = [
   '/horoscope-100pct/',

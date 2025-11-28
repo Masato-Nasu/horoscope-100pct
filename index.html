@@ -696,8 +696,34 @@ function calc() {
   return clamp01to100(val);
 }
 
+// 総合運専用：より大きく上下する分布
+function scoreTotal(normBias) {
+  const seed = 'total2|' + birthStr + '|' + (targetStr || (now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate()));
+  const rng  = makeRng(stableSeed(seed));
+  const r    = rng();  // 0〜1
+
+  // 極端な値が出やすいように、0と1付近を強調するカーブ
+  let t;
+  if (r < 0.5) {
+    t = 2 * r * r;               // 0〜0.5 → 0〜0.5側に寄せる
+  } else {
+    const x = 1 - r;
+    t = 1 - 2 * x * x;           // 0.5〜1 → 0.5〜1側に寄せる
+  }
+
+  // t は 0〜1。これを 50±60 のレンジにマップ（= 20〜100 をよく使う）
+  const base = 50 + (t - 0.5) * 120;
+
+  // 天体差は ±15点までのソフトなバイアスに抑える
+  const astroShift = normBias * 15;
+
+  const val = base + astroShift;
+  return clamp01to100(val);
+}
+
+
   // --- 全体運＆各分野スコア ---
-  const totalRaw  = scoreFromRandom('total',  nTotal,  1.0, 0.9);
+  const totalRaw  = scoreTotal(nTotal);
   let   love      = scoreFromRandom('love',   nLove,   1.0, 0.7);
   let   money     = scoreFromRandom('money',  nMoney,  1.0, 0.8);
   let   work      = scoreFromRandom('work',   nWork,   1.0, 0.8);
@@ -726,10 +752,8 @@ function calc() {
   work   = jitterScore(work);
   health = jitterScore(health);
 
-  // 各分野（恋愛・仕事・金運・健康）の平均と、もともとの総合乱数をブレンド
-  const avgCats = (love + money + work + health) / 4;
-  total = clamp01to100(avgCats * 0.4 + totalRaw * 0.6);
-
+  // 総合運は、総合専用スコア totalRaw をそのまま採用（分野スコアは表示専用）
+  total = totalRaw;
 
   let html = '';
   html += '<div class="card">' +

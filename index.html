@@ -659,12 +659,20 @@ function calc() {
                     asp(norm(tod[Astronomy.Body.Moon]    - nat[Astronomy.Body.Moon]));
 
   // --- 天体差を -1〜+1 に正規化 ---
-  function clampNorm(x) {
+  function clampNorm
+
+  // 総合運用のカーブ調整：中心付近を少し押し下げて、良い日／悪い日を強調
+  function shapeTotal(x) {
+    // x は -1〜+1 を想定
+    // 立ち上がりを少し急にしてメリハリを出す
+    return x * x * x + 0.35 * x;
+  }
+(x) {
     if (x < -1) return -1;
     if (x >  1) return 1;
     return x;
   }
-  const nTotal  = clampNorm(rawTotal / (7 * 8));
+  const nTotal  = clampNorm(rawTotal / 4);
   const nLove   = clampNorm(rawLove   / 8);
   const nMoney  = clampNorm(rawMoney  / 8);
   const nWork   = clampNorm(rawWork   / (2 * 8));
@@ -695,41 +703,16 @@ function calc() {
   const val = base + astroShift;
   return clamp01to100(val);
 }
+// --- 全体運＆各分野スコア ---
+  // 総合運は天体差 rawTotal から直接算出（乱数を使わず、誕生日×占いたい日に対して一意）
+  let total = clamp01to100(((shapeTotal(nTotal) + 1) / 2) * 80 + 20);
 
-// 総合運専用：より大きく上下する分布
-function scoreTotal(normBias) {
-  const seed = 'total2|' + birthStr + '|' + (targetStr || (now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate()));
-  const rng  = makeRng(stableSeed(seed));
-  const r    = rng();  // 0〜1
-
-  // 極端な値が出やすいように、0と1付近を強調するカーブ
-  let t;
-  if (r < 0.5) {
-    t = 2 * r * r;               // 0〜0.5 → 0〜0.5側に寄せる
-  } else {
-    const x = 1 - r;
-    t = 1 - 2 * x * x;           // 0.5〜1 → 0.5〜1側に寄せる
-  }
-
-  // t は 0〜1。これを 50±60 のレンジにマップ（= 20〜100 をよく使う）
-  const base = 50 + (t - 0.5) * 120;
-
-  // 天体差は ±15点までのソフトなバイアスに抑える
-  const astroShift = normBias * 15;
-
-  const val = base + astroShift;
-  return clamp01to100(val);
-}
+  let love      = scoreFromRandom('love',   nLove,   1.0, 0.7);
+  let money     = scoreFromRandom('money',  nMoney,  1.0, 0.8);
+  let work      = scoreFromRandom('work',   nWork,   1.0, 0.8);
+  let health    = scoreFromRandom('health', nHealth, 1.0, 0.8);
 
 
-  // --- 全体運＆各分野スコア ---
-  const totalRaw  = scoreTotal(nTotal);
-  let   love      = scoreFromRandom('love',   nLove,   1.0, 0.7);
-  let   money     = scoreFromRandom('money',  nMoney,  1.0, 0.8);
-  let   work      = scoreFromRandom('work',   nWork,   1.0, 0.8);
-  let   health    = scoreFromRandom('health', nHealth, 1.0, 0.8);
-
-  let total = totalRaw;
 
   const seedBase =
     birthStr + '|' +

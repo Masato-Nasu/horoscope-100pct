@@ -6,7 +6,7 @@
 <title>本格星占い (Astro Logic)</title>
 <meta name="theme-color" content="#6b46c1">
 
-<link rel="apple-touch-icon" href="/horoscope-100pct/icon-180.png">
+<link rel="apple-touch-icon" href="/horoscope-100pct/icon-192.png">
 <link rel="manifest" href="/horoscope-100pct/manifest.json">
 <link rel="icon" href="/horoscope-100pct/favicon.svg" type="image/svg+xml">
 
@@ -27,15 +27,13 @@ button:active{transform: translateY(2px);}
 .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between}
 .title{font-weight:700}
 .score{display:flex;align-items:center;gap:8px;margin-left:auto}
-
-/* 結果表示用の装飾 */
 .zodiac-badge { background: #f3e8ff; color: #6b46c1; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 0.9em; }
 
 /* トースト通知 */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .25s; pointer-events: none; z-index: 10000;}
 .toast.show{opacity:1}
 
-/* ★修正2：起動画面のスタイルを内蔵 */
+/* 起動画面 */
 #app-splash {
   position: fixed; inset: 0; background: #fff; z-index: 9999;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -101,7 +99,6 @@ button:active{transform: translateY(2px);}
 <div class="toast" id="toast"></div>
 
 <script>
-// 基本ユーティリティ
 const $ = id => document.getElementById(id);
 function toast(m){const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000);}
 function saveInputs(){
@@ -126,7 +123,6 @@ function loadInputs(){
 // ---------------------------------------------------------
 // ★ 本格占いロジック
 // ---------------------------------------------------------
-
 const ZODIAC_SIGNS = ['♈ 牡羊座', '♉ 牡牛座', '♊ 双子座', '♋ 蟹座', '♌ 獅子座', '♍ 乙女座', '♎ 天秤座', '♏ 蠍座', '♐ 射手座', '♑ 山羊座', '♒ 水瓶座', '♓ 魚座'];
 const PLANET_DEFS = [
   { key: 'Sun',     label: '☀️ 太陽',  desc: '人生の目的・本質' },
@@ -138,13 +134,14 @@ const PLANET_DEFS = [
   { key: 'Saturn',  label: '♄ 土星',  desc: '課題・責任・安定' },
 ];
 
-// 惑星位置計算
 function calculateRealPlanets(date) {
-  if (typeof Astronomy === 'undefined') throw new Error('天文計算エンジンが読み込まれていません。オフラインか、接続エラーです。');
+  if (typeof Astronomy === 'undefined') throw new Error('天文計算エンジンが読み込まれていません。');
+  
   const results = [];
   PLANET_DEFS.forEach(p => {
     const body = Astronomy.Body[p.key];
-    const vector = Astronomy.GeoVector(body, date);
+    // ★修正点: 第3引数に true (光行差あり) を追加してエラーを回避
+    const vector = Astronomy.GeoVector(body, date, true);
     const ecliptic = Astronomy.Ecliptic(vector); 
     const lon = ecliptic.lon;
     const signIndex = Math.floor(lon / 30);
@@ -154,12 +151,15 @@ function calculateRealPlanets(date) {
   return results;
 }
 
-// 木星の未来予測
 function predictJupiterLuck(birthDate, targetDate) {
-  const natalVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, birthDate);
+  // ★修正点: ここにも true を追加
+  const natalVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, birthDate, true);
   const natalLon = Astronomy.Ecliptic(natalVec).lon;
-  const transitVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, targetDate);
+  
+  // ★修正点: ここにも true を追加
+  const transitVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, targetDate, true);
   const transitLon = Astronomy.Ecliptic(transitVec).lon;
+  
   let diff = Math.abs(transitLon - natalLon);
   if (diff > 180) diff = 360 - diff;
   const orb = 6; 
@@ -178,7 +178,6 @@ function predictJupiterLuck(birthDate, targetDate) {
   return result;
 }
 
-// 星座の解説
 function getSignMeaning(planetKey, sign) {
   if (planetKey === 'Sun') return `あなたの基本性格は「${sign}」的です。`;
   if (planetKey === 'Moon') return `リラックス時は「${sign}」っぽくなります。`;
@@ -186,7 +185,6 @@ function getSignMeaning(planetKey, sign) {
   return '';
 }
 
-// 実行ボタン処理
 async function runHoroscope(){
   try {
     saveInputs();
@@ -198,12 +196,10 @@ async function runHoroscope(){
     const targetStr = $('targetDate').value || new Date().toISOString().split('T')[0];
     const targetDate = new Date(`${targetStr}T12:00:00`);
 
-    // 計算実行
     const planets = calculateRealPlanets(birthDate);
     const jupPred = predictJupiterLuck(birthDate, targetDate);
 
     let html = '';
-    // 結果HTML作成
     html += `<div class="card" style="border: 3px solid ${jupPred.score >= 80 ? '#ffd166' : '#eee'}; background: ${jupPred.score >= 80 ? '#fffbe6' : '#fff'};">
       <div class="row"><div class="title" style="color:#b7791f">🪐 木星の予報</div><div class="score"><strong>幸運度 ${jupPred.score}%</strong></div></div>
       <h3 style="margin:10px 0;">${jupPred.title}</h3><p class="muted">${jupPred.msg}</p></div>`;
@@ -225,10 +221,6 @@ async function runHoroscope(){
     alert('エラーが発生しました: ' + e.message);
   }
 }
-
-// ---------------------------------------------------------
-// UI関連
-// ---------------------------------------------------------
 
 async function onGeocodeClick(){
   const q=($('placeName').value||'').trim();
@@ -264,14 +256,12 @@ function triggerConfetti(durationMs, count){
   requestAnimationFrame(loop);
 }
 
-// 初期化・起動画面の処理
 document.addEventListener('DOMContentLoaded', ()=>{
   loadInputs();
   $('geoBtn').addEventListener('click', onGeocodeClick);
   $('runBtn').addEventListener('click', runHoroscope);
   $('backBtn').addEventListener('click', backToInput);
   
-  // ★修正3：起動画面を確実に消す（0.8秒後）
   setTimeout(()=>{
     const splash = $('app-splash');
     if(splash) splash.classList.add('fadeout');

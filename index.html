@@ -27,9 +27,6 @@ button:active{transform: translateY(2px);}
 .score{display:flex;align-items:center;gap:8px;margin-left:auto}
 .zodiac-badge { background: #f3e8ff; color: #6b46c1; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 0.9em; }
 
-/* ステータス表示 */
-#system-status { font-size: 0.8em; margin-top: 10px; color: #666; }
-
 /* 起動画面 */
 #app-splash { position: fixed; inset: 0; background: #fff; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease; }
 #app-splash.fadeout { opacity: 0; pointer-events: none; }
@@ -49,8 +46,6 @@ button:active{transform: translateY(2px);}
 <header>本格 天体星占い</header>
 
 <main>
-  <div id="system-status">システム準備中...</div>
-
 <section id="inputArea">
   <div class="card">
     <h3>📝 あなたの情報</h3>
@@ -76,7 +71,7 @@ button:active{transform: translateY(2px);}
   <button id="runBtn" type="button">ホロスコープを作成</button>
   
   <div style="margin-top:30px; text-align:center;">
-    <button onclick="forceReset()" style="background:#666; font-size:0.8em; padding:5px 10px; width:auto;">↻ 強制リセット (キャッシュ削除)</button>
+    <button onclick="forceReset()" style="background:#666; font-size:0.8em; padding:5px 10px; width:auto;">↻ 動作がおかしい時はここを押す</button>
   </div>
 </section>
 
@@ -123,15 +118,17 @@ function createSafeDate(dateStr, timeStr) {
   return new Date(y, m - 1, d, h, min, 0);
 }
 
-// ★修正: 最も互換性の高い呼び出し方 (v2.1.19準拠)
+// ★修正: 第3引数に必ず false を渡すことでエラーを回避
 function calculateRealPlanets(date) {
   if (typeof Astronomy === 'undefined') throw new Error('エンジン未ロード');
   
   const results = [];
   PLANET_DEFS.forEach(p => {
     const body = Astronomy.Body[p.key];
-    // オプション引数なしで呼ぶのが一番安全
-    const vector = Astronomy.GeoVector(body, date); 
+    
+    // ★ここです！ , false を追加しました
+    const vector = Astronomy.GeoVector(body, date, false); 
+    
     const ecliptic = Astronomy.Ecliptic(vector); 
     const lon = ecliptic.lon;
     
@@ -150,9 +147,12 @@ function calculateRealPlanets(date) {
 }
 
 function predictJupiterLuck(birthDate, targetDate) {
-  const natalVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, birthDate);
+  // ★ここも false を追加
+  const natalVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, birthDate, false);
   const natalLon = Astronomy.Ecliptic(natalVec).lon;
-  const transitVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, targetDate);
+  
+  // ★ここも false を追加
+  const transitVec = Astronomy.GeoVector(Astronomy.Body.Jupiter, targetDate, false);
   const transitLon = Astronomy.Ecliptic(transitVec).lon;
   
   let diff = Math.abs(transitLon - natalLon);
@@ -195,7 +195,6 @@ async function runHoroscope(){
 
     if(!birthDate || isNaN(birthDate.getTime())){ alert("生年月日の形式が無効です。"); return; }
     
-    // エンジンチェック
     if (typeof Astronomy === 'undefined') {
        alert("計算エンジンがまだ読み込まれていません。通信環境の良い場所でリロードしてください。");
        return;
@@ -227,7 +226,7 @@ async function runHoroscope(){
   }
 }
 
-// ★強力なキャッシュ削除関数
+// キャッシュ削除・リセット
 function forceReset() {
   if(confirm("アプリを初期化して再読み込みしますか？")){
       if('serviceWorker' in navigator){
@@ -285,8 +284,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const checkEngine = setInterval(()=>{
       if(typeof Astronomy !== 'undefined') {
           $('loading-msg').textContent = "準備完了";
-          $('system-status').textContent = "✅ エンジン正常稼働中 (v2.1.19)";
-          $('system-status').style.color = "green";
           setTimeout(()=>{
               const splash = $('app-splash');
               if(splash) splash.classList.add('fadeout');
@@ -295,16 +292,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
       }
   }, 500);
 
-  // 10秒待っても読み込めない場合
+  // 10秒タイムアウト
   setTimeout(()=>{
       if(typeof Astronomy === 'undefined') {
-          $('loading-msg').textContent = "エンジンの読み込みに失敗しました。";
+          $('loading-msg').textContent = "エンジンの読み込みに失敗。リロードしてください";
           $('loading-msg').style.color = "red";
-          $('system-status').textContent = "⚠️ エンジンエラー";
       }
   }, 10000);
 
-  // 起動時に自動でService Workerを解除（キャッシュ問題を根絶）
+  // 念のため自動でService Workerを解除
   if('serviceWorker' in navigator){
     navigator.serviceWorker.getRegistrations().then(function(registrations) {
       for(let registration of registrations) { registration.unregister(); }

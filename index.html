@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>本格星占い（PWA準備済・単一HTML） - 修正版</title>
+<title>本格星占い（修正版 — elon対応）</title>
 <meta name="theme-color" content="#6b46c1" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪐</text></svg>">
 
@@ -28,6 +28,7 @@
   #luckyResult{padding:12px;border-radius:10px;background:#fffbe6;border:1px solid #ffe58f;margin-bottom:12px;font-weight:700}
   .small{font-size:0.9rem;color:var(--muted)}
   footer{font-size:0.8rem;color:var(--muted);text-align:center;margin-top:8px}
+  pre.debug{background:#f7f7fb;padding:8px;border-radius:8px;overflow:auto;font-size:12px}
 </style>
 </head>
 <body>
@@ -35,8 +36,8 @@
     <header>
       <div style="font-size:34px">🪐</div>
       <div>
-        <h1>本格星占い（PWA準備済・単一HTML）</h1>
-        <div class="small">Astronomy Engine 対応 — 日付パース堅牢化・SW登録解除付き</div>
+        <h1>本格星占い（修正版）</h1>
+        <div class="small">Astronomy Engine 対応 — ecliptic.elon 対応・日付堅牢化・SW解除</div>
       </div>
     </header>
 
@@ -57,19 +58,24 @@
       <div style="margin-top:12px;display:flex;gap:8px">
         <button id="goBtn">鑑定を実行</button>
         <button id="exampleBtn" style="background:#444">サンプル（2000-01-01 12:00）</button>
+        <button id="debugBtn" style="background:#888">デバッグ出力</button>
       </div>
     </div>
 
     <div id="resultArea" class="card" style="display:none">
       <div id="luckyResult"></div>
       <div id="planetList"></div>
+      <div style="margin-top:10px;">
+        <div class="small">詳しいデバッグ（ライブラリの生データ）:</div>
+        <pre id="debugOut" class="debug" style="display:none"></pre>
+      </div>
     </div>
 
     <footer class="small">画像は不要・DataURI 使用 / manifest / sw.js があってもまずはブラウザだけで動作します</footer>
   </div>
 
 <script>
-/* ヘルパーと UI 操作 */
+/* 了解しました — 修正版 (elon 対応) */
 const STATUS = document.getElementById('statusText');
 const PLANETS = [
   { body: Astronomy.Body.Sun, label: '☀️ 太陽' },
@@ -84,7 +90,7 @@ const SIGNS = ['♈ 牡羊座','♉ 牡牛座','♊ 双子座','♋ 蟹座','♌
 
 function safeLog(...args){ if(console && console.log) console.log(...args); }
 
-/* ServiceWorker の登録があれば解除（キャッシュ問題回避） */
+/* Service Worker の解除 */
 async function unregisterAllServiceWorkers(){
   if('serviceWorker' in navigator){
     try{
@@ -97,62 +103,48 @@ async function unregisterAllServiceWorkers(){
   }
 }
 
-/* ライブラリの準備チェック */
+/* ライブラリ準備チェック */
 function checkLibraryReady(timeout=4000){
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve,reject)=>{
     const start = Date.now();
     (function poll(){
       if(typeof Astronomy !== 'undefined' && Astronomy.Body){
         resolve(true);
       } else if(Date.now() - start > timeout){
         reject(new Error('Astronomy Engine の読み込みに失敗しました'));
-      } else {
-        setTimeout(poll, 120);
-      }
+      } else setTimeout(poll,120);
     })();
   });
 }
 
-/* 日付パース（安全）: 入力が YYYY-MM-DD 以外の形式（例: 2000/01/01）でも対応 */
+/* 日付パース（スラッシュ対応） */
 function parseUserDate(dateStr, timeStr, tzOffsetStr){
   try{
     if(!dateStr) return null;
-
-    // Normalize common delimiters to hyphen
     let normalized = dateStr.replace(/\//g,'-').trim();
-
-    // If user typed like "YYYY-MM-DD" or "YYYY-M-D", split and zero-pad
-    const parts = normalized.split('-').map(s => s.trim()).filter(s=>s.length>0);
+    const parts = normalized.split('-').map(s=>s.trim()).filter(Boolean);
     if(parts.length >= 3){
       const y = parseInt(parts[0],10);
       const m = parseInt(parts[1],10);
       const d = parseInt(parts[2],10);
       if(Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(d)){
         const time = (timeStr && timeStr.trim()) ? timeStr.trim() : '12:00';
-        // If tzOffset provided like +09:00, construct ISO with offset (preserves wall-clock)
         if(tzOffsetStr && /^\s*[+-]\d{2}:\d{2}\s*$/.test(tzOffsetStr)){
           const iso = `${String(y).padStart(4,'0')}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}T${time}:00${tzOffsetStr}`;
           const dt = new Date(iso);
           if(isNaN(dt.getTime())) return null;
           return dt;
         }
-        // Otherwise create local Date (browser timezone)
         const [hh,mm] = time.split(':').map(v=>parseInt(v,10)||0);
         const dtLocal = new Date(y, m-1, d, hh, mm, 0, 0);
-        if(isNaN(dtLocal.getTime())){
-          // Fallback: try basic ISO
-          const iso2 = `${String(y).padStart(4,'0')}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}T${time}:00`;
-          const dt2 = new Date(iso2);
-          if(isNaN(dt2.getTime())) return null;
-          return dt2;
-        }
-        return dtLocal;
+        if(!isNaN(dtLocal.getTime())) return dtLocal;
+        const iso2 = `${String(y).padStart(4,'0')}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}T${time}:00`;
+        const dt2 = new Date(iso2);
+        if(!isNaN(dt2.getTime())) return dt2;
       }
     }
-    // Final fallback: try Date.parse
     const parsed = new Date(dateStr);
-    if(!isNaN(parsed.getTime())) return parsed;
-    return null;
+    return isNaN(parsed.getTime()) ? null : parsed;
   }catch(e){
     safeLog('parseUserDate error', e);
     return null;
@@ -173,25 +165,16 @@ function angleDiff(a,b){
   return diff;
 }
 
-/* AstroTime へ変換（ライブラリ互換性考慮） */
+/* AstroTime 互換 */
 function toAstroTime(jsDate){
   try{
     if(typeof Astronomy === 'undefined') return jsDate;
-    // 最新のライブラリは new Astronomy.AstroTime(date) をサポートする
-    if(typeof Astronomy.AstroTime === 'function'){
-      return new Astronomy.AstroTime(jsDate);
-    }
-    // 代替: MakeTime(year, month, day, hour, min, sec) - もし存在するなら使う
+    if(typeof Astronomy.AstroTime === 'function') return new Astronomy.AstroTime(jsDate);
     if(typeof Astronomy.MakeTime === 'function'){
-      const y = jsDate.getFullYear();
-      const m = jsDate.getMonth() + 1;
-      const d = jsDate.getDate();
-      const hh = jsDate.getHours();
-      const mm = jsDate.getMinutes();
-      const ss = jsDate.getSeconds();
-      return Astronomy.MakeTime(y, m, d, hh, mm, ss);
+      const y = jsDate.getFullYear(), m = jsDate.getMonth()+1, d = jsDate.getDate();
+      const hh = jsDate.getHours(), mm = jsDate.getMinutes(), ss = jsDate.getSeconds();
+      return Astronomy.MakeTime(y,m,d,hh,mm,ss);
     }
-    // フォールバック: ライブラリが Date を受け付ける場合はそのまま渡す
     return jsDate;
   }catch(e){
     safeLog('toAstroTime error', e);
@@ -199,68 +182,94 @@ function toAstroTime(jsDate){
   }
 }
 
-/* 結果表示ユーティリティ */
-function renderPlanetList(itemsHtml, luckHtml){
+/* Ecliptic の lon を安全に取り出す（elon や lon のどちらでも） */
+function eclipticLongitude(ecl){
+  if(!ecl) return NaN;
+  // いくつかのビルドでプロパティ名が異なるため、より多くの候補を試す
+  const candidates = ['lon','elon','el','lambda','elat']; // 'elat' は経度ではないが保険で入れる
+  for(const k of candidates){
+    if(Object.prototype.hasOwnProperty.call(ecl, k)){
+      const v = Number(ecl[k]);
+      if(Number.isFinite(v)) return v;
+    }
+  }
+  // ライブラリによっては ecl.elon としてネストされているケースもある
+  if(ecl && typeof ecl === 'object'){
+    for(const val of Object.values(ecl)){
+      if(val && typeof val === 'object' && Number.isFinite(Number(val.elon))) return Number(val.elon);
+    }
+  }
+  return NaN;
+}
+
+/* 結果表示 */
+function renderPlanetList(itemsHtml, luckHtml, dbgText){
   document.getElementById('planetList').innerHTML = itemsHtml;
   document.getElementById('luckyResult').innerHTML = luckHtml;
+  const dbg = document.getElementById('debugOut');
+  if(dbgText){
+    dbg.style.display = 'block';
+    dbg.textContent = dbgText;
+  } else {
+    dbg.style.display = 'none';
+  }
   document.getElementById('resultArea').style.display = 'block';
-  // スクロール（ユーザーの画面位置を考慮）
   setTimeout(()=>window.scrollTo({top: document.getElementById('resultArea').offsetTop - 20, behavior: 'smooth'}), 60);
 }
 
-/* 実計算: 生年月日から太陽〜土星まで算出、木星で「12年に一度」判定 */
-async function calculate(){
+/* 実計算 */
+async function calculate(showDebug=false){
   const dateInput = document.getElementById('birthDate').value;
   const timeInput = document.getElementById('birthTime').value;
   const tzInput = document.getElementById('tzOffset').value.trim();
 
   const natalDate = parseUserDate(dateInput, timeInput, tzInput);
   if(!natalDate){
-    alert('生年月日が正しくありません。入力形式を確認してください（例: 2000-01-01 または 2000/01/01）。');
+    alert('生年月日が正しくありません。形式を確認してください（例: 2000-01-01 または 2000/01/01）。');
     return;
   }
-
   if(typeof Astronomy === 'undefined' || !Astronomy.Body){
     alert('Astronomy Engine が読み込まれていません。ページを再読み込みしてください。');
     return;
   }
 
-  // AstroTime に変換（互換性対応）
   const natalAstro = toAstroTime(natalDate);
-
   const items = [];
   let natalJupiterLon = NaN;
+  let debugRecords = [];
 
   for(const p of PLANETS){
     try{
-      // GeoVector( body, time, aberration ) — time は AstroTime が望ましい
       const vec = Astronomy.GeoVector(p.body, natalAstro, true);
-      // Ecliptic(vec) が lon/lat を返す（ライブラリ仕様）
       const ecl = Astronomy.Ecliptic(vec);
-      const lon = norm360(ecl && ecl.lon);
+      const lonRaw = eclipticLongitude(ecl);
+      const lon = norm360(lonRaw);
       const signIndex = Number.isFinite(lon) ? Math.floor(lon / 30) % 12 : null;
       const degree = Number.isFinite(lon) ? (lon % 30) : NaN;
       items.push({ label: p.label, lon, sign: signIndex !== null ? SIGNS[signIndex] : '計算不能', degree });
       if(p.body === Astronomy.Body.Jupiter && Number.isFinite(lon)) natalJupiterLon = lon;
+      debugRecords.push({ planet: p.label, vec, ecl, lonRaw });
     }catch(err){
       safeLog('planet calc error', p, err);
       items.push({ label: p.label, lon: NaN, sign: '計算不能', degree: NaN });
+      debugRecords.push({ planet: p.label, error: String(err) });
     }
   }
 
-  // 今日の木星経度（比較用）
+  // 今日の木星
   let todayJupiterLon = NaN;
   try{
-    const today = new Date();
-    const todayAstro = toAstroTime(today);
+    const todayAstro = toAstroTime(new Date());
     const vecT = Astronomy.GeoVector(Astronomy.Body.Jupiter, todayAstro, true);
     const eclT = Astronomy.Ecliptic(vecT);
-    todayJupiterLon = norm360(eclT && eclT.lon);
+    todayJupiterLon = norm360(eclipticLongitude(eclT));
+    debugRecords.push({ planet: '♃ 木星(今日)', vec: vecT, ecl: eclT, lonRaw: eclipticLongitude(eclT) });
   }catch(e){
     safeLog('today jupiter calc failed', e);
+    debugRecords.push({ planet: '♃ 木星(今日)', error: String(e) });
   }
 
-  // HTML 作成
+  // HTML
   let html = '';
   for(const it of items){
     const degText = Number.isFinite(it.degree) ? it.degree.toFixed(1) + '°' : '—';
@@ -271,29 +280,45 @@ async function calculate(){
     </div>`;
   }
 
-  // 木星の12年に一度判定（閾値 8°）
+  // 木星判定
   let luckHtml = '木星の比較情報が取得できませんでした。';
   if(Number.isFinite(natalJupiterLon) && Number.isFinite(todayJupiterLon)){
     const diff = angleDiff(natalJupiterLon, todayJupiterLon);
     if(diff < 8){
       luckHtml = `<div style="color:#1b5e20">✨ おめでとうございます！<br>現在は <strong>12年に一度の木星帰還（幸運期）</strong> に近い位置です（差 ${diff.toFixed(1)}°）。</div>`;
     } else if(Math.abs(diff - 120) < 8){
-      luckHtml = `<div style="color:#e65100">🌈 大吉運（トライン）: 木星から追い風が来ています（差 ${diff.toFixed(1)}°）。</div>`;
+      luckHtml = `<div style="color:#e65100">🌈 トライン（良い影響）です（差 ${diff.toFixed(1)}°）。</div>`;
     } else if(Math.abs(diff - 60) < 6){
-      luckHtml = `<div style="color:#2e7d32">👍 良いタイミング（セクスタイル）: 穏やかな好機（差 ${diff.toFixed(1)}°）。</div>`;
+      luckHtml = `<div style="color:#2e7d32">👍 セクスタイル（穏やかな好機）です（差 ${diff.toFixed(1)}°）。</div>`;
     } else {
-      luckHtml = `<div>木星は特別な角度にありません（差 ${diff.toFixed(1)}°）。</div>`;
+      luckHtml = `<div>特別な角度ではありません（差 ${diff.toFixed(1)}°）。</div>`;
     }
     luckHtml += `<div class="small" style="margin-top:8px">出生時の木星経度: ${natalJupiterLon.toFixed(1)}° / 今日の木星経度: ${todayJupiterLon.toFixed(1)}°</div>`;
   }
 
-  renderPlanetList(html, luckHtml);
+  const dbgText = showDebug ? JSON.stringify(debugRecords, replacerForDebug, 2) : '';
+  renderPlanetList(html, luckHtml, dbgText);
+}
+
+/* JSON stringify 補助（循環参照対策） */
+function replacerForDebug(){
+  const seen = new WeakSet();
+  return function(key, value){
+    if (value && typeof value === 'object'){
+      if (seen.has(value)) return '[Circular]';
+      seen.add(value);
+      // ベクトルなど大きいオブジェクトは要点だけ出す
+      if('x' in value && 'y' in value && 'z' in value){
+        return { x: Number(value.x), y: Number(value.y), z: Number(value.z), t: value.t ? '[AstroTime]' : undefined };
+      }
+    }
+    return value;
+  };
 }
 
 /* 初期化 */
 (async function init(){
   await unregisterAllServiceWorkers();
-
   try{
     await checkLibraryReady(4000);
     document.getElementById('statusText').textContent = '✅ 準備完了 — 計算可能です（Astronomy Engine 読み込み済）';
@@ -302,13 +327,12 @@ async function calculate(){
     safeLog(e);
   }
 
-  document.getElementById('goBtn').addEventListener('click', function(){
-    calculate();
-  });
-  document.getElementById('exampleBtn').addEventListener('click', function(){
+  document.getElementById('goBtn').addEventListener('click', ()=>calculate(false));
+  document.getElementById('exampleBtn').addEventListener('click', ()=>{
     document.getElementById('birthDate').value = '2000-01-01';
     document.getElementById('birthTime').value = '12:00';
   });
+  document.getElementById('debugBtn').addEventListener('click', ()=>calculate(true));
 })();
 </script>
 </body>

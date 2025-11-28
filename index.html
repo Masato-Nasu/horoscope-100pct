@@ -473,8 +473,8 @@ function makeRng(seed) {
 
 // スコアに応じて a/b/c を選ぶ
 function gradeFromScore(score) {
-  if (score >= 70) return 'a';
-  if (score >= 45) return 'b';
+  if (score >= 80) return 'a';
+  if (score >= 55) return 'b';
   return 'c';
 }
 
@@ -512,8 +512,8 @@ function asp(d) {
 
 // 0〜100 に正規化
 function mapScore(raw, maxAbs) {
-  // 振れ幅は大きめ（±40）を保ちつつ、全体の平均が低くなりすぎないよう中心値を高めに設定
-  // raw/maxAbs の平均値がマイナス寄りになることを考慮して、中心を 80 にシフト
+  // 全体運用：生のアスペクト値 raw（-maxAbs〜+maxAbs）を 0〜100 にマップ
+  // 振れ幅は大きめ（±40）、中心は高め（80）寄せで「優しめ」設計
   const span = 40;
   let s = 80 + (raw / maxAbs) * span;
   if (s < 0) s = 0;
@@ -600,11 +600,43 @@ function calc() {
   const rawHealth = asp(norm(tod[Astronomy.Body.Sun]     - nat[Astronomy.Body.Sun])) +
                     asp(norm(tod[Astronomy.Body.Moon]    - nat[Astronomy.Body.Moon]));
 
-  const total  = mapScore(rawTotal, 7 * 8);
-  const love   = mapScore(rawLove,        8);
-  const money  = mapScore(rawMoney,       8);
-  const work   = mapScore(rawWork,     2 * 8);
-  const health = mapScore(rawHealth,   2 * 8);
+  // --- 全体運スコア（太陽〜土星、7天体ぶん） ---
+  const total = mapScore(rawTotal, 7 * 8);
+
+  // --- 各分野用の「傾き」（-1〜+1 程度） ---
+  const loveBase   = rawLove   / 8;        // 金星
+  const moneyBase  = rawMoney  / 8;        // 木星
+  const workBase   = rawWork   / (2 * 8);  // 火星＋土星
+  const healthBase = rawHealth / (2 * 8);  // 太陽＋月
+
+  // --- 全体運をベースに、各分野にプラスマイナスを付ける ---
+  // 振れ幅は大きめに確保しつつ、「全体運が低いのに恋愛だけ極端に高い」を抑える設計
+  let love   = total + loveBase   * 20;  // 恋愛は少し控えめな振れ幅
+  let money  = total + moneyBase  * 30;
+  let work   = total + workBase   * 30;
+  let health = total + healthBase * 30;
+
+  // 0〜100 にクリップ
+  function clamp01to100(x) {
+    if (x < 0) return 0;
+    if (x > 100) return 100;
+    return x;
+  }
+  love   = clamp01to100(love);
+  money  = clamp01to100(money);
+  work   = clamp01to100(work);
+  health = clamp01to100(health);
+
+  // --- 4つの平均が「全体運」と極端にズレないよう、全体運に少し寄せる ---
+  const avgCat = (love + money + work + health) / 4;
+  const diff   = total - avgCat;          // 全体運と4分野平均の差
+  const adjust = diff * 0.7;              // 7割だけ寄せる（バランス調整）
+
+  love   = clamp01to100(love   + adjust);
+  money  = clamp01to100(money  + adjust);
+  work   = clamp01to100(work   + adjust);
+  health = clamp01to100(health + adjust);
+
 
   const seedBase =
     birthStr + '|' +

@@ -659,7 +659,11 @@ function calc() {
                     asp(norm(tod[Astronomy.Body.Moon]    - nat[Astronomy.Body.Moon]));
 
   // --- 天体差を -1〜+1 に正規化 ---
-  function clampNorm
+  function clampNorm(x) {
+    if (x < -1) return -1;
+    if (x >  1) return 1;
+    return x;
+  }
 
   // 総合運用のカーブ調整：中心付近を少し押し下げて、良い日／悪い日を強調
   function shapeTotal(x) {
@@ -667,11 +671,7 @@ function calc() {
     // 立ち上がりを少し急にしてメリハリを出す
     return x * x * x + 0.35 * x;
   }
-(x) {
-    if (x < -1) return -1;
-    if (x >  1) return 1;
-    return x;
-  }
+
   const nTotal  = clampNorm(rawTotal / 4);
   const nLove   = clampNorm(rawLove   / 8);
   const nMoney  = clampNorm(rawMoney  / 8);
@@ -707,10 +707,16 @@ function calc() {
   // 総合運は天体差 rawTotal から直接算出（乱数を使わず、誕生日×占いたい日に対して一意）
   let total = clamp01to100(((shapeTotal(nTotal) + 1) / 2) * 80 + 20);
 
-  let love      = scoreFromRandom('love',   nLove,   1.0, 0.7);
-  let money     = scoreFromRandom('money',  nMoney,  1.0, 0.8);
-  let work      = scoreFromRandom('work',   nWork,   1.0, 0.8);
-  let health    = scoreFromRandom('health', nHealth, 1.0, 0.8);
+// 分野別スコアも、乱数ではなく天体差をベースに算出し、最後に小さなゆらぎだけを乗せる
+  const baseLove   = ((nLove   + 1) / 2) * 80 + 20;
+  const baseMoney  = ((nMoney  + 1) / 2) * 80 + 20;
+  const baseWork   = ((nWork   + 1) / 2) * 80 + 20;
+  const baseHealth = ((nHealth + 1) / 2) * 80 + 20;
+
+  let love   = baseLove;
+  let money  = baseMoney;
+  let work   = baseWork;
+  let health = baseHealth;
 
 
 
@@ -734,9 +740,6 @@ function calc() {
   money  = jitterScore(money);
   work   = jitterScore(work);
   health = jitterScore(health);
-
-  // 総合運は、総合専用スコア totalRaw をそのまま採用（分野スコアは表示専用）
-  total = totalRaw;
 
   let html = '';
   html += '<div class="card">' +

@@ -618,11 +618,15 @@ function calc() {
   const health0 = mapScoreCat(rawHealth,  2 * 8);     // 太陽＋月
 
   // --- 全体運とブレンドして、「極端な一人勝ち／一人負け」を防ぐ ---
+  function blendLove(cat) {
+    // 恋愛は全体運に少し強めに寄せて、突出しすぎを防ぐ
+    return Math.round(cat * 0.5 + total * 0.5);
+  }
   function blendCat(cat) {
-    return Math.round(cat * 0.6 + total * 0.4);
+    return Math.round(cat * 0.7 + total * 0.3);
   }
 
-  let love   = blendCat(love0);
+  let love   = blendLove(love0);
   let money  = blendCat(money0);
   let work   = blendCat(work0);
   let health = blendCat(health0);
@@ -631,6 +635,23 @@ function calc() {
   const seedBase =
     birthStr + '|' +
     (targetStr || (now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate()));
+
+
+  // カテゴリごとの微調整：同じパーセントが並びすぎないよう、安定した小さな揺らぎを加える
+  const jitterRng = makeRng(stableSeed('jitter|' + seedBase));
+  function jitterScore(base) {
+    const amp = 6; // 最大 ±6
+    const r = jitterRng();
+    let v = base + (r * 2 - 1) * amp;
+    if (v < 0) v = 0;
+    if (v > 100) v = 100;
+    return Math.round(v);
+  }
+
+  love   = jitterScore(love);
+  money  = jitterScore(money);
+  work   = jitterScore(work);
+  health = jitterScore(health);
 
   let html = '';
   html += '<div class="score">🪐 今日の総合運 ' + total + '%</div>';

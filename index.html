@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>100% 星占い</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#B79DF2">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon-192.png">
@@ -14,16 +14,23 @@
       background: #ffffff;
       color: #333333;
       margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
       padding: 16px;
       text-align: center;
+      box-sizing: border-box;
     }
     .app-card {
+      width: 100%;
       max-width: 420px;
       margin: 0 auto;
       background: #ffffff;
       border-radius: 24px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.12);
       padding: 18px 16px 20px;
+      box-sizing: border-box;
     }
     .app-header {
       display: flex;
@@ -73,7 +80,7 @@
       box-sizing: border-box;
       border: none;
       padding: 11px 12px;
-      border-radius: 12px;  /* ← 入力欄と同じ小さめ角R */
+      border-radius: 12px;
       margin-top: 14px;
       font-size: 14px;
       font-weight: 600;
@@ -85,6 +92,19 @@
       transform: translateY(1px);
       box-shadow: 0 3px 8px rgba(0,0,0,0.2) inset;
     }
+    /* 下の「結果を保存」ボタン用（セカンダリ） */
+    .secondary-button {
+      margin-top: 18px;
+      background: #ffffff;
+      color: #7C4DFF;
+      border: 1px solid #D4C4FF;
+      box-shadow: none;
+    }
+    .secondary-button:active {
+      box-shadow: 0 0 0 1px rgba(183,157,242,0.4) inset;
+      transform: translateY(0);
+    }
+
     .result {
       margin-top: 16px;
       text-align: left;
@@ -129,15 +149,27 @@
       pointer-events: none;
       z-index: 9999;
     }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+      .app-card {
+        border-radius: 20px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+      }
+    }
   </style>
 
   <!-- Astronomy Engine -->
   <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+  <!-- 結果を画像化するためのライブラリ -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
 <canvas id="confettiCanvas"></canvas>
 
-<div class="app-card">
+<div class="app-card" id="cardRoot">
   <div class="app-header">
     <div class="app-icon">🪐</div>
     <div class="app-title-block">
@@ -159,6 +191,11 @@
 
   <div id="result" class="result"></div>
   <div id="birthdayMessage" class="birthday"></div>
+
+  <!-- 一番下の保存ボタン -->
+  <button type="button" id="saveBtn" class="secondary-button" onclick="saveResultImage()">
+    結果を保存
+  </button>
 </div>
 
 <script>
@@ -631,7 +668,39 @@
     }
   }
 
+  // 結果カードを JPEG として保存
+  function saveResultImage() {
+    var result = document.getElementById('result');
+    if (!result || !result.innerHTML.trim()) {
+      alert('まず「この日の運勢を見る」で結果を表示してください。');
+      return;
+    }
+    if (typeof html2canvas === 'undefined') {
+      alert('保存用ライブラリの読み込みに失敗しました。ネットワーク環境を確認してください。');
+      return;
+    }
+
+    var card = document.getElementById('cardRoot');
+    var birthStr  = document.getElementById('birth').value || 'birth';
+    var targetStr = document.getElementById('targetDate').value;
+
+    var fileDate = targetStr || 'today';
+    var fileBirth = birthStr.replace(/-/g, '');
+    var filename = 'horoscope_' + fileDate.replace(/-/g, '') + '_' + fileBirth + '.jpg';
+
+    html2canvas(card, {
+      backgroundColor: '#ffffff',
+      scale: window.devicePixelRatio > 1 ? 2 : 1
+    }).then(function (canvas) {
+      var link = document.createElement('a');
+      link.href = canvas.toDataURL('image/jpeg', 0.92);
+      link.download = filename;
+      link.click();
+    });
+  }
+
   window.calc = calc;
+  window.saveResultImage = saveResultImage;
 })();
 </script>
 </body>

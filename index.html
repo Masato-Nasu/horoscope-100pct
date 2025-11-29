@@ -156,7 +156,7 @@
       <p class="app-title">100% 星占い</p>
       <p class="app-subtitle">
         太陽〜土星の配置から「今日との相性度」を数値化します。<br>
-        ver. 天体差エンジン 3.3 daily-mix
+        ver. 天体差エンジン 3.4 gentle
       </p>
     </div>
   </div>
@@ -218,7 +218,7 @@
     };
   }
 
-  // ---------- テキストバンク（短め・日常会話寄り） ----------
+  // ---------- テキストバンク（簡略） ----------
   var TEXT_BANK = {
     total: {
       a: [
@@ -368,18 +368,30 @@
     return x;
   }
 
-  // -1〜+1 → 20〜100%（平方根＋レンジ狭め）
-  function mapNormToPercent(n) {
+  // 背景運のマイナス影響だけ弱める
+  function softenBackground(bg, negScale) {
+    if (bg < 0) {
+      return bg * negScale;
+    }
+    return bg;
+  }
+
+  // -1〜+1 → [minP, maxP] にマップ（平方根カーブ＋ごく一部だけ100%）
+  function mapNormToPercent(n, minP, maxP) {
     if (n < -1) n = -1;
     if (n >  1) n =  1;
-    var z = (n < 0) ? -Math.sqrt(-n) : Math.sqrt(n);  // 極端は少し強調
-    var p = 60 + 35 * z;  // 基本レンジはおよそ 25〜95
 
-    // ごく一部だけ 100% が出るように補正
-    if (n > 0.9)  p += 3;    // 90%以上なら少し押し上げ
-    if (n > 0.97) p  = 100;  // 本当に尖った日だけ 100%
+    var z = (n < 0) ? -Math.sqrt(-n) : Math.sqrt(n);
+    var mid = (minP + maxP) / 2;
+    var amp = (maxP - minP) / 2;
+    var p = mid + amp * z;
 
-    if (p < 20) p = 20;
+    // ごく一部だけ 100% が出るように補正（ほとんどの日は maxP 以下）
+    if (n > 0.96) {
+      p = 100;
+    }
+
+    if (p < minP) p = minP;
     if (p > 100) p = 100;
     return Math.round(p);
   }
@@ -505,23 +517,25 @@
       return aspectScore(diffLon(body));
     }
 
-    // ====== 背景運（ゆっくり変わる部分）と日替わり運（速い部分）を分けて計算 ======
+    // ====== 背景運（ゆっくり）と日替わり運（速い） ======
 
     // --- 総合運 ---
     var rawBgTotal =
-      A(Jup) + A(Sat) + 0.6 * A(Sun); // 長期〜中期の地合い
+      A(Jup) + A(Sat) + 0.6 * A(Sun);
     var rawDailyTotal =
       0.7 * A(Sun) + 1.0 * A(Moon) +
       0.5 * A(Merc) + 0.5 * A(Ven) +
-      0.6 * A(Mars);                // 毎日〜数日の揺れ
+      0.6 * A(Mars);
 
-    var nBgTotal    = clampNorm(rawBgTotal    * 0.35); // 緩めスケール
+    var nBgTotal    = clampNorm(rawBgTotal    * 0.35);
     var nDailyTotal = clampNorm(rawDailyTotal * 0.45);
 
-    // 背景4割・日替わり6割ぐらいのイメージ
+    // 背景がマイナスのときだけ効きを弱める（長期的な“しんどさ”を数字に出しすぎない）
+    nBgTotal = softenBackground(nBgTotal, 0.4); // マイナス側は40%だけ反映
+
     var nTotal = clampNorm(nBgTotal * 0.4 + nDailyTotal * 0.6);
 
-    // --- 恋愛運（主に金星・月・木星） ---
+    // --- 恋愛運 ---
     var rawLoveFast =
       1.2 * A(Ven) + 1.0 * A(Moon) + 0.5 * A(Merc);
     var rawLoveBg =
@@ -529,32 +543,35 @@
 
     var nLoveFast = clampNorm(rawLoveFast * 0.45);
     var nLoveBg   = clampNorm(rawLoveBg   * 0.40);
+    nLoveBg = softenBackground(nLoveBg, 0.5);
 
     var nLove = clampNorm(nLoveFast * 0.7 + nLoveBg * 0.3);
 
-    // --- 金運（木星・金星・土星） ---
+    // --- 金運 ---
     var rawMoneyFast =
       0.7 * A(Ven) + 0.4 * A(Mars);
     var rawMoneyBg =
       1.0 * A(Jup) + 0.5 * A(Sat);
 
     var nMoneyFast = clampNorm(rawMoneyFast * 0.40);
-    var nMoneyBg   = clampNorm(rawMoneyBg   * 0.40);
+    var nMoneyBg   = clampNorm(rawMoneyBg   * 0.35);
+    nMoneyBg = softenBackground(nMoneyBg, 0.5);
 
     var nMoney = clampNorm(nMoneyFast * 0.4 + nMoneyBg * 0.6);
 
-    // --- 仕事運（火星・水星・太陽＋土星） ---
+    // --- 仕事運 ---
     var rawWorkFast =
       1.0 * A(Mars) + 0.5 * A(Merc) + 0.5 * A(Sun);
     var rawWorkBg =
       1.0 * A(Sat);
 
     var nWorkFast = clampNorm(rawWorkFast * 0.40);
-    var nWorkBg   = clampNorm(rawWorkBg   * 0.40);
+    var nWorkBg   = clampNorm(rawWorkBg   * 0.35);
+    nWorkBg = softenBackground(nWorkBg, 0.5);
 
     var nWork = clampNorm(nWorkFast * 0.5 + nWorkBg * 0.5);
 
-    // --- 健康運（太陽・月）＋木星少し ---
+    // --- 健康運 ---
     var rawHealthFast =
       0.8 * A(Moon) + 0.6 * A(Sun);
     var rawHealthBg =
@@ -562,15 +579,16 @@
 
     var nHealthFast = clampNorm(rawHealthFast * 0.45);
     var nHealthBg   = clampNorm(rawHealthBg   * 0.35);
+    nHealthBg = softenBackground(nHealthBg, 0.5);
 
     var nHealth = clampNorm(nHealthFast * 0.7 + nHealthBg * 0.3);
 
-    // パーセンテージに変換
-    var total  = mapNormToPercent(nTotal);
-    var love   = mapNormToPercent(nLove);
-    var money  = mapNormToPercent(nMoney);
-    var work   = mapNormToPercent(nWork);
-    var health = mapNormToPercent(nHealth);
+    // パーセンテージに変換（総合は30〜95前後、他は25〜95前後、たまに100）
+    var total  = mapNormToPercent(nTotal,  30, 95);
+    var love   = mapNormToPercent(nLove,   25, 95);
+    var money  = mapNormToPercent(nMoney,  25, 95);
+    var work   = mapNormToPercent(nWork,   25, 95);
+    var health = mapNormToPercent(nHealth, 25, 95);
 
     var seedBase = birthStr + '|' +
       (targetStr || (targetDate.getFullYear() + '-' +
@@ -586,7 +604,7 @@
 
     var html = '';
 
-    // 総合運：テキストは1ブロックに統合
+    // 総合運
     html += '<div class="section-title">' +
               '<span class="icon">🪐</span>' +
               '<span class="label">今日の総合運</span>' +

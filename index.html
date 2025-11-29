@@ -182,7 +182,7 @@
 (function () {
   'use strict';
 
-  // ---- 旧 Service Worker を念のため解除（キャッシュ問題を避ける） ----
+  // 旧 Service Worker を解除（キャッシュで古い JS が残るのを防ぐ）
   if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
     navigator.serviceWorker.getRegistrations().then(function (regs) {
       for (var i = 0; i < regs.length; i++) {
@@ -214,7 +214,7 @@
     };
   }
 
-  // ---------- テキストバンク（短め・会話調） ----------
+  // ---------- テキストバンク（短め・日常会話寄り） ----------
   var TEXT_BANK = {
     total: {
       a: [
@@ -303,7 +303,7 @@
     return bank[idx];
   }
 
-  // ---------- 季節感のあるひと言 ----------
+  // ---------- 季節感のひと言 ----------
   function seasonPhrase(date, seedBase) {
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '';
     var month = date.getMonth() + 1;
@@ -334,9 +334,8 @@
     return arr[idx] || '';
   }
 
-  // ---------- アスペクト評価（連続スコア＋バイアス補正） ----------
+  // ---------- アスペクト評価（ガウス＋バイアス補正） ----------
   function aspectScore(diff) {
-    // diff: 0〜360
     var aspects = [
       { angle: 0,   sign:  1.0 },
       { angle: 60,  sign:  0.6 },
@@ -344,38 +343,33 @@
       { angle: 90,  sign: -0.8 },
       { angle: 180, sign: -0.8 }
     ];
-    var sigma = 35;                       // 広めのオーブ（度）
+    var sigma = 35;
     var rad2 = 2 * sigma * sigma;
     var score = 0;
     for (var i = 0; i < aspects.length; i++) {
       var a = aspects[i];
       var d = Math.abs(diff - a.angle);
       if (d > 180) d = 360 - d;
-      var w = Math.exp(-(d * d) / rad2);  // 角度が近いほど 1 に近づく
+      var w = Math.exp(-(d * d) / rad2);   // 角度が近いほど1に近づく
       score += a.sign * w;
     }
-    // 平均値が少しプラス寄りになるので、1惑星あたりの期待値ぶんを引いて中心を0へ
+    // 1惑星あたりの期待値ぶんを引いて、平均がほぼ0になるよう補正
     score -= 0.2435;
     return score;
   }
 
   function clampNorm(x) {
     if (x < -1) return -1;
-    if (x >  1) return 1;
+    if (x >  1) return  1;
     return x;
   }
 
-  // -1〜+1 を 20〜100% にマップ（平方根で「極端寄り」の日を増やす）
+  // -1〜+1 → 20〜100%（平方根カーブ）
   function mapNormToPercent(n) {
     if (n < -1) n = -1;
     if (n >  1) n =  1;
-    var z;
-    if (n < 0) {
-      z = -Math.sqrt(-n);
-    } else {
-      z = Math.sqrt(n);
-    }
-    var p = 60 + 40 * z;  // 中心60、端が20と100
+    var z = (n < 0) ? -Math.sqrt(-n) : Math.sqrt(n);
+    var p = 60 + 40 * z;
     if (p < 20) p = 20;
     if (p > 100) p = 100;
     return Math.round(p);
@@ -387,15 +381,15 @@
     if (!m) return null;
     var y = parseInt(m[1], 10);
     var mo = parseInt(m[2], 10);
-    var d = parseInt(m[3], 10);
+    var d  = parseInt(m[3], 10);
     if (!y || !mo || !d) return null;
     return new Date(y, mo - 1, d, 12, 0, 0);
   }
 
   function eclLon(body, date) {
     var time = new Astronomy.AstroTime(date);
-    var vec = Astronomy.GeoVector(body, time, true);
-    var ecl = Astronomy.Ecliptic(vec);
+    var vec  = Astronomy.GeoVector(body, time, true);
+    var ecl  = Astronomy.Ecliptic(vec);
     return ecl.elon;
   }
 
@@ -473,7 +467,7 @@
       targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
     }
 
-    // 惑星位置
+    // 惑星位置取得
     var bodies = [
       Astronomy.Body.Sun,
       Astronomy.Body.Moon,
@@ -499,7 +493,7 @@
       return d;
     }
 
-    // 生スコア（すべて天体差から計算）
+    // 生スコア（天体差からのみ計算）
     var rawTotal = 0;
     for (var j = 0; j < bodies.length; j++) {
       rawTotal += aspectScore(diffLon(bodies[j]));
@@ -508,25 +502,22 @@
     var rawLove =
       aspectScore(diffLon(Astronomy.Body.Venus)) +
       0.7 * aspectScore(diffLon(Astronomy.Body.Moon));
-
     var rawMoney =
       aspectScore(diffLon(Astronomy.Body.Jupiter)) +
       0.4 * aspectScore(diffLon(Astronomy.Body.Venus));
-
     var rawWork =
       aspectScore(diffLon(Astronomy.Body.Mars)) +
       aspectScore(diffLon(Astronomy.Body.Saturn));
-
     var rawHealth =
       aspectScore(diffLon(Astronomy.Body.Sun)) +
       aspectScore(diffLon(Astronomy.Body.Moon));
 
-    // スケール係数：20〜100% がしっかり振れるよう強めに調整
-    var nTotal  = clampNorm(rawTotal * 0.75);
-    var nLove   = clampNorm(rawLove  * 1.50);
-    var nMoney  = clampNorm(rawMoney * 1.60);
-    var nWork   = clampNorm(rawWork  * 1.30);
-    var nHealth = clampNorm(rawHealth* 1.30);
+    // ★ スケール係数を弱めて、100% / 20% 連発を防ぐ
+    var nTotal  = clampNorm(rawTotal * 0.50);
+    var nLove   = clampNorm(rawLove  * 0.90);
+    var nMoney  = clampNorm(rawMoney * 1.00);
+    var nWork   = clampNorm(rawWork  * 0.80);
+    var nHealth = clampNorm(rawHealth* 0.80);
 
     var total  = mapNormToPercent(nTotal);
     var love   = mapNormToPercent(nLove);
@@ -539,25 +530,26 @@
                      (targetDate.getMonth() + 1) + '-' +
                      targetDate.getDate()));
 
-    var overallText = pickText('total', total, seedBase);
-    var loveText    = pickText('love',  love,   seedBase);
-    var moneyText   = pickText('money', money,  seedBase);
-    var workText    = pickText('work',  work,   seedBase);
-    var healthText  = pickText('health',health, seedBase);
+    var overallText = pickText('total',  total,  seedBase);
+    var loveText    = pickText('love',   love,   seedBase);
+    var moneyText   = pickText('money',  money,  seedBase);
+    var workText    = pickText('work',   work,   seedBase);
+    var healthText  = pickText('health', health, seedBase);
     var seasonText  = seasonPhrase(targetDate, seedBase);
 
     var html = '';
 
-    // 総合運（1枚だけ）
+    // 総合運：テキストは1ブロックに統合
     html += '<div class="section-title">' +
               '<span class="icon">🪐</span>' +
               '<span class="label">今日の総合運</span>' +
               '<span class="percent">' + total + '%</span>' +
             '</div>';
-    html += '<div class="text-block">' + overallText + '</div>';
+    var totalText = overallText;
     if (seasonText) {
-      html += '<div class="text-block">' + seasonText + '</div>';
+      totalText += ' ' + seasonText;
     }
+    html += '<div class="text-block">' + totalText + '</div>';
 
     // 恋愛
     html += '<div class="section-title">' +
@@ -593,7 +585,7 @@
 
     document.getElementById('result').innerHTML = html;
 
-    // 誕生日判定
+    // 誕生日メッセージ
     var birthdayEl = document.getElementById('birthdayMessage');
     birthdayEl.textContent = '';
     var isBirthday =
@@ -606,9 +598,7 @@
     }
   }
 
-  // グローバル公開
   window.calc = calc;
-
 })();
 </script>
 </body>

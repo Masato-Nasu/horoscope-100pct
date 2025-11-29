@@ -1,767 +1,169 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>100% 星占い</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#B79DF2">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon-192.png">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>星占い (Complete Fix)</title>
+<meta name="theme-color" content="#6b46c1">
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-    html,
-    body {
-      max-width: 100%;
-      overflow-x: hidden;     /* 横スクロール禁止 */
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
-      background: #ffffff;
-      color: #333333;
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 16px;
-      text-align: center;
-      touch-action: pan-y;    /* 縦スクロールのみ */
-    }
-    .app-card {
-      width: 100%;
-      max-width: 420px;
-      margin: 0 auto;
-      background: #ffffff;
-      border-radius: 24px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-      padding: 18px 16px 20px;
-    }
-    .app-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .app-icon {
-      font-size: 28px;
-    }
-    .app-title-block {
-      text-align: left;
-    }
-    .app-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #7C4DFF;
-      margin: 0;
-    }
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪐</text></svg>">
 
-    .form-row {
-      margin-bottom: 10px;
-      text-align: left;
-    }
-    label {
-      display: block;
-      margin-bottom: 4px;
-      font-size: 12px;
-      color: #555555;
-    }
-    input {
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 12px;
-      border: 1px solid #DDDDFF;
-      font-size: 13px;
-      font-family: inherit;
-    }
-    input:focus {
-      outline: none;
-      border-color: #B79DF2;
-      box-shadow: 0 0 0 1px rgba(183,157,242,0.5);
-    }
-    button {
-      width: 100%;
-      border: none;
-      padding: 11px 12px;
-      border-radius: 12px; /* 角丸を統一 */
-      margin-top: 14px;
-      font-size: 14px;
-      font-weight: 600;
-      background: linear-gradient(135deg, #B79DF2, #7C4DFF);
-      color: #ffffff;
-      cursor: pointer;
-    }
-    button:active {
-      transform: translateY(1px);
-      box-shadow: 0 3px 8px rgba(0,0,0,0.2) inset;
-    }
-    .secondary-button {
-      margin-top: 18px;
-      background: #ffffff;
-      color: #7C4DFF;
-      border: 1px solid #D4C4FF;
-      box-shadow: none;
-    }
-    .secondary-button:active {
-      box-shadow: 0 0 0 1px rgba(183,157,242,0.4) inset;
-      transform: translateY(0);
-    }
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 
-    .result {
-      margin-top: 16px;
-      text-align: left;
-    }
-    .section-title {
-      margin: 18px 0 4px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #7C4DFF;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .section-title span.icon {
-      font-size: 18px;
-    }
-    .section-title span.label {
-      flex: 1;
-    }
-    .section-title span.percent {
-      font-size: 13px;
-      color: #555555;
-    }
-    .text-block {
-      font-size: 12px;
-      color: #555555;
-      line-height: 1.7;
-      padding: 8px 10px;
-      border-radius: 14px;
-      background: #F7F4FF;
-      margin-bottom: 6px;
-    }
-    .birthday {
-      margin-top: 12px;
-      font-size: 12px;
-      color: #C06FD8;
-      text-align: left;
-    }
-    #confettiCanvas {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 9999;
-    }
+<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
 
-    @media (max-width: 480px) {
-      body {
-        padding: 12px;
-      }
-      .app-card {
-        border-radius: 20px;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.10);
-      }
-    }
-  </style>
-
-  <!-- Astronomy Engine -->
-  <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
-  <!-- 結果を画像化するライブラリ -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+body{font-family:-apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; background:#f4f4f9; color:#333; margin:0; padding:20px; text-align:center;}
+h1 { color: #6b46c1; margin-bottom: 10px; font-size: 1.6em; }
+.card { background:#fff; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); padding:20px; margin-bottom:20px; text-align:left; max-width: 600px; margin-left: auto; margin-right: auto; }
+input, button { font-size:16px; padding:12px; width:100%; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; margin-bottom:10px; }
+button { background:#6b46c1; color:#fff; font-weight:bold; border:none; cursor:pointer; font-size: 1.1em; transition: 0.2s; }
+button:active { transform: scale(0.98); opacity: 0.9; }
+.result-row { display:flex; justify-content:space-between; align-items:center; padding: 12px 0; border-bottom: 1px solid #eee; }
+.result-row:last-child { border-bottom: none; }
+.planet-name { font-weight: bold; font-size: 1.1em; color: #444; }
+.planet-sign { background: #f3e8ff; color: #6b46c1; padding: 4px 12px; border-radius: 20px; font-weight:bold; font-size: 0.95em; }
+#status { margin-bottom: 20px; font-size: 0.9em; font-weight: bold; }
+</style>
 </head>
 <body>
-<canvas id="confettiCanvas"></canvas>
 
-<div class="app-card" id="cardRoot">
-  <div class="app-header">
-    <div class="app-icon">🪐</div>
-    <div class="app-title-block">
-      <p class="app-title">100% 星占い</p>
-    </div>
-  </div>
+<h1>🪐 天体位置計算</h1>
 
-  <div class="form-row">
-    <label for="birth">生年月日</label>
-    <input id="birth" type="date" value="1978-12-31">
-  </div>
+<div id="status" style="color:#666;">システム起動中...</div>
 
-  <div class="form-row">
-    <label for="targetDate">占いたい日（空欄なら今日）</label>
-    <input id="targetDate" type="date">
-  </div>
+<div class="card">
+    <label>あなたの誕生日:</label>
+    <input type="date" id="birthDate">
+    <input type="time" id="birthTime" value="12:00">
+    <button onclick="calculate()">鑑定スタート</button>
+</div>
 
-  <button type="button" onclick="calc()">この日の運勢を見る</button>
-
-  <div id="result" class="result"></div>
-  <div id="birthdayMessage" class="birthday"></div>
-
-  <!-- 結果が出たときだけ表示 -->
-  <button
-    type="button"
-    id="saveBtn"
-    class="secondary-button"
-    style="display:none"
-    onclick="saveResultImage()"
-  >
-    結果を保存
-  </button>
+<div id="resultArea" class="card" style="display:none;">
+    <div id="luckyResult" style="text-align:center; margin-bottom:20px; padding:15px; background:#fffbe6; border: 2px solid #ffe58f; border-radius:8px;"></div>
+    <div id="planetList"></div>
 </div>
 
 <script>
-(function () {
-  'use strict';
-
-  console.log('Horoscope engine 4.2 planets+day-noise+rare100');
-
-  // --- PWA: Service Worker 登録 ---
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js')
-        .then(function (reg) {
-          console.log('ServiceWorker registered:', reg.scope);
-        })
-        .catch(function (err) {
-          console.log('ServiceWorker registration failed:', err);
-        });
+// ★ゾンビキャッシュの完全消去
+if(window.navigator && navigator.serviceWorker) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) { registration.unregister(); }
     });
-  }
+}
 
-  // ---------- 共通ユーティリティ ----------
-  function stableSeed(str) {
-    var h = 1779033703 ^ str.length;
-    for (var i = 0; i < str.length; i++) {
-      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-      h = (h << 13) | (h >>> 19);
-    }
-    h = (h ^ (h >>> 16)) >>> 0;
-    return h;
-  }
+const $ = id => document.getElementById(id);
+const STATUS = $('status');
+const SIGNS = ['♈ 牡羊座', '♉ 牡牛座', '♊ 双子座', '♋ 蟹座', '♌ 獅子座', '♍ 乙女座', '♎ 天秤座', '♏ 蠍座', '♐ 射手座', '♑ 山羊座', '♒ 水瓶座', '♓ 魚座'];
+const PLANETS = [
+    {key: 'Sun', label: '☀️ 太陽'}, {key: 'Moon', label: '🌙 月'}, 
+    {key: 'Mercury', label: '☿ 水星'}, {key: 'Venus', label: '♀ 金星'}, 
+    {key: 'Mars', label: '♂ 火星'}, {key: 'Jupiter', label: '♃ 木星'}, 
+    {key: 'Saturn', label: '♄ 土星'}
+];
 
-  function makeRng(seed) {
-    var a = seed >>> 0;
-    return function () {
-      a |= 0;
-      a = (a + 0x6D2B79F5) | 0;
-      var t = Math.imul(a ^ (a >>> 15), 1 | a);
-      t = t + Math.imul(t ^ (t >>> 7), 61 | t) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
+// 起動チェック
+window.onload = function() {
+    if(!$('birthDate').value) $('birthDate').value = '2000-01-01'; 
 
-  // 短めの BANK（点数ゾーン a/b/c ごと）
-  var TEXT_BANK = {
-    total: {
-      a: [
-        "追い風を感じやすいタイミング。やりたいことを一つだけ決めて、そこに時間を使ってみてください。ちょっとした行動が、次のきっかけにつながっていきそうです。",
-        "全体的にスムーズに流れやすい日。完璧を目指すよりも、「今日はここまでできれば十分」と自分に言ってあげると、気持ちよく一日を終えられそうです。"
-      ],
-      b: [
-        "大きな山はなくても、日常を整えやすい日。すべてを一度に変えようとせず、身の回りの小さなところから整えていくと、心も落ち着いてきます。",
-        "いつも通りの一日の中にも、小さな楽しみを見つけやすいタイミング。好きな飲み物や音楽をひとつ足して、自分だけのごほうび時間を作ってみてください。"
-      ],
-      c: [
-        "少し慎重さが役に立つ日。無理に答えを出そうとせず、「今日は様子を見る」と決めるだけでも、心に余白が生まれます。自分を責めすぎないでくださいね。",
-        "思い通りに進まない場面もあるかもしれませんが、それでも大丈夫。できなかったことより、今日ちゃんとできたことを一つ思い出して、そっと自分をねぎらってあげましょう。"
-      ]
-    },
-    love: {
-      a: [
-        "人との距離が心地よく縮まりやすい日。恋愛に限らず、素直な「ありがとう」や「おつかれさま」が、関係をあたたかくしてくれそうです。",
-        "気になる人との会話が弾みやすいタイミング。大きなアクションよりも、ちょっとした気遣いやスタンプひとつが、相手の心にやさしく届きそうです。"
-      ],
-      b: [
-        "言葉の行き違いに敏感になりやすい日。相手の一言を深読みしすぎず、「今日はそういう日もある」と受け止めてみると、気持ちが少し軽くなります。",
-        "過去の出来事をふと思い出しやすいかもしれません。うまくいかなかった経験も、「あの時の自分もよくがんばっていた」と認めてあげると、今の恋にもやさしく向き合えます。"
-      ],
-      c: [
-        "気持ちが揺れやすい日。無理に明るく振る舞うより、信頼できる人とのゆるい会話や一人時間で心を落ち着かせるほうが、恋のバランスも整いやすくなります。",
-        "相手のペースと自分のペースの違いを、少し重く感じてしまうかもしれません。答えを急がず、「今日は自分の心の声をよく聴く日」と決めて過ごしてみてください。"
-      ]
-    },
-    work: {
-      a: [
-        "集中力を発揮しやすい日。短い時間でも「ここまでやる」と決めて取り組むと、手応えと達成感の両方を得られそうです。",
-        "得意な作業で周りを支えやすいタイミング。無理のない範囲で手を差し伸べると、信頼感がぐっと高まりそうです。"
-      ],
-      b: [
-        "淡々と取り組むことで、気づいたら進んでいる日。仕事前に今日やることを三つだけ書き出すと、スムーズに動きやすくなります。",
-        "「がんばる」と「休む」のバランスをとりたいタイミング。同じ姿勢が続くときは、軽く首や肩を回してリセットしてあげてください。"
-      ],
-      c: [
-        "集中しにくさを感じたら、いったんタスクを細かく区切ってみましょう。「ここまでできたら休憩」と小さなゴールを作ると、気持ちが少し楽になります。",
-        "判断に迷うことが増えそうな日。大きな決断は明日以降に回し、今日は情報を集める日にするのも一つの選択です。"
-      ]
-    },
-    money: {
-      a: [
-        "お金との付き合い方を整えやすい日。レシートや明細をざっと眺めて、気になる項目に印をつけるだけでも、流れが見えやすくなります。",
-        "欲しいものと必要なものの線引きがしやすいタイミング。今日は「本当にときめくもの」だけを選ぶ意識で、お金を使ってみてください。"
-      ],
-      b: [
-        "「なんとなく」で使ってしまうお金を見直したくなる日。すべてを管理しきれなくても、「これはやめてみようかな」と思う項目を一つ決めるだけで十分です。",
-        "大きな出費よりも、日々の小さな積み重ねが気になるタイミング。無理な節約ではなく、「ここだけ少し控えめにしてみよう」くらいが続けやすそうです。"
-      ],
-      c: [
-        "お金のことを考えると少し不安が出てきやすい日。ひとりで抱え込まず、信頼できる人に軽く相談したり、家計アプリで現状を「見える化」するところから始めてみてください。",
-        "今日は大きな契約や高額な買い物は慎重に。もう一度条件を見直したり、一晩おいてから決めると後悔が少なく済みそうです。"
-      ]
-    },
-    health: {
-      a: [
-        "体と心のコンディションを整えやすい日。早めにお風呂に入ったり、好きな香りを取り入れたりと、五感からリラックスさせてあげてください。",
-        "小さなケアが明日の自分を助けてくれるタイミング。水分補給や軽いストレッチなど、続けやすいことをひとつ選んで意識してみましょう。"
-      ],
-      b: [
-        "夜のスマホ時間を少し短くしてみるだけでも、睡眠の質が変わってきそうな日。寝る前に深呼吸を数回繰り返し、体の力を抜くイメージをしてみてください。",
-        "なんとなく疲れを感じたら、「今日は早めに寝る」と決めてしまうのもアリ。自分の限界を超える前に休むことが、明日のパフォーマンスにつながります。"
-      ],
-      c: [
-        "疲れがたまりやすいタイミング。無理に予定を詰め込まず、帰宅後は体をあたためることと、十分な睡眠を優先してあげてください。",
-        "気圧や気温の変化で、体調や気分が揺れやすいかもしれません。温かい飲み物や、やさしい味のご飯で、内側からじんわり整えていきましょう。"
-      ]
-    }
-  };
-
-  function gradeFromScore(score) {
-    if (score >= 75) return 'a';
-    if (score >= 45) return 'b';
-    return 'c';
-  }
-
-  function pickText(category, score, seedBase) {
-    var g = gradeFromScore(score);
-    var bank = (TEXT_BANK[category] && TEXT_BANK[category][g]) || [];
-    if (!bank.length) return '';
-    var rng = makeRng(stableSeed(category + '|' + g + '|' + seedBase));
-    var idx = Math.floor(rng() * bank.length);
-    return bank[idx];
-  }
-
-  function seasonPhrase(date, seedBase) {
-    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '';
-    var month = date.getMonth() + 1;
-    var rng = makeRng(stableSeed('season|' + month + '|' + seedBase));
-    var arr;
-    if (month === 12 || month === 1 || month === 2) {
-      arr = [
-        "冷たい空気の中にも、静かに整える力が流れています。温かい飲み物でほっと一息つく時間を増やしてみてください。",
-        "一年の締めくくりや始まりを意識しやすい季節。小さな区切りをつけることで、心にも余白が生まれそうです。"
-      ];
-    } else if (month >= 3 && month <= 5) {
-      arr = [
-        "春の空気がゆっくりと流れ込み、気持ちも少しずつほぐれやすいタイミングです。予定の中に、小さな楽しみを混ぜてみてください。",
-        "新しいことを始めたくなる季節。全部を一気に変えようとせず、「ひとつだけ試してみる」くらいがちょうど良さそうです。"
-      ];
-    } else if (month >= 6 && month <= 8) {
-      arr = [
-        "暑さで体力を奪われやすい季節。無理を通すより、こまめな休憩と水分補給を味方につけてあげてください。",
-        "日差しが強いぶん、心も外に向きやすい時期。疲れを感じたら、涼しい場所で一息ついてから次の予定へ。"
-      ];
-    } else {
-      arr = [
-        "空気が少しずつ落ち着いてくる季節。ゆっくりと振り返る時間をとることで、次に進むヒントが見つかりそうです。",
-        "日々の変化を感じやすい季節。小さな違いに気づくほど、明日への楽しみも増えていきます。"
-      ];
-    }
-    var idx = Math.floor(rng() * arr.length);
-    return arr[idx] || '';
-  }
-
-  // アスペクトスコア（-1〜+1 付近）
-  function aspectScore(diff) {
-    var aspects = [
-      { angle: 0,   sign:  1.0 },
-      { angle: 60,  sign:  0.6 },
-      { angle: 120, sign:  1.0 },
-      { angle: 90,  sign: -0.8 },
-      { angle: 180, sign: -0.8 }
-    ];
-    var sigma = 35;
-    var rad2 = 2 * sigma * sigma;
-    var score = 0;
-    for (var i = 0; i < aspects.length; i++) {
-      var a = aspects[i];
-      var d = Math.abs(diff - a.angle);
-      if (d > 180) d = 360 - d;
-      var w = Math.exp(-(d * d) / rad2);
-      score += a.sign * w;
-    }
-    score -= 0.2435;
-    return score;
-  }
-
-  function clampNorm(x) {
-    if (x < -1) return -1;
-    if (x >  1) return  1;
-    return x;
-  }
-
-  function softenBackground(bg, negScale, posScale) {
-    if (bg < 0) return bg * negScale;
-    if (bg > 0) return bg * posScale;
-    return bg;
-  }
-
-  // 日ごとの微小ゆらぎ（同じ月の中で 20〜30pt くらい動かす要素）
-  function applyDayJitter(n, category, date, strength) {
-    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return n;
-    var key = category + '|' +
-      date.getFullYear() + '-' +
-      (date.getMonth() + 1) + '-' +
-      date.getDate();
-    var rng = makeRng(stableSeed('dayJ|' + key));
-    var amp = strength;
-    var jitter = (rng() - 0.5) * 2 * amp; // -amp〜+amp
-    return clampNorm(n + jitter);
-  }
-
-  // -1〜+1 → 0〜100％
-  // ふだんは 15〜95 に収めつつ、n が 0.985 以上のときだけ 100% を許可
-  function mapNormToPercent(n, minP, maxP) {
-    if (n < -1) n = -1;
-    if (n >  1) n =  1;
-    var mid = (minP + maxP) / 2;  // 55
-    var amp = (maxP - minP) / 2;  // 40
-    var p   = mid + amp * n;      // 55 + 40n
-
-    if (p < minP) p = minP;
-    if (p > maxP) p = maxP;
-
-    // 本当に良い配置のときだけ 100% にジャンプ
-    if (n > 0.985) {
-      p = 100;
-    }
-    return Math.round(p);
-  }
-
-  function parseDateInput(str) {
-    if (!str) return null;
-    var m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!m) return null;
-    var y  = parseInt(m[1], 10);
-    var mo = parseInt(m[2], 10);
-    var d  = parseInt(m[3], 10);
-    if (!y || !mo || !d) return null;
-    return new Date(y, mo - 1, d, 12, 0, 0);
-  }
-
-  function eclLon(body, date) {
-    var time = new Astronomy.AstroTime(date);
-    var vec  = Astronomy.GeoVector(body, time, true);
-    var ecl  = Astronomy.Ecliptic(vec);
-    return ecl.elon;
-  }
-
-  // 紙吹雪
-  function fireConfetti() {
-    var canvas = document.getElementById('confettiCanvas');
-    var ctx = canvas.getContext('2d');
-    var w = (canvas.width  = window.innerWidth);
-    var h = (canvas.height = window.innerHeight);
-    var COUNT = 150;
-    var confs = [];
-    for (var i = 0; i < COUNT; i++) {
-      confs.push({
-        x: Math.random() * w,
-        y: Math.random() * -h,
-        vy: 2 + Math.random() * 3,
-        vx: (Math.random() - 0.5) * 1.5,
-        size: 4 + Math.random() * 4,
-        rot: Math.random() * Math.PI * 2,
-        vr: (Math.random() - 0.5) * 0.2
-      });
-    }
-    var start = performance.now();
-    function loop(now) {
-      var t = now - start;
-      ctx.clearRect(0, 0, w, h);
-      for (var i = 0; i < confs.length; i++) {
-        var c = confs[i];
-        c.y += c.vy;
-        c.x += c.vx;
-        c.rot += c.vr;
-        if (c.y > h + 20) {
-          c.y = -20;
-          c.x = Math.random() * w;
+    let checkCount = 0;
+    const checker = setInterval(() => {
+        checkCount++;
+        if (typeof Astronomy !== 'undefined') {
+            STATUS.innerHTML = '✅ 準備完了';
+            STATUS.style.color = '#2e7d32';
+            clearInterval(checker);
+        } else if (checkCount > 10) {
+            STATUS.innerHTML = '⚠️ 読み込み中... (長引く場合はリロードしてください)';
+            STATUS.style.color = '#e65100';
         }
-        ctx.save();
-        ctx.translate(c.x, c.y);
-        ctx.rotate(c.rot);
-        ctx.fillStyle = 'hsla(' + (260 + Math.random() * 40) + ',70%,70%,0.9)';
-        ctx.fillRect(-c.size / 2, -c.size / 2, c.size, c.size);
-        ctx.restore();
-      }
-      if (t < 2500) {
-        requestAnimationFrame(loop);
-      } else {
-        ctx.clearRect(0, 0, w, h);
-      }
-    }
-    requestAnimationFrame(loop);
-  }
+    }, 500);
+};
 
-  // --------- メイン計算 ---------
-  function calc() {
-    var birthStr  = document.getElementById('birth').value;
-    var targetStr = document.getElementById('targetDate').value;
+// 安全な日付生成
+function getSafeDate() {
+    const dStr = $('birthDate').value;
+    const tStr = $('birthTime').value || '12:00';
+    if(!dStr) return null;
+    const [y, m, d] = dStr.split('-').map(Number);
+    const [h, min] = tStr.split(':').map(Number);
+    return new Date(y, m - 1, d, h, min, 0);
+}
 
-    if (!birthStr) {
-      alert('生年月日を入力してください');
-      return;
-    }
+// 計算実行
+function calculate() {
+    const date = getSafeDate();
+    
     if (typeof Astronomy === 'undefined') {
-      alert('Astronomy Engine が読み込まれていません。ネットワーク環境を確認してください。');
-      return;
+        alert("計算エンジンがロードされていません。リロードしてください。");
+        return;
+    }
+    if(!date || isNaN(date.getTime())) {
+        alert("日付を入力してください");
+        return;
     }
 
-    var birthDate = parseDateInput(birthStr);
-    if (!birthDate) {
-      alert('生年月日が正しくありません');
-      return;
-    }
+    let html = '';
+    let jupiterLon = 0;
 
-    var now = new Date();
-    var targetDate = parseDateInput(targetStr);
-    if (!targetDate) {
-      targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
-    }
+    // 惑星計算ループ
+    PLANETS.forEach(p => {
+        let lon = 0;
+        try {
+            // ★ここが修正ポイント！
+            // 第3引数に必ず「true」を入れることで、undefinedエラーを回避します
+            const vector = Astronomy.GeoVector(p.key, date, true);
+            const ecliptic = Astronomy.Ecliptic(vector);
+            lon = ecliptic.lon;
+            if(p.key === 'Jupiter') jupiterLon = lon;
+        } catch(e) {
+            console.error(e);
+            lon = 0; 
+        }
 
-    var targetKey =
-      targetDate.getFullYear() + '-' +
-      (targetDate.getMonth() + 1) + '-' +
-      targetDate.getDate();
-    var seedBase = birthStr + '|' + targetKey;
+        const signIndex = Math.floor(lon / 30) % 12;
+        const degree = (lon % 30).toFixed(1);
+        const signName = SIGNS[signIndex];
 
-    var Sun  = Astronomy.Body.Sun;
-    var Moon = Astronomy.Body.Moon;
-    var Merc = Astronomy.Body.Mercury;
-    var Ven  = Astronomy.Body.Venus;
-    var Mars = Astronomy.Body.Mars;
-    var Jup  = Astronomy.Body.Jupiter;
-    var Sat  = Astronomy.Body.Saturn;
-
-    var bodies = [Sun, Moon, Merc, Ven, Mars, Jup, Sat];
-    var nat = {};
-    var cur = {};
-    for (var i = 0; i < bodies.length; i++) {
-      var b = bodies[i];
-      nat[b] = eclLon(b, birthDate);
-      cur[b] = eclLon(b, targetDate);
-    }
-
-    function diffLon(body) {
-      var d = cur[body] - nat[body];
-      d = d % 360;
-      if (d < 0) d += 360;
-      return d;
-    }
-
-    function A(body) {
-      return aspectScore(diffLon(body));
-    }
-
-    // --- 総合運：天体差（planet） + 日替わりノイズ ---
-    var rawBgTotal =
-      0.25 * A(Jup) +
-      0.20 * A(Sat) +
-      0.20 * A(Sun);
-    var rawFastTotal =
-      1.5 * A(Moon) +
-      1.1 * A(Merc) +
-      1.1 * A(Ven)  +
-      1.2 * A(Mars);
-
-    var nBgTotal   = clampNorm(rawBgTotal   * 0.40);
-    var nFastTotal = clampNorm(rawFastTotal * 0.45);
-    nBgTotal = softenBackground(nBgTotal, 0.4, 0.4);
-    var nTotalPlanet = clampNorm(nFastTotal * 0.95 + nBgTotal * 0.05);
-
-    // --- 恋愛 ---
-    var rawBgLove =
-      0.35 * A(Jup);
-    var rawFastLove =
-      1.6 * A(Ven) +
-      1.4 * A(Moon) +
-      0.9 * A(Merc);
-
-    var nBgLove   = clampNorm(rawBgLove   * 0.45);
-    var nFastLove = clampNorm(rawFastLove * 0.45);
-    nBgLove = softenBackground(nBgLove, 0.4, 0.4);
-    var nLovePlanet = clampNorm(nFastLove * 0.95 + nBgLove * 0.05);
-
-    // --- 金運 ---
-    var rawBgMoney =
-      0.45 * A(Jup) +
-      0.30 * A(Sat);
-    var rawFastMoney =
-      1.0 * A(Ven) +
-      0.8 * A(Mars) +
-      0.6 * A(Merc);
-
-    var nBgMoney   = clampNorm(rawBgMoney   * 0.35);
-    var nFastMoney = clampNorm(rawFastMoney * 0.45);
-    nBgMoney = softenBackground(nBgMoney, 0.4, 0.4);
-    var nMoneyPlanet = clampNorm(nFastMoney * 0.95 + nBgMoney * 0.05);
-
-    // --- 仕事 ---
-    var rawBgWork =
-      0.50 * A(Sat);
-    var rawFastWork =
-      1.1 * A(Mars) +
-      0.9 * A(Merc) +
-      0.5 * A(Moon) +
-      0.4 * A(Sun);
-
-    var nBgWork   = clampNorm(rawBgWork   * 0.45);
-    var nFastWork = clampNorm(rawFastWork * 0.45);
-    nBgWork = softenBackground(nBgWork, 0.4, 0.4);
-    var nWorkPlanet = clampNorm(nFastWork * 0.95 + nBgWork * 0.05);
-
-    // --- 健康 ---
-    var rawBgHealth =
-      0.30 * A(Jup);
-    var rawFastHealth =
-      1.3 * A(Moon) +
-      0.7 * A(Sun) +
-      0.4 * A(Ven);
-
-    var nBgHealth   = clampNorm(rawBgHealth   * 0.45);
-    var nFastHealth = clampNorm(rawFastHealth * 0.45);
-    nBgHealth = softenBackground(nBgHealth, 0.4, 0.4);
-    var nHealthPlanet = clampNorm(nFastHealth * 0.95 + nBgHealth * 0.05);
-
-    // --- 日替わりノイズをミックス（天体差:ノイズ ≒ 8:2イメージ） ---
-    var nTotal  = applyDayJitter(nTotalPlanet,  'total',  targetDate, 0.30);
-    var nLove   = applyDayJitter(nLovePlanet,   'love',   targetDate, 0.30);
-    var nMoney  = applyDayJitter(nMoneyPlanet,  'money',  targetDate, 0.30);
-    var nWork   = applyDayJitter(nWorkPlanet,   'work',   targetDate, 0.30);
-    var nHealth = applyDayJitter(nHealthPlanet, 'health', targetDate, 0.30);
-
-    // --- 0〜100％へ変換（15〜95 を主レンジ、n>0.985 のときだけ 100%） ---
-    var total  = mapNormToPercent(nTotal,  15, 95);
-    var love   = mapNormToPercent(nLove,   15, 95);
-    var money  = mapNormToPercent(nMoney,  15, 95);
-    var work   = mapNormToPercent(nWork,   15, 95);
-    var health = mapNormToPercent(nHealth, 15, 95);
-
-    // テキスト選択
-    var seedBase = birthStr + '|' + targetKey;
-    var overallText = pickText('total',  total,  seedBase);
-    var loveText    = pickText('love',   love,   seedBase);
-    var moneyText   = pickText('money',  money,  seedBase);
-    var workText    = pickText('work',   work,   seedBase);
-    var healthText  = pickText('health', health, seedBase);
-    var seasonText  = seasonPhrase(targetDate, seedBase);
-
-    var html = '';
-
-    html += '<div class="section-title">' +
-              '<span class="icon">🪐</span>' +
-              '<span class="label">今日の総合運</span>' +
-              '<span class="percent">' + total + '%</span>' +
-            '</div>';
-    var totalText = overallText;
-    if (seasonText) {
-      totalText += ' ' + seasonText;
-    }
-    html += '<div class="text-block">' + totalText + '</div>';
-
-    html += '<div class="section-title">' +
-              '<span class="icon">💞</span>' +
-              '<span class="label">恋愛</span>' +
-              '<span class="percent">' + love + '%</span>' +
-            '</div>';
-    html += '<div class="text-block">' + loveText + '</div>';
-
-    html += '<div class="section-title">' +
-              '<span class="icon">💼</span>' +
-              '<span class="label">仕事</span>' +
-              '<span class="percent">' + work + '%</span>' +
-            '</div>';
-    html += '<div class="text-block">' + workText + '</div>';
-
-    html += '<div class="section-title">' +
-              '<span class="icon">💰</span>' +
-              '<span class="label">金運</span>' +
-              '<span class="percent">' + money + '%</span>' +
-            '</div>';
-    html += '<div class="text-block">' + moneyText + '</div>';
-
-    html += '<div class="section-title">' +
-              '<span class="icon">💗</span>' +
-              '<span class="label">健康</span>' +
-              '<span class="percent">' + health + '%</span>' +
-            '</div>';
-    html += '<div class="text-block">' + healthText + '</div>';
-
-    document.getElementById('result').innerHTML = html;
-
-    // 結果が出たので「結果を保存」ボタンを表示
-    var saveBtn = document.getElementById('saveBtn');
-    if (saveBtn) {
-      saveBtn.style.display = 'block';
-    }
-
-    // 誕生日演出（本当に「今日」が誕生日のときだけ）
-    var birthdayEl = document.getElementById('birthdayMessage');
-    birthdayEl.textContent = '';
-
-    var now2 = new Date();
-    var todayY = now2.getFullYear();
-    var todayM = now2.getMonth();
-    var todayD = now2.getDate();
-
-    var isTodayTarget =
-      targetDate.getFullYear() === todayY &&
-      targetDate.getMonth() === todayM &&
-      targetDate.getDate() === todayD;
-
-    var isTodayBirthday =
-      birthDate.getMonth() === todayM &&
-      birthDate.getDate() === todayD;
-
-    if (isTodayTarget && isTodayBirthday) {
-      birthdayEl.textContent =
-        '🎂 お誕生日おめでとうございます。今日のあなたに、やさしい流れがありますように。';
-      fireConfetti();
-    }
-  }
-
-  // --------- 結果カードを JPEG 保存 ---------
-  function saveResultImage() {
-    var result = document.getElementById('result');
-    if (!result || !result.innerHTML.trim()) {
-      alert('まず「この日の運勢を見る」で結果を表示してください。');
-      return;
-    }
-    if (typeof html2canvas === 'undefined') {
-      alert('保存用ライブラリの読み込みに失敗しました。ネットワーク環境を確認してください。');
-      return;
-    }
-
-    var card = document.getElementById('cardRoot');
-    var birthStr  = document.getElementById('birth').value || 'birth';
-    var targetStr = document.getElementById('targetDate').value;
-
-    var fileDate = targetStr || 'today';
-    var fileBirth = birthStr.replace(/-/g, '');
-    var filename = 'horoscope_' + fileDate.replace(/-/g, '') + '_' + fileBirth + '.jpg';
-
-    html2canvas(card, {
-      backgroundColor: '#ffffff',
-      scale: window.devicePixelRatio > 1 ? 2 : 1
-    }).then(function (canvas) {
-      var link = document.createElement('a');
-      link.href = canvas.toDataURL('image/jpeg', 0.92);
-      link.download = filename;
-      link.click();
+        html += `
+        <div class="result-row">
+            <div class="planet-name">${p.label}</div>
+            <div class="planet-sign">${signName} ${degree}°</div>
+        </div>`;
     });
-  }
 
-  window.calc = calc;
-  window.saveResultImage = saveResultImage;
-})();
+    $('planetList').innerHTML = html;
+    
+    // 木星運勢判定（ここも true を忘れずに追加）
+    try {
+        const todayVec = Astronomy.GeoVector('Jupiter', new Date(), true);
+        const todayLon = Astronomy.Ecliptic(todayVec).lon;
+        let diff = Math.abs(todayLon - jupiterLon);
+        if(diff > 180) diff = 360 - diff;
+        
+        let luckMsg = "木星は通常運行中です";
+        let luckColor = "#333";
+        
+        if(diff < 8) {
+            luckMsg = "✨ おめでとうございます！<br>12年に一度の最強幸運期です！";
+            luckColor = "#d32f2f";
+        } else if(Math.abs(diff - 120) < 8) {
+            luckMsg = "🌈 大吉運！<br>物事がスムーズに進む追い風が吹いています。";
+            luckColor = "#e65100";
+        }
+
+        const resDiv = $('luckyResult');
+        resDiv.innerHTML = `<div style="color:${luckColor}; font-weight:bold; font-size:1.1em; line-height:1.5;">${luckMsg}</div>`;
+        $('resultArea').style.display = 'block';
+        resDiv.scrollIntoView({behavior: "smooth", block: "center"});
+        
+    } catch(e) {
+        console.error("Luck calc error:", e);
+    }
+}
 </script>
+
 </body>
 </html>

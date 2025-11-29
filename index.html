@@ -73,7 +73,7 @@
       box-sizing: border-box;
       border: none;
       padding: 11px 12px;
-      border-radius: 12px; /* 他と同じくらいの角丸に統一 */
+      border-radius: 12px;
       margin-top: 14px;
       font-size: 14px;
       font-weight: 600;
@@ -84,13 +84,6 @@
     button:active {
       transform: translateY(1px);
       box-shadow: 0 3px 8px rgba(0,0,0,0.2) inset;
-    }
-    .note {
-      margin-top: 10px;
-      font-size: 11px;
-      color: #888888;
-      line-height: 1.5;
-      text-align: left;
     }
     .result {
       margin-top: 16px;
@@ -164,10 +157,6 @@
 
   <button type="button" onclick="calc()">この日の運勢を見る</button>
 
-  <p class="note">
-    ※ 数値は太陽〜土星までの配置をもとにした「今日との相性度」です。
-  </p>
-
   <div id="result" class="result"></div>
   <div id="birthdayMessage" class="birthday"></div>
 </div>
@@ -176,7 +165,6 @@
 (function () {
   'use strict';
 
-  // 旧 Service Worker を解除（キャッシュで古い JS が残るのを防ぐ）
   if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
     navigator.serviceWorker.getRegistrations().then(function (regs) {
       for (var i = 0; i < regs.length; i++) {
@@ -186,7 +174,6 @@
     });
   }
 
-  // ---------- 安定乱数（テキスト選択用のみ） ----------
   function stableSeed(str) {
     var h = 1779033703 ^ str.length;
     for (var i = 0; i < str.length; i++) {
@@ -208,7 +195,6 @@
     };
   }
 
-  // ---------- テキストバンク（簡略） ----------
   var TEXT_BANK = {
     total: {
       a: [
@@ -297,7 +283,6 @@
     return bank[idx];
   }
 
-  // ---------- 季節感のひと言 ----------
   function seasonPhrase(date, seedBase) {
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '';
     var month = date.getMonth() + 1;
@@ -328,7 +313,6 @@
     return arr[idx] || '';
   }
 
-  // ---------- アスペクト評価（ガウス＋バイアス補正） ----------
   function aspectScore(diff) {
     var aspects = [
       { angle: 0,   sign:  1.0 },
@@ -357,7 +341,6 @@
     return x;
   }
 
-  // 背景運のマイナス影響だけ弱める
   function softenBackground(bg, negScale) {
     if (bg < 0) {
       return bg * negScale;
@@ -365,7 +348,6 @@
     return bg;
   }
 
-  // -1〜+1 → [minP, maxP] にマップ（平方根カーブ＋ごく一部だけ100%）
   function mapNormToPercent(n, minP, maxP) {
     if (n < -1) n = -1;
     if (n >  1) n =  1;
@@ -402,7 +384,6 @@
     return ecl.elon;
   }
 
-  // ---------- 簡易コンフェッティ ----------
   function fireConfetti() {
     var canvas = document.getElementById('confettiCanvas');
     var ctx = canvas.getContext('2d');
@@ -450,7 +431,6 @@
     requestAnimationFrame(loop);
   }
 
-  // ---------- メイン計算 ----------
   function calc() {
     var birthStr  = document.getElementById('birth').value;
     var targetStr = document.getElementById('targetDate').value;
@@ -505,9 +485,6 @@
       return aspectScore(diffLon(body));
     }
 
-    // ====== 背景運（ゆっくり）と日替わり運（速い） ======
-
-    // 総合運
     var rawBgTotal =
       A(Jup) + A(Sat) + 0.6 * A(Sun);
     var rawDailyTotal =
@@ -521,7 +498,6 @@
 
     var nTotal = clampNorm(nBgTotal * 0.4 + nDailyTotal * 0.6);
 
-    // 恋愛運
     var rawLoveFast =
       1.2 * A(Ven) + 1.0 * A(Moon) + 0.5 * A(Merc);
     var rawLoveBg =
@@ -533,7 +509,6 @@
 
     var nLove = clampNorm(nLoveFast * 0.7 + nLoveBg * 0.3);
 
-    // 金運
     var rawMoneyFast =
       0.7 * A(Ven) + 0.4 * A(Mars);
     var rawMoneyBg =
@@ -545,7 +520,6 @@
 
     var nMoney = clampNorm(nMoneyFast * 0.4 + nMoneyBg * 0.6);
 
-    // 仕事運
     var rawWorkFast =
       1.0 * A(Mars) + 0.5 * A(Merc) + 0.5 * A(Sun);
     var rawWorkBg =
@@ -557,7 +531,6 @@
 
     var nWork = clampNorm(nWorkFast * 0.5 + nWorkBg * 0.5);
 
-    // 健康運
     var rawHealthFast =
       0.8 * A(Moon) + 0.6 * A(Sun);
     var rawHealthBg =
@@ -569,7 +542,6 @@
 
     var nHealth = clampNorm(nHealthFast * 0.7 + nHealthBg * 0.3);
 
-    // パーセンテージに変換
     var total  = mapNormToPercent(nTotal,  30, 95);
     var love   = mapNormToPercent(nLove,   25, 95);
     var money  = mapNormToPercent(nMoney,  25, 95);
@@ -590,7 +562,6 @@
 
     var html = '';
 
-    // 総合運
     html += '<div class="section-title">' +
               '<span class="icon">🪐</span>' +
               '<span class="label">今日の総合運</span>' +
@@ -602,7 +573,6 @@
     }
     html += '<div class="text-block">' + totalText + '</div>';
 
-    // 恋愛
     html += '<div class="section-title">' +
               '<span class="icon">💞</span>' +
               '<span class="label">恋愛</span>' +
@@ -610,7 +580,6 @@
             '</div>';
     html += '<div class="text-block">' + loveText + '</div>';
 
-    // 仕事
     html += '<div class="section-title">' +
               '<span class="icon">💼</span>' +
               '<span class="label">仕事</span>' +
@@ -618,7 +587,6 @@
             '</div>';
     html += '<div class="text-block">' + workText + '</div>';
 
-    // 金運
     html += '<div class="section-title">' +
               '<span class="icon">💰</span>' +
               '<span class="label">金運</span>' +
@@ -626,7 +594,6 @@
             '</div>';
     html += '<div class="text-block">' + moneyText + '</div>';
 
-    // 健康
     html += '<div class="section-title">' +
               '<span class="icon">💗</span>' +
               '<span class="label">健康</span>' +
@@ -636,7 +603,6 @@
 
     document.getElementById('result').innerHTML = html;
 
-    // 誕生日メッセージ・紙吹雪
     var birthdayEl = document.getElementById('birthdayMessage');
     birthdayEl.textContent = '';
 

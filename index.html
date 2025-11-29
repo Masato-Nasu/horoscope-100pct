@@ -682,6 +682,60 @@
 
       var todayNorms = computeNormsForDate(targetDate);
 
+      var yearStats = {
+        total:  { sum: 0, min:  9999, max: -9999, count: 0 },
+        love:   { sum: 0, min:  9999, max: -9999, count: 0 },
+        money:  { sum: 0, min:  9999, max: -9999, count: 0 },
+        work:   { sum: 0, min:  9999, max: -9999, count: 0 },
+        health: { sum: 0, min:  9999, max: -9999, count: 0 }
+      };
+
+      for (var oy = -90; oy <= 90; oy += 3) {
+        var dYear = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+        dYear.setDate(dYear.getDate() + oy);
+        var ny = computeNormsForDate(dYear);
+
+        yearStats.total.sum   += ny.total;
+        yearStats.total.min    = Math.min(yearStats.total.min,  ny.total);
+        yearStats.total.max    = Math.max(yearStats.total.max,  ny.total);
+        yearStats.total.count += 1;
+
+        yearStats.love.sum    += ny.love;
+        yearStats.love.min     = Math.min(yearStats.love.min,   ny.love);
+        yearStats.love.max     = Math.max(yearStats.love.max,   ny.love);
+        yearStats.love.count  += 1;
+
+        yearStats.money.sum   += ny.money;
+        yearStats.money.min    = Math.min(yearStats.money.min,  ny.money);
+        yearStats.money.max    = Math.max(yearStats.money.max,  ny.money);
+        yearStats.money.count += 1;
+
+        yearStats.work.sum    += ny.work;
+        yearStats.work.min     = Math.min(yearStats.work.min,   ny.work);
+        yearStats.work.max     = Math.max(yearStats.work.max,   ny.work);
+        yearStats.work.count  += 1;
+
+        yearStats.health.sum  += ny.health;
+        yearStats.health.min   = Math.min(yearStats.health.min, ny.health);
+        yearStats.health.max   = Math.max(yearStats.health.max, ny.health);
+        yearStats.health.count+= 1;
+      }
+
+      function yearNorm(valueToday, stat) {
+        if (!stat || stat.count <= 1) return 0;
+        var mean = stat.sum / stat.count;
+        var halfRange = (stat.max - stat.min) / 2;
+        if (halfRange < 0.05) return 0;
+        var n = (valueToday - mean) / halfRange;
+        return clampNorm(n);
+      }
+
+      var nTotalGlobal  = yearNorm(todayNorms.total,  yearStats.total);
+      var nLoveGlobal   = yearNorm(todayNorms.love,   yearStats.love);
+      var nMoneyGlobal  = yearNorm(todayNorms.money,  yearStats.money);
+      var nWorkGlobal   = yearNorm(todayNorms.work,   yearStats.work);
+      var nHealthGlobal = yearNorm(todayNorms.health, yearStats.health);
+
       var windowDays = 16;
       var sum  = { total:0, love:0, money:0, work:0, health:0 };
       var sum2 = { total:0, love:0, money:0, work:0, health:0 };
@@ -705,7 +759,7 @@
         var variance = s2 / count - mean * mean;
         if (variance < 1e-6) return 0;
         var std = Math.sqrt(variance);
-        if (std < 0.15) return 0;
+        if (std < 0.05) return 0;
         var z = (valueToday - mean) / (2 * std);
         return clampNorm(z);
       }
@@ -717,15 +771,18 @@
       var nHealthLocal = localFromWindow(todayNorms.health, sum.health, sum2.health);
 
       function mix(global, local) {
-        var g = 0.35 * global + 0.65 * local;
+        if (local === 0) {
+          return clampNorm(global);
+        }
+        var g = 0.25 * global + 0.75 * local;
         return clampNorm(g);
       }
 
-      var nTotal  = mix(todayNorms.total,  nTotalLocal);
-      var nLove   = mix(todayNorms.love,   nLoveLocal);
-      var nMoney  = mix(todayNorms.money,  nMoneyLocal);
-      var nWork   = mix(todayNorms.work,   nWorkLocal);
-      var nHealth = mix(todayNorms.health, nHealthLocal);
+      var nTotal  = mix(nTotalGlobal,  nTotalLocal);
+      var nLove   = mix(nLoveGlobal,   nLoveLocal);
+      var nMoney  = mix(nMoneyGlobal,  nMoneyLocal);
+      var nWork   = mix(nWorkGlobal,   nWorkLocal);
+      var nHealth = mix(nHealthGlobal, nHealthLocal);
 
       nTotal  = applyDayJitter(nTotal,  'total',  targetDate, 0.18);
       nLove   = applyDayJitter(nLove,   'love',   targetDate, 0.18);
@@ -825,7 +882,7 @@
     }
   }
 
-  window.calc = calc;
+window.calc = calc;
   window.saveResultImage = saveResultImage;
 
 })(); 

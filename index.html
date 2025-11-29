@@ -9,6 +9,14 @@
   <link rel="icon" href="icon-192.png">
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      max-width: 100%;
+      overflow-x: hidden;     /* ★ 横スクロール禁止 */
+    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
       background: #ffffff;
@@ -20,7 +28,7 @@
       align-items: flex-start;
       padding: 16px;
       text-align: center;
-      box-sizing: border-box;
+      touch-action: pan-y;    /* ★ 縦スクロールのみ（横スワイプ抑制） */
     }
     .app-card {
       width: 100%;
@@ -30,7 +38,6 @@
       border-radius: 24px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.12);
       padding: 18px 16px 20px;
-      box-sizing: border-box;
     }
     .app-header {
       display: flex;
@@ -63,7 +70,6 @@
     }
     input {
       width: 100%;
-      box-sizing: border-box;
       padding: 8px 10px;
       border-radius: 12px;
       border: 1px solid #DDDDFF;
@@ -77,7 +83,6 @@
     }
     button {
       width: 100%;
-      box-sizing: border-box;
       border: none;
       padding: 11px 12px;
       border-radius: 12px;

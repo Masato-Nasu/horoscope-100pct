@@ -85,7 +85,7 @@
       width: 100%;
       border: none;
       padding: 11px 12px;
-      border-radius: 12px;
+      border-radius: 12px; /* 角丸を他ボタンと統一 */
       margin-top: 14px;
       font-size: 14px;
       font-weight: 600;
@@ -97,7 +97,6 @@
       transform: translateY(1px);
       box-shadow: 0 3px 8px rgba(0,0,0,0.2) inset;
     }
-    /* 下の「結果を保存」ボタン用（セカンダリ） */
     .secondary-button {
       margin-top: 18px;
       background: #ffffff;
@@ -168,7 +167,7 @@
 
   <!-- Astronomy Engine -->
   <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
-  <!-- 結果を画像化するためのライブラリ -->
+  <!-- 結果を画像化するライブラリ -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
@@ -197,7 +196,7 @@
   <div id="result" class="result"></div>
   <div id="birthdayMessage" class="birthday"></div>
 
-  <!-- 初期状態では非表示、結果が出たら表示する -->
+  <!-- 初期状態では非表示。結果が出たら表示 -->
   <button
     type="button"
     id="saveBtn"
@@ -213,8 +212,8 @@
 (function () {
   'use strict';
 
-  // engine 3.6 daily-tilt：遅い天体をさらに弱めて、日替わり感を強調
-  console.log('Horoscope engine 3.6 daily-tilt');
+  // engine 4.0: 誠実＋日替わり強め（月内で 20〜30pt 動く前提）
+  console.log('Horoscope engine 4.0 monthly-variance');
 
   // --- PWA: Service Worker 登録 ---
   if ('serviceWorker' in navigator) {
@@ -229,7 +228,7 @@
     });
   }
 
-  // 安定したハッシュ → シード
+  // --------- 共通ユーティリティ ---------
   function stableSeed(str) {
     var h = 1779033703 ^ str.length;
     for (var i = 0; i < str.length; i++) {
@@ -240,7 +239,6 @@
     return h;
   }
 
-  // xorshift 系の軽量 PRNG
   function makeRng(seed) {
     var a = seed >>> 0;
     return function () {
@@ -252,7 +250,7 @@
     };
   }
 
-  // テキストバンク（高 / 中 / 低）
+  // テキストバンク（高・中・低）
   var TEXT_BANK = {
     total: {
       a: [
@@ -341,6 +339,7 @@
     return bank[idx];
   }
 
+  // 季節感メッセージ
   function seasonPhrase(date, seedBase) {
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '';
     var month = date.getMonth() + 1;
@@ -371,7 +370,7 @@
     return arr[idx] || '';
   }
 
-  // アスペクトスコア（出生 vs その日の天体差）
+  // アスペクトスコア（-1〜+1 付近）
   function aspectScore(diff) {
     var aspects = [
       { angle: 0,   sign:  1.0 },
@@ -400,15 +399,14 @@
     return x;
   }
 
-  // 背景（遅い天体）の悪さだけ軽く丸める
-  function softenBackground(bg, negScale) {
-    if (bg < 0) {
-      return bg * negScale;
-    }
+  // 背景（遅い天体）をまろやかに
+  function softenBackground(bg, negScale, posScale) {
+    if (bg < 0) return bg * negScale;
+    if (bg > 0) return bg * posScale;
     return bg;
   }
 
-  // 日付ごとの微小ゆらぎで「日替わり感」を追加
+  // 日付ごとのゆらぎで「日替わり感」を追加
   function applyDayJitter(n, category, date, strength) {
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) return n;
     var key = category + '|' +
@@ -421,18 +419,16 @@
     return clampNorm(n + jitter);
   }
 
-  // 差をそのまま％へ（線形マッピング）
+  // -1〜+1 を 0〜100％へ（15〜95にマップ、±40pt 程度の振れ幅）
   function mapNormToPercent(n, minP, maxP) {
     if (n < -1) n = -1;
     if (n >  1) n =  1;
-
-    var mid = (minP + maxP) / 2;
-    var amp = (maxP - minP) / 2;
-    var z   = n;
-    var p   = mid + amp * z;
+    var mid = (minP + maxP) / 2;      // 55
+    var amp = (maxP - minP) / 2;      // 40
+    var p   = mid + amp * n;          // 55 + 40 * n
 
     if (n > 0.97) {
-      p = 100;
+      p = 100;                        // ごく稀に 100%
     }
 
     if (p < minP) p = minP;
@@ -458,6 +454,7 @@
     return ecl.elon;
   }
 
+  // --------- 紙吹雪 ---------
   function fireConfetti() {
     var canvas = document.getElementById('confettiCanvas');
     var ctx = canvas.getContext('2d');
@@ -505,6 +502,7 @@
     requestAnimationFrame(loop);
   }
 
+  // --------- メイン計算 ---------
   function calc() {
     var birthStr  = document.getElementById('birth').value;
     var targetStr = document.getElementById('targetDate').value;
@@ -539,7 +537,6 @@
     var Sat  = Astronomy.Body.Saturn;
 
     var bodies = [Sun, Moon, Merc, Ven, Mars, Jup, Sat];
-
     var nat = {};
     var cur = {};
     for (var i = 0; i < bodies.length; i++) {
@@ -559,81 +556,94 @@
       return aspectScore(diffLon(body));
     }
 
-    // --- 総合運：木星・土星はかなり弱く、月＋内惑星が主役 ---
+    // --- 総合運 ---
     var rawBgTotal =
-      0.2 * A(Jup) + 0.15 * A(Sat) + 0.15 * A(Sun);   // 長期的な「地合い」をごく薄く
-    var rawDailyTotal =
-      1.5 * A(Moon) + 0.9 * A(Merc) +
-      0.9 * A(Ven)  + 1.0 * A(Mars);                  // 日々動く成分を強く
+      0.25 * A(Jup) +
+      0.20 * A(Sat) +
+      0.20 * A(Sun);
+    var rawFastTotal =
+      1.5 * A(Moon) +
+      1.1 * A(Merc) +
+      1.1 * A(Ven)  +
+      1.2 * A(Mars);
 
-    var nBgTotal    = clampNorm(rawBgTotal    * 0.25);
-    var nDailyTotal = clampNorm(rawDailyTotal * 0.50);
-    nBgTotal = softenBackground(nBgTotal, 0.4);
+    var nBgTotal   = clampNorm(rawBgTotal   * 0.40);
+    var nFastTotal = clampNorm(rawFastTotal * 0.45);
+    nBgTotal = softenBackground(nBgTotal, 0.4, 0.4);
 
-    var nTotal = clampNorm(nBgTotal * 0.10 + nDailyTotal * 0.90);
+    var nTotal = clampNorm(nFastTotal * 0.95 + nBgTotal * 0.05);
+    nTotal = applyDayJitter(nTotal, 'total', targetDate, 0.25);
 
-    // --- 恋愛：月＋金星＋水星を主役、木星はごく薄い背景 ---
-    var rawLoveFast =
-      1.6 * A(Ven) + 1.4 * A(Moon) + 0.9 * A(Merc);
-    var rawLoveBg =
-      0.4 * A(Jup);
+    // --- 恋愛 ---
+    var rawBgLove =
+      0.35 * A(Jup);
+    var rawFastLove =
+      1.6 * A(Ven) +
+      1.4 * A(Moon) +
+      0.9 * A(Merc);
 
-    var nLoveFast = clampNorm(rawLoveFast * 0.50);
-    var nLoveBg   = clampNorm(rawLoveBg   * 0.25);
-    nLoveBg = softenBackground(nLoveBg, 0.5);
+    var nBgLove   = clampNorm(rawBgLove   * 0.45);
+    var nFastLove = clampNorm(rawFastLove * 0.45);
+    nBgLove = softenBackground(nBgLove, 0.4, 0.4);
 
-    var nLove = clampNorm(nLoveFast * 0.85 + nLoveBg * 0.15);
+    var nLove = clampNorm(nFastLove * 0.95 + nBgLove * 0.05);
+    nLove = applyDayJitter(nLove, 'love', targetDate, 0.30);
 
-    // --- 金運：金星＋火星＋水星、木星・土星はかなり弱め ---
-    var rawMoneyFast =
-      1.0 * A(Ven) + 0.8 * A(Mars) + 0.6 * A(Merc);
-    var rawMoneyBg =
-      0.6 * A(Jup) + 0.3 * A(Sat);
+    // --- 金運 ---
+    var rawBgMoney =
+      0.45 * A(Jup) +
+      0.30 * A(Sat);
+    var rawFastMoney =
+      1.0 * A(Ven) +
+      0.8 * A(Mars) +
+      0.6 * A(Merc);
 
-    var nMoneyFast = clampNorm(rawMoneyFast * 0.45);
-    var nMoneyBg   = clampNorm(rawMoneyBg   * 0.25);
-    nMoneyBg = softenBackground(nMoneyBg, 0.5);
+    var nBgMoney   = clampNorm(rawBgMoney   * 0.35);
+    var nFastMoney = clampNorm(rawFastMoney * 0.45);
+    nBgMoney = softenBackground(nBgMoney, 0.4, 0.4);
 
-    var nMoney = clampNorm(nMoneyFast * 0.80 + nMoneyBg * 0.20);
+    var nMoney = clampNorm(nFastMoney * 0.95 + nBgMoney * 0.05);
+    nMoney = applyDayJitter(nMoney, 'money', targetDate, 0.30);
 
-    // --- 仕事：火星＋水星＋少し太陽・月、土星は控えめ背景 ---
-    var rawWorkFast =
-      1.1 * A(Mars) + 0.9 * A(Merc) + 0.5 * A(Moon) + 0.4 * A(Sun);
-    var rawWorkBg =
-      0.7 * A(Sat);
+    // --- 仕事 ---
+    var rawBgWork =
+      0.50 * A(Sat);
+    var rawFastWork =
+      1.1 * A(Mars) +
+      0.9 * A(Merc) +
+      0.5 * A(Moon) +
+      0.4 * A(Sun);
 
-    var nWorkFast = clampNorm(rawWorkFast * 0.45);
-    var nWorkBg   = clampNorm(rawWorkBg   * 0.25);
-    nWorkBg = softenBackground(nWorkBg, 0.5);
+    var nBgWork   = clampNorm(rawBgWork   * 0.45);
+    var nFastWork = clampNorm(rawFastWork * 0.45);
+    nBgWork = softenBackground(nBgWork, 0.4, 0.4);
 
-    var nWork = clampNorm(nWorkFast * 0.80 + nWorkBg * 0.20);
+    var nWork = clampNorm(nFastWork * 0.95 + nBgWork * 0.05);
+    nWork = applyDayJitter(nWork, 'work', targetDate, 0.30);
 
-    // --- 健康：月＋太陽＋金星、木星はごく弱い背景 ---
-    var rawHealthFast =
-      1.3 * A(Moon) + 0.7 * A(Sun) + 0.4 * A(Ven);
-    var rawHealthBg =
-      0.3 * A(Jup);
+    // --- 健康 ---
+    var rawBgHealth =
+      0.30 * A(Jup);
+    var rawFastHealth =
+      1.3 * A(Moon) +
+      0.7 * A(Sun) +
+      0.4 * A(Ven);
 
-    var nHealthFast = clampNorm(rawHealthFast * 0.50);
-    var nHealthBg   = clampNorm(rawHealthBg   * 0.25);
-    nHealthBg = softenBackground(nHealthBg, 0.5);
+    var nBgHealth   = clampNorm(rawBgHealth   * 0.45);
+    var nFastHealth = clampNorm(rawFastHealth * 0.45);
+    nBgHealth = softenBackground(nBgHealth, 0.4, 0.4);
 
-    var nHealth = clampNorm(nHealthFast * 0.85 + nHealthBg * 0.15);
+    var nHealth = clampNorm(nFastHealth * 0.95 + nBgHealth * 0.05);
+    nHealth = applyDayJitter(nHealth, 'health', targetDate, 0.30);
 
-    // ★ 日付ごとの軽いゆらぎ（誕生日＋日付が同じなら毎回同じ）
-    nTotal  = applyDayJitter(nTotal,  'total',  targetDate, 0.30);
-    nLove   = applyDayJitter(nLove,   'love',   targetDate, 0.33);
-    nMoney  = applyDayJitter(nMoney,  'money',  targetDate, 0.33);
-    nWork   = applyDayJitter(nWork,   'work',   targetDate, 0.33);
-    nHealth = applyDayJitter(nHealth, 'health', targetDate, 0.33);
+    // --- 0〜100％へ変換（15〜95 を主レンジ） ---
+    var total  = mapNormToPercent(nTotal,  15, 95);
+    var love   = mapNormToPercent(nLove,   15, 95);
+    var money  = mapNormToPercent(nMoney,  15, 95);
+    var work   = mapNormToPercent(nWork,   15, 95);
+    var health = mapNormToPercent(nHealth, 15, 95);
 
-    // --- 0〜100% にマッピング（20〜95%レンジ） ---
-    var total  = mapNormToPercent(nTotal,  20, 95);
-    var love   = mapNormToPercent(nLove,   20, 95);
-    var money  = mapNormToPercent(nMoney,  20, 95);
-    var work   = mapNormToPercent(nWork,   20, 95);
-    var health = mapNormToPercent(nHealth, 20, 95);
-
+    // テキスト選択
     var seedBase = birthStr + '|' +
       (targetStr || (targetDate.getFullYear() + '-' +
                      (targetDate.getMonth() + 1) + '-' +
@@ -695,7 +705,7 @@
       saveBtn.style.display = 'block';
     }
 
-    // 誕生日演出（「今日」を占っていて、かつ本当に誕生日の日だけ）
+    // 誕生日演出（本当に今日が誕生日 + 「今日」を占っているときだけ）
     var birthdayEl = document.getElementById('birthdayMessage');
     birthdayEl.textContent = '';
 
@@ -720,7 +730,7 @@
     }
   }
 
-  // 結果カードを JPEG として保存
+  // --------- 結果カードを JPEG 保存 ---------
   function saveResultImage() {
     var result = document.getElementById('result');
     if (!result || !result.innerHTML.trim()) {

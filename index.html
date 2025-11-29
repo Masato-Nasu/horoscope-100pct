@@ -435,16 +435,24 @@
   }
 
   function mapNormToPercent(n, minP, maxP) {
+    // n は -1〜+1 の正規化値
     if (n < -1) n = -1;
     if (n >  1) n =  1;
+
+    // 両端を少し持ち上げるカーブ
+    var z = (n < 0) ? -Math.sqrt(-n) : Math.sqrt(n);
     var mid = (minP + maxP) / 2;
     var amp = (maxP - minP) / 2;
-    var p   = mid + amp * n;
-    if (p < minP) p = minP;
-    if (p > maxP) p = maxP;
-    if (n > 0.985) {
+    var p   = mid + amp * z;
+
+    // トップクラスの日だけ 100% に丸める
+    // 0.88 は「かなり良い日」だけに絞るイメージです
+    if (n > 0.88) {
       p = 100;
     }
+
+    if (p < minP) p = minP;
+    if (p > 100) p = 100;
     return Math.round(p);
   }
 
@@ -682,6 +690,7 @@
 
       var todayNorms = computeNormsForDate(targetDate);
 
+      // --- 年内（±90日）での位置づけ ---
       var yearStats = {
         total:  { sum: 0, min:  9999, max: -9999, count: 0 },
         love:   { sum: 0, min:  9999, max: -9999, count: 0 },
@@ -736,6 +745,7 @@
       var nWorkGlobal   = yearNorm(todayNorms.work,   yearStats.work);
       var nHealthGlobal = yearNorm(todayNorms.health, yearStats.health);
 
+      // --- 近傍（±16日）のローカル比較 ---
       var windowDays = 16;
       var sum  = { total:0, love:0, money:0, work:0, health:0 };
       var sum2 = { total:0, love:0, money:0, work:0, health:0 };
@@ -882,7 +892,7 @@
     }
   }
 
-window.calc = calc;
+  window.calc = calc;
   window.saveResultImage = saveResultImage;
 
 })(); 

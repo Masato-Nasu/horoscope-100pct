@@ -192,8 +192,14 @@
   <div id="result" class="result"></div>
   <div id="birthdayMessage" class="birthday"></div>
 
-  <!-- 一番下の保存ボタン -->
-  <button type="button" id="saveBtn" class="secondary-button" onclick="saveResultImage()">
+  <!-- 初期状態では非表示、結果が出たら表示する -->
+  <button
+    type="button"
+    id="saveBtn"
+    class="secondary-button"
+    style="display:none"
+    onclick="saveResultImage()"
+  >
     結果を保存
   </button>
 </div>
@@ -643,6 +649,12 @@
     html += '<div class="text-block">' + healthText + '</div>';
 
     document.getElementById('result').innerHTML = html;
+
+    // 結果が出たので「結果を保存」ボタンを表示
+    var saveBtn = document.getElementById('saveBtn');
+    if (saveBtn) {
+      saveBtn.style.display = 'block';
+    }
 
     var birthdayEl = document.getElementById('birthdayMessage');
     birthdayEl.textContent = '';

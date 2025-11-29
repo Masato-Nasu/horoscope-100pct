@@ -21,7 +21,7 @@
       max-width: 420px;
       margin: 0 auto;
       background: #ffffff;
-      border-radius: 18px;
+      border-radius: 24px;          /* 外枠いちばん大きく */
       box-shadow: 0 6px 18px rgba(0,0,0,0.12);
       padding: 18px 16px 20px;
     }
@@ -58,7 +58,7 @@
       width: 100%;
       box-sizing: border-box;
       padding: 8px 10px;
-      border-radius: 18px;   /* ← カード・ボタンと同じ */
+      border-radius: 12px;          /* 入力欄は少し小さめ */
       border: 1px solid #DDDDFF;
       font-size: 13px;
       font-family: inherit;
@@ -73,7 +73,7 @@
       box-sizing: border-box;
       border: none;
       padding: 11px 12px;
-      border-radius: 18px;   /* ← 角丸統一 */
+      border-radius: 24px;          /* ボタンはカプセル感 */
       margin-top: 14px;
       font-size: 14px;
       font-weight: 600;
@@ -113,7 +113,7 @@
       color: #555555;
       line-height: 1.7;
       padding: 8px 10px;
-      border-radius: 12px;
+      border-radius: 14px;         /* 中のカードも一段階小さく */
       background: #F7F4FF;
       margin-bottom: 6px;
     }
@@ -610,6 +610,7 @@
     var birthdayEl = document.getElementById('birthdayMessage');
     birthdayEl.textContent = '';
 
+    var now = new Date();
     var todayY = now.getFullYear();
     var todayM = now.getMonth();
     var todayD = now.getDate();

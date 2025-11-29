@@ -58,7 +58,7 @@
       width: 100%;
       box-sizing: border-box;
       padding: 8px 10px;
-      border-radius: 12px;
+      border-radius: 18px;   /* ← カード・ボタンと同じ */
       border: 1px solid #DDDDFF;
       font-size: 13px;
       font-family: inherit;
@@ -73,7 +73,7 @@
       box-sizing: border-box;
       border: none;
       padding: 11px 12px;
-      border-radius: 18px; /* 他と同じくらいの角丸 */
+      border-radius: 18px;   /* ← 角丸統一 */
       margin-top: 14px;
       font-size: 14px;
       font-weight: 600;
@@ -178,7 +178,6 @@
     });
   }
 
-  // --- 安定乱数生成（同じ人＋同じ日なら同じ文章） ---
   function stableSeed(str) {
     var h = 1779033703 ^ str.length;
     for (var i = 0; i < str.length; i++) {
@@ -200,7 +199,6 @@
     };
   }
 
-  // ---- 文章バンク（A/B/C の3段階） ----
   var TEXT_BANK = {
     total: {
       a: [
@@ -319,7 +317,6 @@
     return arr[idx] || '';
   }
 
-  // --- アスペクト評価（天体差エンジン） ---
   function aspectScore(diff) {
     var aspects = [
       { angle: 0,   sign:  1.0 },
@@ -338,7 +335,6 @@
       var w = Math.exp(-(d * d) / rad2);
       score += a.sign * w;
     }
-    // 平均がだいたい 0 付近になるようにバイアスを調整
     score -= 0.2435;
     return score;
   }
@@ -392,7 +388,6 @@
     return ecl.elon;
   }
 
-  // --- 誕生日紙吹雪 ---
   function fireConfetti() {
     var canvas = document.getElementById('confettiCanvas');
     var ctx = canvas.getContext('2d');
@@ -440,7 +435,6 @@
     requestAnimationFrame(loop);
   }
 
-  // --- メイン計算 ---
   function calc() {
     var birthStr  = document.getElementById('birth').value;
     var targetStr = document.getElementById('targetDate').value;
@@ -495,7 +489,6 @@
       return aspectScore(diffLon(body));
     }
 
-    // --- 総合 ---
     var rawBgTotal =
       A(Jup) + A(Sat) + 0.6 * A(Sun);
     var rawDailyTotal =
@@ -509,7 +502,6 @@
 
     var nTotal = clampNorm(nBgTotal * 0.4 + nDailyTotal * 0.6);
 
-    // --- 恋愛 ---
     var rawLoveFast =
       1.2 * A(Ven) + 1.0 * A(Moon) + 0.5 * A(Merc);
     var rawLoveBg =
@@ -521,7 +513,6 @@
 
     var nLove = clampNorm(nLoveFast * 0.7 + nLoveBg * 0.3);
 
-    // --- 金運 ---
     var rawMoneyFast =
       0.7 * A(Ven) + 0.4 * A(Mars);
     var rawMoneyBg =
@@ -533,7 +524,6 @@
 
     var nMoney = clampNorm(nMoneyFast * 0.4 + nMoneyBg * 0.6);
 
-    // --- 仕事 ---
     var rawWorkFast =
       1.0 * A(Mars) + 0.5 * A(Merc) + 0.5 * A(Sun);
     var rawWorkBg =
@@ -545,7 +535,6 @@
 
     var nWork = clampNorm(nWorkFast * 0.5 + nWorkBg * 0.5);
 
-    // --- 健康 ---
     var rawHealthFast =
       0.8 * A(Moon) + 0.6 * A(Sun);
     var rawHealthBg =
@@ -557,7 +546,6 @@
 
     var nHealth = clampNorm(nHealthFast * 0.7 + nHealthBg * 0.3);
 
-    // --- 0〜100% にマッピング ---
     var total  = mapNormToPercent(nTotal,  30, 95);
     var love   = mapNormToPercent(nLove,   25, 95);
     var money  = mapNormToPercent(nMoney,  25, 95);
@@ -619,7 +607,6 @@
 
     document.getElementById('result').innerHTML = html;
 
-    // --- 誕生日判定（本当に当日のみ紙吹雪） ---
     var birthdayEl = document.getElementById('birthdayMessage');
     birthdayEl.textContent = '';
 

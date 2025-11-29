@@ -15,7 +15,7 @@
     html,
     body {
       max-width: 100%;
-      overflow-x: hidden;     /* ★ 横スクロール禁止 */
+      overflow-x: hidden;     /* 横スクロール禁止 */
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
@@ -28,7 +28,7 @@
       align-items: flex-start;
       padding: 16px;
       text-align: center;
-      touch-action: pan-y;    /* ★ 縦スクロールのみ（横スワイプ抑制） */
+      touch-action: pan-y;    /* 縦スクロールのみ */
     }
     .app-card {
       width: 100%;
@@ -226,6 +226,7 @@
     });
   }
 
+  // 安定したハッシュ → シード
   function stableSeed(str) {
     var h = 1779033703 ^ str.length;
     for (var i = 0; i < str.length; i++) {
@@ -236,6 +237,7 @@
     return h;
   }
 
+  // xorshift 系の軽量 PRNG
   function makeRng(seed) {
     var a = seed >>> 0;
     return function () {
@@ -247,6 +249,7 @@
     };
   }
 
+  // 簡略版テキストバンク（グレード a/b/c）
   var TEXT_BANK = {
     total: {
       a: [
@@ -365,6 +368,7 @@
     return arr[idx] || '';
   }
 
+  // アスペクトスコア（出生 vs その日の天体差）
   function aspectScore(diff) {
     var aspects = [
       { angle: 0,   sign:  1.0 },
@@ -393,6 +397,7 @@
     return x;
   }
 
+  // 背景（遅い天体）の悪さだけ軽く丸める
   function softenBackground(bg, negScale) {
     if (bg < 0) {
       return bg * negScale;
@@ -400,17 +405,31 @@
     return bg;
   }
 
+  // ★ 日付ごとの微小ゆらぎ（±0.25 以内）で「日替わり感」を追加
+  function applyDayJitter(n, category, date) {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return n;
+    var key = category + '|' +
+      date.getFullYear() + '-' +
+      (date.getMonth() + 1) + '-' +
+      date.getDate();
+    var rng = makeRng(stableSeed('dayJ|' + key));
+    var amp = 0.25; // 最大 ±0.25（最終的に±約8〜10% ぐらい揺れるイメージ）
+    var jitter = (rng() - 0.5) * 2 * amp;
+    return clampNorm(n + jitter);
+  }
+
+  // ★ 線形マッピング（以前の √ を廃止して日々の差をそのまま％へ）
   function mapNormToPercent(n, minP, maxP) {
     if (n < -1) n = -1;
     if (n >  1) n =  1;
 
-    var z = (n < 0) ? -Math.sqrt(-n) : Math.sqrt(n);
     var mid = (minP + maxP) / 2;
     var amp = (maxP - minP) / 2;
-    var p = mid + amp * z;
+    var z   = n;               // ここをそのまま使うことで差を潰さない
+    var p   = mid + amp * z;
 
     if (n > 0.96) {
-      p = 100;
+      p = 100;                 // ごく稀に「ど真ん中命中」の 100%
     }
 
     if (p < minP) p = minP;
@@ -537,6 +556,7 @@
       return aspectScore(diffLon(body));
     }
 
+    // --- 総合運：背景（木星・土星）＋日々の動き（太陽〜火星） ---
     var rawBgTotal =
       A(Jup) + A(Sat) + 0.6 * A(Sun);
     var rawDailyTotal =
@@ -550,6 +570,7 @@
 
     var nTotal = clampNorm(nBgTotal * 0.4 + nDailyTotal * 0.6);
 
+    // --- 恋愛 ---
     var rawLoveFast =
       1.2 * A(Ven) + 1.0 * A(Moon) + 0.5 * A(Merc);
     var rawLoveBg =
@@ -561,6 +582,7 @@
 
     var nLove = clampNorm(nLoveFast * 0.7 + nLoveBg * 0.3);
 
+    // --- 金運 ---
     var rawMoneyFast =
       0.7 * A(Ven) + 0.4 * A(Mars);
     var rawMoneyBg =
@@ -572,6 +594,7 @@
 
     var nMoney = clampNorm(nMoneyFast * 0.4 + nMoneyBg * 0.6);
 
+    // --- 仕事 ---
     var rawWorkFast =
       1.0 * A(Mars) + 0.5 * A(Merc) + 0.5 * A(Sun);
     var rawWorkBg =
@@ -583,6 +606,7 @@
 
     var nWork = clampNorm(nWorkFast * 0.5 + nWorkBg * 0.5);
 
+    // --- 健康 ---
     var rawHealthFast =
       0.8 * A(Moon) + 0.6 * A(Sun);
     var rawHealthBg =
@@ -594,12 +618,21 @@
 
     var nHealth = clampNorm(nHealthFast * 0.7 + nHealthBg * 0.3);
 
+    // ★ 日付ごとの微小ゆらぎをここで付与（天体差をベースに軽く揺らす）
+    nTotal  = applyDayJitter(nTotal,  'total',  targetDate);
+    nLove   = applyDayJitter(nLove,   'love',   targetDate);
+    nMoney  = applyDayJitter(nMoney,  'money',  targetDate);
+    nWork   = applyDayJitter(nWork,   'work',   targetDate);
+    nHealth = applyDayJitter(nHealth, 'health', targetDate);
+
+    // --- 0〜100% にマッピング（総合は30〜95%, 他は25〜95%） ---
     var total  = mapNormToPercent(nTotal,  30, 95);
     var love   = mapNormToPercent(nLove,   25, 95);
     var money  = mapNormToPercent(nMoney,  25, 95);
     var work   = mapNormToPercent(nWork,   25, 95);
     var health = mapNormToPercent(nHealth, 25, 95);
 
+    // テキスト選択用のシード
     var seedBase = birthStr + '|' +
       (targetStr || (targetDate.getFullYear() + '-' +
                      (targetDate.getMonth() + 1) + '-' +
@@ -661,6 +694,7 @@
       saveBtn.style.display = 'block';
     }
 
+    // 誕生日演出（「今日 占う日」かつ 誕生日のときだけ）
     var birthdayEl = document.getElementById('birthdayMessage');
     birthdayEl.textContent = '';
 

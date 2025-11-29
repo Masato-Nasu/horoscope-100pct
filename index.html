@@ -213,7 +213,8 @@
 (function () {
   'use strict';
 
-  console.log('Horoscope engine: fast-planet emphasis / month-flattened');
+  // engine 3.6 daily-tilt：遅い天体をさらに弱めて、日替わり感を強調
+  console.log('Horoscope engine 3.6 daily-tilt');
 
   // --- PWA: Service Worker 登録 ---
   if ('serviceWorker' in navigator) {
@@ -251,7 +252,7 @@
     };
   }
 
-  // テキストバンク（簡略：高／中／低の3グレード）
+  // テキストバンク（高 / 中 / 低）
   var TEXT_BANK = {
     total: {
       a: [
@@ -430,7 +431,7 @@
     var z   = n;
     var p   = mid + amp * z;
 
-    if (n > 0.96) {
+    if (n > 0.97) {
       p = 100;
     }
 
@@ -558,73 +559,73 @@
       return aspectScore(diffLon(body));
     }
 
-    // --- 総合運：遅い天体をかなり弱め、月・内惑星を強める ---
+    // --- 総合運：木星・土星はかなり弱く、月＋内惑星が主役 ---
     var rawBgTotal =
-      0.4 * A(Jup) + 0.3 * A(Sat) + 0.3 * A(Sun);  // 長期的な「地合い」
+      0.2 * A(Jup) + 0.15 * A(Sat) + 0.15 * A(Sun);   // 長期的な「地合い」をごく薄く
     var rawDailyTotal =
-      1.3 * A(Moon) + 0.8 * A(Merc) +
-      0.7 * A(Ven)  + 0.7 * A(Mars);               // 日々動く成分
+      1.5 * A(Moon) + 0.9 * A(Merc) +
+      0.9 * A(Ven)  + 1.0 * A(Mars);                  // 日々動く成分を強く
 
-    var nBgTotal    = clampNorm(rawBgTotal    * 0.30);
-    var nDailyTotal = clampNorm(rawDailyTotal * 0.45);
+    var nBgTotal    = clampNorm(rawBgTotal    * 0.25);
+    var nDailyTotal = clampNorm(rawDailyTotal * 0.50);
     nBgTotal = softenBackground(nBgTotal, 0.4);
 
-    var nTotal = clampNorm(nBgTotal * 0.20 + nDailyTotal * 0.80);
+    var nTotal = clampNorm(nBgTotal * 0.10 + nDailyTotal * 0.90);
 
-    // --- 恋愛：月＋金星＋水星を主役に、木星は弱めの背景 ---
+    // --- 恋愛：月＋金星＋水星を主役、木星はごく薄い背景 ---
     var rawLoveFast =
-      1.4 * A(Ven) + 1.3 * A(Moon) + 0.8 * A(Merc);
+      1.6 * A(Ven) + 1.4 * A(Moon) + 0.9 * A(Merc);
     var rawLoveBg =
-      0.5 * A(Jup);
+      0.4 * A(Jup);
 
-    var nLoveFast = clampNorm(rawLoveFast * 0.45);
-    var nLoveBg   = clampNorm(rawLoveBg   * 0.30);
+    var nLoveFast = clampNorm(rawLoveFast * 0.50);
+    var nLoveBg   = clampNorm(rawLoveBg   * 0.25);
     nLoveBg = softenBackground(nLoveBg, 0.5);
 
-    var nLove = clampNorm(nLoveFast * 0.75 + nLoveBg * 0.25);
+    var nLove = clampNorm(nLoveFast * 0.85 + nLoveBg * 0.15);
 
     // --- 金運：金星＋火星＋水星、木星・土星はかなり弱め ---
     var rawMoneyFast =
-      0.9 * A(Ven) + 0.7 * A(Mars) + 0.5 * A(Merc);
+      1.0 * A(Ven) + 0.8 * A(Mars) + 0.6 * A(Merc);
     var rawMoneyBg =
-      0.7 * A(Jup) + 0.3 * A(Sat);
+      0.6 * A(Jup) + 0.3 * A(Sat);
 
-    var nMoneyFast = clampNorm(rawMoneyFast * 0.40);
-    var nMoneyBg   = clampNorm(rawMoneyBg   * 0.30);
+    var nMoneyFast = clampNorm(rawMoneyFast * 0.45);
+    var nMoneyBg   = clampNorm(rawMoneyBg   * 0.25);
     nMoneyBg = softenBackground(nMoneyBg, 0.5);
 
-    var nMoney = clampNorm(nMoneyFast * 0.55 + nMoneyBg * 0.45);
+    var nMoney = clampNorm(nMoneyFast * 0.80 + nMoneyBg * 0.20);
 
-    // --- 仕事：火星＋水星＋少し太陽、土星は控えめな背景 ---
+    // --- 仕事：火星＋水星＋少し太陽・月、土星は控えめ背景 ---
     var rawWorkFast =
-      1.0 * A(Mars) + 0.8 * A(Merc) + 0.4 * A(Moon) + 0.3 * A(Sun);
+      1.1 * A(Mars) + 0.9 * A(Merc) + 0.5 * A(Moon) + 0.4 * A(Sun);
     var rawWorkBg =
-      0.8 * A(Sat);
+      0.7 * A(Sat);
 
-    var nWorkFast = clampNorm(rawWorkFast * 0.40);
-    var nWorkBg   = clampNorm(rawWorkBg   * 0.30);
+    var nWorkFast = clampNorm(rawWorkFast * 0.45);
+    var nWorkBg   = clampNorm(rawWorkBg   * 0.25);
     nWorkBg = softenBackground(nWorkBg, 0.5);
 
-    var nWork = clampNorm(nWorkFast * 0.60 + nWorkBg * 0.40);
+    var nWork = clampNorm(nWorkFast * 0.80 + nWorkBg * 0.20);
 
-    // --- 健康：月＋太陽＋金星を主役に、木星背景をごく弱く ---
+    // --- 健康：月＋太陽＋金星、木星はごく弱い背景 ---
     var rawHealthFast =
-      1.2 * A(Moon) + 0.6 * A(Sun) + 0.4 * A(Ven);
+      1.3 * A(Moon) + 0.7 * A(Sun) + 0.4 * A(Ven);
     var rawHealthBg =
       0.3 * A(Jup);
 
-    var nHealthFast = clampNorm(rawHealthFast * 0.45);
-    var nHealthBg   = clampNorm(rawHealthBg   * 0.30);
+    var nHealthFast = clampNorm(rawHealthFast * 0.50);
+    var nHealthBg   = clampNorm(rawHealthBg   * 0.25);
     nHealthBg = softenBackground(nHealthBg, 0.5);
 
-    var nHealth = clampNorm(nHealthFast * 0.75 + nHealthBg * 0.25);
+    var nHealth = clampNorm(nHealthFast * 0.85 + nHealthBg * 0.15);
 
     // ★ 日付ごとの軽いゆらぎ（誕生日＋日付が同じなら毎回同じ）
     nTotal  = applyDayJitter(nTotal,  'total',  targetDate, 0.30);
-    nLove   = applyDayJitter(nLove,   'love',   targetDate, 0.30);
-    nMoney  = applyDayJitter(nMoney,  'money',  targetDate, 0.30);
-    nWork   = applyDayJitter(nWork,   'work',   targetDate, 0.30);
-    nHealth = applyDayJitter(nHealth, 'health', targetDate, 0.30);
+    nLove   = applyDayJitter(nLove,   'love',   targetDate, 0.33);
+    nMoney  = applyDayJitter(nMoney,  'money',  targetDate, 0.33);
+    nWork   = applyDayJitter(nWork,   'work',   targetDate, 0.33);
+    nHealth = applyDayJitter(nHealth, 'health', targetDate, 0.33);
 
     // --- 0〜100% にマッピング（20〜95%レンジ） ---
     var total  = mapNormToPercent(nTotal,  20, 95);

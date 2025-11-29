@@ -43,12 +43,7 @@
       color: #7C4DFF;
       margin: 0;
     }
-    .app-subtitle {
-      font-size: 11px;
-      color: #999999;
-      margin: 2px 0 0;
-      line-height: 1.5;
-    }
+
     .form-row {
       margin-bottom: 10px;
       text-align: left;
@@ -63,7 +58,7 @@
       width: 100%;
       box-sizing: border-box;
       padding: 8px 10px;
-      border-radius: 10px;
+      border-radius: 12px;
       border: 1px solid #DDDDFF;
       font-size: 13px;
       font-family: inherit;
@@ -78,7 +73,7 @@
       box-sizing: border-box;
       border: none;
       padding: 11px 12px;
-      border-radius: 999px;
+      border-radius: 12px; /* 他と同じくらいの角丸に統一 */
       margin-top: 14px;
       font-size: 14px;
       font-weight: 600;
@@ -154,10 +149,6 @@
     <div class="app-icon">🪐</div>
     <div class="app-title-block">
       <p class="app-title">100% 星占い</p>
-      <p class="app-subtitle">
-        太陽〜土星の配置から「今日との相性度」を数値化します。<br>
-        ver. 天体差エンジン 3.4 gentle
-      </p>
     </div>
   </div>
 
@@ -174,8 +165,7 @@
   <button type="button" onclick="calc()">この日の運勢を見る</button>
 
   <p class="note">
-    ※ 数値は太陽〜土星までの配置をもとにした「今日との相性度」です。<br>
-    ※ 誕生日の日を占うと、ささやかな紙吹雪とメッセージが表示されます。
+    ※ 数値は太陽〜土星までの配置をもとにした「今日との相性度」です。
   </p>
 
   <div id="result" class="result"></div>
@@ -357,7 +347,6 @@
       var w = Math.exp(-(d * d) / rad2);
       score += a.sign * w;
     }
-    // 1惑星あたりの期待値ぶんを引いて、平均がほぼ0になるよう補正
     score -= 0.2435;
     return score;
   }
@@ -386,7 +375,6 @@
     var amp = (maxP - minP) / 2;
     var p = mid + amp * z;
 
-    // ごく一部だけ 100% が出るように補正（ほとんどの日は maxP 以下）
     if (n > 0.96) {
       p = 100;
     }
@@ -400,7 +388,7 @@
     if (!str) return null;
     var m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (!m) return null;
-    var y = parseInt(m[1], 10);
+    var y  = parseInt(m[1], 10);
     var mo = parseInt(m[2], 10);
     var d  = parseInt(m[3], 10);
     if (!y || !mo || !d) return null;
@@ -482,19 +470,19 @@
       return;
     }
 
+    var now = new Date();
     var targetDate = parseDateInput(targetStr);
     if (!targetDate) {
-      var now = new Date();
       targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
     }
 
-    var Sun    = Astronomy.Body.Sun;
-    var Moon   = Astronomy.Body.Moon;
-    var Merc   = Astronomy.Body.Mercury;
-    var Ven    = Astronomy.Body.Venus;
-    var Mars   = Astronomy.Body.Mars;
-    var Jup    = Astronomy.Body.Jupiter;
-    var Sat    = Astronomy.Body.Saturn;
+    var Sun  = Astronomy.Body.Sun;
+    var Moon = Astronomy.Body.Moon;
+    var Merc = Astronomy.Body.Mercury;
+    var Ven  = Astronomy.Body.Venus;
+    var Mars = Astronomy.Body.Mars;
+    var Jup  = Astronomy.Body.Jupiter;
+    var Sat  = Astronomy.Body.Saturn;
 
     var bodies = [Sun, Moon, Merc, Ven, Mars, Jup, Sat];
 
@@ -519,7 +507,7 @@
 
     // ====== 背景運（ゆっくり）と日替わり運（速い） ======
 
-    // --- 総合運 ---
+    // 総合運
     var rawBgTotal =
       A(Jup) + A(Sat) + 0.6 * A(Sun);
     var rawDailyTotal =
@@ -529,13 +517,11 @@
 
     var nBgTotal    = clampNorm(rawBgTotal    * 0.35);
     var nDailyTotal = clampNorm(rawDailyTotal * 0.45);
-
-    // 背景がマイナスのときだけ効きを弱める（長期的な“しんどさ”を数字に出しすぎない）
-    nBgTotal = softenBackground(nBgTotal, 0.4); // マイナス側は40%だけ反映
+    nBgTotal = softenBackground(nBgTotal, 0.4);
 
     var nTotal = clampNorm(nBgTotal * 0.4 + nDailyTotal * 0.6);
 
-    // --- 恋愛運 ---
+    // 恋愛運
     var rawLoveFast =
       1.2 * A(Ven) + 1.0 * A(Moon) + 0.5 * A(Merc);
     var rawLoveBg =
@@ -547,7 +533,7 @@
 
     var nLove = clampNorm(nLoveFast * 0.7 + nLoveBg * 0.3);
 
-    // --- 金運 ---
+    // 金運
     var rawMoneyFast =
       0.7 * A(Ven) + 0.4 * A(Mars);
     var rawMoneyBg =
@@ -559,7 +545,7 @@
 
     var nMoney = clampNorm(nMoneyFast * 0.4 + nMoneyBg * 0.6);
 
-    // --- 仕事運 ---
+    // 仕事運
     var rawWorkFast =
       1.0 * A(Mars) + 0.5 * A(Merc) + 0.5 * A(Sun);
     var rawWorkBg =
@@ -571,7 +557,7 @@
 
     var nWork = clampNorm(nWorkFast * 0.5 + nWorkBg * 0.5);
 
-    // --- 健康運 ---
+    // 健康運
     var rawHealthFast =
       0.8 * A(Moon) + 0.6 * A(Sun);
     var rawHealthBg =
@@ -583,7 +569,7 @@
 
     var nHealth = clampNorm(nHealthFast * 0.7 + nHealthBg * 0.3);
 
-    // パーセンテージに変換（総合は30〜95前後、他は25〜95前後、たまに100）
+    // パーセンテージに変換
     var total  = mapNormToPercent(nTotal,  30, 95);
     var love   = mapNormToPercent(nLove,   25, 95);
     var money  = mapNormToPercent(nMoney,  25, 95);
@@ -650,13 +636,24 @@
 
     document.getElementById('result').innerHTML = html;
 
-    // 誕生日メッセージ
+    // 誕生日メッセージ・紙吹雪
     var birthdayEl = document.getElementById('birthdayMessage');
     birthdayEl.textContent = '';
-    var isBirthday =
-      birthDate.getMonth() === targetDate.getMonth() &&
-      birthDate.getDate() === targetDate.getDate();
-    if (isBirthday) {
+
+    var todayY = now.getFullYear();
+    var todayM = now.getMonth();
+    var todayD = now.getDate();
+
+    var isTodayTarget =
+      targetDate.getFullYear() === todayY &&
+      targetDate.getMonth() === todayM &&
+      targetDate.getDate() === todayD;
+
+    var isTodayBirthday =
+      birthDate.getMonth() === todayM &&
+      birthDate.getDate() === todayD;
+
+    if (isTodayTarget && isTodayBirthday) {
       birthdayEl.textContent =
         '🎂 お誕生日おめでとうございます。今日のあなたに、やさしい流れがありますように。';
       fireConfetti();

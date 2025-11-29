@@ -1,15 +1,15 @@
 // Cache Name: バージョンを変えると更新されます
-const CACHE_NAME = 'horoscope-100pct-2-v2025-astronomy-2';
+const CACHE_NAME = 'horoscope-v2025-astronomy';
 
 // キャッシュするファイル一覧
 const urlsToCache = [
-  '/horoscope-100pct-2/',
-  '/horoscope-100pct-2/index.html',
-  '/horoscope-100pct-2/manifest.json',
-  '/horoscope-100pct-2/splash.css',
-  '/horoscope-100pct-2/splash.js',
-  '/horoscope-100pct-2/icon-192.png',
-  '/horoscope-100pct-2/icon-512.png',
+  '/horoscope-100pct/',
+  '/horoscope-100pct/index.html',
+  '/horoscope-100pct/manifest.json',
+  '/horoscope-100pct/splash.css',
+  '/horoscope-100pct/splash.js',
+  '/horoscope-100pct/icon-192.png',
+  '/horoscope-100pct/icon-512.png',
   // ★重要: 天文計算ライブラリもキャッシュする（オフライン対応用）
   'https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js'
 ];

@@ -156,7 +156,7 @@
       <p class="app-title">100% 星占い</p>
       <p class="app-subtitle">
         太陽〜土星の配置から「今日との相性度」を数値化します。<br>
-        ver. 天体差エンジン 3.2
+        ver. 天体差エンジン 3.3 daily-mix
       </p>
     </div>
   </div>
@@ -376,8 +376,8 @@
     var p = 60 + 35 * z;  // 基本レンジはおよそ 25〜95
 
     // ごく一部だけ 100% が出るように補正
-    if (n > 0.9)  p += 3;   // 90%以上なら少し押し上げ
-    if (n > 0.97) p = 100; // 本当に尖った日だけ 100%
+    if (n > 0.9)  p += 3;    // 90%以上なら少し押し上げ
+    if (n > 0.97) p  = 100;  // 本当に尖った日だけ 100%
 
     if (p < 20) p = 20;
     if (p > 100) p = 100;
@@ -476,15 +476,15 @@
       targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
     }
 
-    var bodies = [
-      Astronomy.Body.Sun,
-      Astronomy.Body.Moon,
-      Astronomy.Body.Mercury,
-      Astronomy.Body.Venus,
-      Astronomy.Body.Mars,
-      Astronomy.Body.Jupiter,
-      Astronomy.Body.Saturn
-    ];
+    var Sun    = Astronomy.Body.Sun;
+    var Moon   = Astronomy.Body.Moon;
+    var Merc   = Astronomy.Body.Mercury;
+    var Ven    = Astronomy.Body.Venus;
+    var Mars   = Astronomy.Body.Mars;
+    var Jup    = Astronomy.Body.Jupiter;
+    var Sat    = Astronomy.Body.Saturn;
+
+    var bodies = [Sun, Moon, Merc, Ven, Mars, Jup, Sat];
 
     var nat = {};
     var cur = {};
@@ -501,31 +501,71 @@
       return d;
     }
 
-    // 天体差から生スコア算出
-    var rawTotal = 0;
-    for (var j = 0; j < bodies.length; j++) {
-      rawTotal += aspectScore(diffLon(bodies[j]));
+    function A(body) {
+      return aspectScore(diffLon(body));
     }
-    var rawLove =
-      aspectScore(diffLon(Astronomy.Body.Venus)) +
-      0.7 * aspectScore(diffLon(Astronomy.Body.Moon));
-    var rawMoney =
-      aspectScore(diffLon(Astronomy.Body.Jupiter)) +
-      0.4 * aspectScore(diffLon(Astronomy.Body.Venus));
-    var rawWork =
-      aspectScore(diffLon(Astronomy.Body.Mars)) +
-      aspectScore(diffLon(Astronomy.Body.Saturn));
-    var rawHealth =
-      aspectScore(diffLon(Astronomy.Body.Sun)) +
-      aspectScore(diffLon(Astronomy.Body.Moon));
 
-    // ★ スケール係数をさらに弱めて 100%／20% 連発を防ぐ
-    var nTotal  = clampNorm(rawTotal * 0.35);
-    var nLove   = clampNorm(rawLove  * 0.70);
-    var nMoney  = clampNorm(rawMoney * 0.75);
-    var nWork   = clampNorm(rawWork  * 0.60);
-    var nHealth = clampNorm(rawHealth* 0.60);
+    // ====== 背景運（ゆっくり変わる部分）と日替わり運（速い部分）を分けて計算 ======
 
+    // --- 総合運 ---
+    var rawBgTotal =
+      A(Jup) + A(Sat) + 0.6 * A(Sun); // 長期〜中期の地合い
+    var rawDailyTotal =
+      0.7 * A(Sun) + 1.0 * A(Moon) +
+      0.5 * A(Merc) + 0.5 * A(Ven) +
+      0.6 * A(Mars);                // 毎日〜数日の揺れ
+
+    var nBgTotal    = clampNorm(rawBgTotal    * 0.35); // 緩めスケール
+    var nDailyTotal = clampNorm(rawDailyTotal * 0.45);
+
+    // 背景4割・日替わり6割ぐらいのイメージ
+    var nTotal = clampNorm(nBgTotal * 0.4 + nDailyTotal * 0.6);
+
+    // --- 恋愛運（主に金星・月・木星） ---
+    var rawLoveFast =
+      1.2 * A(Ven) + 1.0 * A(Moon) + 0.5 * A(Merc);
+    var rawLoveBg =
+      0.6 * A(Jup);
+
+    var nLoveFast = clampNorm(rawLoveFast * 0.45);
+    var nLoveBg   = clampNorm(rawLoveBg   * 0.40);
+
+    var nLove = clampNorm(nLoveFast * 0.7 + nLoveBg * 0.3);
+
+    // --- 金運（木星・金星・土星） ---
+    var rawMoneyFast =
+      0.7 * A(Ven) + 0.4 * A(Mars);
+    var rawMoneyBg =
+      1.0 * A(Jup) + 0.5 * A(Sat);
+
+    var nMoneyFast = clampNorm(rawMoneyFast * 0.40);
+    var nMoneyBg   = clampNorm(rawMoneyBg   * 0.40);
+
+    var nMoney = clampNorm(nMoneyFast * 0.4 + nMoneyBg * 0.6);
+
+    // --- 仕事運（火星・水星・太陽＋土星） ---
+    var rawWorkFast =
+      1.0 * A(Mars) + 0.5 * A(Merc) + 0.5 * A(Sun);
+    var rawWorkBg =
+      1.0 * A(Sat);
+
+    var nWorkFast = clampNorm(rawWorkFast * 0.40);
+    var nWorkBg   = clampNorm(rawWorkBg   * 0.40);
+
+    var nWork = clampNorm(nWorkFast * 0.5 + nWorkBg * 0.5);
+
+    // --- 健康運（太陽・月）＋木星少し ---
+    var rawHealthFast =
+      0.8 * A(Moon) + 0.6 * A(Sun);
+    var rawHealthBg =
+      0.4 * A(Jup);
+
+    var nHealthFast = clampNorm(rawHealthFast * 0.45);
+    var nHealthBg   = clampNorm(rawHealthBg   * 0.35);
+
+    var nHealth = clampNorm(nHealthFast * 0.7 + nHealthBg * 0.3);
+
+    // パーセンテージに変換
     var total  = mapNormToPercent(nTotal);
     var love   = mapNormToPercent(nLove);
     var money  = mapNormToPercent(nMoney);

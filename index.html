@@ -333,6 +333,10 @@ function gradeFromScore(score) {
     var prev       = -1;
     var prev2      = -1;
 
+    // 直近数日間は同じ文章を出さないためのウィンドウ
+    var windowSize = 4; // 最低でも4日は空けるイメージ
+    var recent     = [];
+
     for (var i = 0; i < daysInYear; i++) {
       var candidate = Math.floor(rng() * len);
 
@@ -352,16 +356,32 @@ function gradeFromScore(score) {
         // ABAB... のような周期パターンを弱めるためのゆるい調整
         if (rng() < 0.6) {
           var shift2 = 1 + Math.floor(rng() * (len - 1));
-          candidate = (candidate + shift2) % len;
+          candidate  = (candidate + shift2) % len;
           if (candidate === prev) {
             candidate = (candidate + 1) % len;
           }
         }
       }
 
-      arr[i]  = candidate;
-      prev2   = prev;
-      prev    = candidate;
+      // 直近 windowSize 日で使った文章をできるだけ避ける
+      if (len > windowSize) {
+        var guard = 0;
+        while (recent.indexOf(candidate) !== -1 && guard < 8) {
+          var shift3 = 1 + Math.floor(rng() * (len - 1));
+          candidate  = (candidate + shift3) % len;
+          guard++;
+        }
+      }
+
+      arr[i] = candidate;
+
+      recent.push(candidate);
+      if (recent.length > windowSize) {
+        recent.shift();
+      }
+
+      prev2 = prev;
+      prev  = candidate;
     }
 
     MESSAGE_SCHEDULE_CACHE[key] = arr;

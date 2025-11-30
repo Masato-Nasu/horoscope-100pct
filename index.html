@@ -391,39 +391,23 @@ function gradeFromScore(score) {
     }
 
     var daysInYear = isLeapYear(year) ? 366 : 365;
-    var rng        = makeRng(stableSeed('schedule|' + key));
     var arr        = new Array(daysInYear);
 
-    // 「同じ文章」が出る間隔をできるだけ長くする
-    // → バリエーション数が十分ある前提で、約半年(180日)は同じ文章を避ける
-    var windowSize = Math.min(183, len - 1); // 183日 ≒ 半年
-    var recent     = [];
+    // 誕生日・カテゴリ・グレード・年ごとにオフセットを固定
+    var rng     = makeRng(stableSeed('schedule2|' + key));
+    var offset  = Math.floor(rng() * len);
 
+    // i日目 → (offset + i) % len に単純対応させる
+    // len(バリエーション数) が 183 以上あれば、同じ idx が再登場する間隔は
+    // 183日以上（≒半年）空くことが保証される
     for (var i = 0; i < daysInYear; i++) {
-      var candidate = Math.floor(rng() * len);
-
-      // 直近 windowSize 日で使った文章を避ける
-      if (windowSize > 0 && recent.indexOf(candidate) !== -1) {
-        for (var k = 1; k < len; k++) {
-          var c2 = (candidate + k) % len;
-          if (recent.indexOf(c2) === -1) {
-            candidate = c2;
-            break;
-          }
-        }
-      }
-
-      arr[i] = candidate;
-
-      recent.push(candidate);
-      if (recent.length > windowSize) {
-        recent.shift();
-      }
+      arr[i] = (offset + i) % len;
     }
 
     MESSAGE_SCHEDULE_CACHE[key] = arr;
     return arr;
   }
+
 function pickText(category, score, birthStr, date) {
     var g = gradeFromScore(score);
     var bank = (TEXT_BANK[category] && TEXT_BANK[category][g]) || [];
@@ -446,8 +430,12 @@ function pickText(category, score, birthStr, date) {
       return bank[Math.floor(rng2() * bank.length)];
     }
 
-    var idx = schedule[idxDay];
-    return bank[idx] || '';
+    var idx  = schedule[idxDay];
+    var base = bank[idx] || '';
+
+    var seasonTail = seasonPhrase(date, category + '|' + g);
+    if (!seasonTail) return base;
+    return base + seasonTail;
   }
 
 function seasonPhrase(date, seedBase) {

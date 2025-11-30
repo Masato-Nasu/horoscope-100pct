@@ -352,25 +352,76 @@
     return 'c';
   }
 
-  // 日付 → 通し番号（1970/1/1 からの日数）に変換
-  function dayIndex(date) {
-    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return 0;
-    return Math.floor(date.getTime() / 86400000);
+  // --- メッセージのローテーション制御 ---
+  // 年ごと・カテゴリごと・ランクごとに、その年の並びを決めておく。
+  // これにより、同じランクの日が続いても文章が偏りにくくなる。
+  var MESSAGE_SCHEDULE_CACHE = {};
+
+  function isLeapYear(year) {
+    return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
   }
 
-  // 同じランクが続いても文章がローテーションする pickText
+  function dayOfYear(date) {
+    var start = new Date(date.getFullYear(), 0, 1);
+    var diff  = date.getTime() - start.getTime();
+    return Math.floor(diff / 86400000);
+  }
+
+  function ensureMessageSchedule(birthStr, category, grade, year) {
+    var key = (birthStr || 'none') + '|' + category + '|' + grade + '|' + year;
+    if (MESSAGE_SCHEDULE_CACHE[key]) return MESSAGE_SCHEDULE_CACHE[key];
+
+    var bank = (TEXT_BANK[category] && TEXT_BANK[category][grade]) || [];
+    var len  = bank.length;
+    if (!len) {
+      MESSAGE_SCHEDULE_CACHE[key] = [];
+      return MESSAGE_SCHEDULE_CACHE[key];
+    }
+
+    var daysInYear = isLeapYear(year) ? 366 : 365;
+    var rng        = makeRng(stableSeed('schedule|' + key));
+    var arr        = new Array(daysInYear);
+    var prevIdx    = -1;
+
+    for (var i = 0; i < daysInYear; i++) {
+      var candidate = Math.floor(rng() * len);
+
+      // 直前と同じ文章が続かないように、同じだったら少しずらす
+      if (len > 1 && candidate === prevIdx) {
+        var shift = 1 + Math.floor(rng() * (len - 1));
+        candidate = (candidate + shift) % len;
+      }
+
+      arr[i]  = candidate;
+      prevIdx = candidate;
+    }
+
+    MESSAGE_SCHEDULE_CACHE[key] = arr;
+    return arr;
+  }
+
   function pickText(category, score, birthStr, date) {
     var g = gradeFromScore(score);
     var bank = (TEXT_BANK[category] && TEXT_BANK[category][g]) || [];
     if (!bank.length) return '';
 
-    var dIndex   = dayIndex(date); // 日付ごとに +1 ずつ増える
-    // 誕生日 × カテゴリ × ランクごとに開始位置をずらす
-    var baseSeed = stableSeed('msg|' + (birthStr || '') + '|' + category + '|' + g);
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      // フォールバック：日付が取得できない場合
+      var rng = makeRng(stableSeed('msg|' + (birthStr || '') + '|' + category + '|' + g));
+      return bank[Math.floor(rng() * bank.length)];
+    }
 
-    // 同じ日・同じ人なら同じ文章だが、日付が1日変わると必ず次の文章に進む
-    var idx = (baseSeed + dIndex) % bank.length;
+    var year      = date.getFullYear();
+    var schedule  = ensureMessageSchedule(birthStr, category, g, year);
+    var idxDay    = dayOfYear(date);
 
+    if (idxDay < 0 || idxDay >= schedule.length) {
+      var fallbackSeed = 'msg-fallback|' + (birthStr || '') + '|' + category + '|' + g + '|' + date.toISOString().slice(0, 10);
+      var rng2 = makeRng(stableSeed(fallbackSeed));
+      return bank[Math.floor(rng2() * bank.length)];
+    }
+
+    var idx = schedule[idxDay] % bank.length;
     return bank[idx];
   }
 
@@ -822,11 +873,11 @@
       var work   = mapNormToPercent(nWork,   15, 95);
       var health = mapNormToPercent(nHealth, 15, 95);
 
-      var overallText = pickText('total',  total,  birthStr, targetDate);
-      var loveText    = pickText('love',   love,   birthStr, targetDate);
-      var moneyText   = pickText('money',  money,  birthStr, targetDate);
-      var workText    = pickText('work',   work,   birthStr, targetDate);
-      var healthText  = pickText('health', health, birthStr, targetDate);
+      var overallText = pickText('total',  total,  birthStr,  targetDate);
+      var loveText    = pickText('love',   love,   birthStr,  targetDate);
+      var moneyText   = pickText('money',  money,  birthStr,  targetDate);
+      var workText    = pickText('work',   work,   birthStr,  targetDate);
+      var healthText  = pickText('health', health, birthStr,  targetDate);
       var seasonText  = seasonPhrase(targetDate, seedBase);
 
       var html = '';

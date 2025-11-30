@@ -275,10 +275,12 @@
     };
   }
 
-    // --- 文章バンク ---
+        // --- 文章バンク ---
   // bank.js で定義された BANK を利用して、
   // 内部で使いやすい英語キーにマッピングする
-  var TEXT_BANK = (typeof BANK !== 'undefined')
+
+  // ベースの文章（カテゴリごと）
+  var BASE_BANK = (typeof BANK !== 'undefined')
     ? {
         total:  BANK["全体運"]  || { a: [], b: [], c: [] },
         love:   BANK["恋愛運"] || { a: [], b: [], c: [] },
@@ -293,6 +295,67 @@
         work:   { a: [], b: [], c: [] },
         health: { a: [], b: [], c: [] }
       };
+
+  // ベース文章に「一言コメント」を足してバリエーションを増やす
+  // → 同じ文章そのものが出てくる間隔を長くできる
+  var VARIATION_SUFFIXES = [
+    " 今日の空気を静かに味わいながら、心の声にも耳を傾けてみてください。",
+    " 少しだけ空を見上げる時間をつくると、気持ちがやわらぎそうです。",
+    " 深呼吸をひとつしてから動き出すと、自然とペースが整っていきます。",
+    " 手帳やスマホに一言メモを残すと、あとで今日を振り返る手がかりになります。",
+    " お気に入りの飲み物が、そっと背中を押してくれそうな日です。",
+    " 歩くときは、景色をゆっくり眺める余裕を意識してみてください。",
+    " 音楽やラジオが、気分の切り替えにやさしく効いてくれそうです。",
+    " 香りの良いものをそばに置くと、心がふわっと軽くなります。",
+    " すこしだけ早足をやめて、マイペースを大切にすると良さそうです。",
+    " 目を閉じて数秒だけ何も考えない時間をつくると、頭がすっきりします。",
+    " 予定の合間に、ストレッチや伸びをして体をゆるめてあげてください。",
+    " 今日は「がんばった自分をねぎらう言葉」を一つ決めてみると良い日です。",
+    " ほんの小さな達成でも、自分でちゃんと褒めてあげることを意識してみてください。",
+    " 無理に前向きになろうとせず、「ここまでできれば十分」と区切りをつけてあげましょう。",
+    " いつもより一歩手前でブレーキを踏むくらいの慎重さが、心の安心につながります。",
+    " 眠る前に、今日あった良かったことを一つだけ思い出してみてください。",
+    " デジタルから少し離れる時間をつくると、感覚がリセットされやすくなります。",
+    " 体の声をよく聞きながら、早めの休憩を心掛けてみてください。",
+    " 信頼できる人との短い会話が、思った以上に支えになってくれそうです。",
+    " こまめな水分補給が、心と体のコンディションを整えてくれます。",
+    " 「今日はここまで」と決めることで、明日への余力も残せそうです。",
+    " 少しだけ部屋を整えると、気分もすっと整いやすくなります。",
+    " 外の空気を吸いに出るだけでも、気持ちの切り替えに役立ちます。",
+    " 体を温める工夫をすると、安心感と落ち着きが戻ってきます。",
+    " 今日は自分に合うペースを守ることを、いちばん大切にしてみてください。",
+    " 静かな時間に、心の中で「ありがとう」を唱えてみると穏やかな気持ちになれそうです。",
+    " やらなかったことを責めるより、できたことにそっと目を向けてあげましょう。",
+    " 好きなものや人を思い浮かべるだけでも、心の温度が少し上がります。",
+    " 一人で抱え込みすぎないよう、必要なことはまわりに軽く相談してみてください。",
+    " 今日は「自分にやさしくする日」と決めて過ごすのも良さそうです。",
+    " 心配ごとがあるときほど、深い呼吸とゆっくりした動きを意識してみてください。"
+  ];
+
+  function expandCategory(cat) {
+    var result = { a: [], b: [], c: [] };
+    ['a', 'b', 'c'].forEach(function (g) {
+      var core = (cat && cat[g]) || [];
+      if (!core.length) {
+        result[g] = [];
+        return;
+      }
+      for (var i = 0; i < core.length; i++) {
+        for (var j = 0; j < VARIATION_SUFFIXES.length; j++) {
+          result[g].push(core[i] + VARIATION_SUFFIXES[j]);
+        }
+      }
+    });
+    return result;
+  }
+
+  var TEXT_BANK = {
+    total:  expandCategory(BASE_BANK.total),
+    love:   expandCategory(BASE_BANK.love),
+    money:  expandCategory(BASE_BANK.money),
+    work:   expandCategory(BASE_BANK.work),
+    health: expandCategory(BASE_BANK.health)
+  };
 
 function gradeFromScore(score) {
     if (score >= 75) return 'a';
@@ -330,46 +393,23 @@ function gradeFromScore(score) {
     var daysInYear = isLeapYear(year) ? 366 : 365;
     var rng        = makeRng(stableSeed('schedule|' + key));
     var arr        = new Array(daysInYear);
-    var prev       = -1;
-    var prev2      = -1;
 
-    // 直近数日間は同じ文章を出さないためのウィンドウ
-    var windowSize = 4; // 最低でも4日は空けるイメージ
+    // 「同じ文章」が出る間隔をできるだけ長くする
+    // → バリエーション数が十分ある前提で、約半年(180日)は同じ文章を避ける
+    var windowSize = Math.min(183, len - 1); // 183日 ≒ 半年
     var recent     = [];
 
     for (var i = 0; i < daysInYear; i++) {
       var candidate = Math.floor(rng() * len);
 
-      if (len > 1 && candidate === prev) {
-        // 直前と同じ文章を避ける
-        if (len === 2) {
-          // 2パターンだけなら、もう片方を選ぶ
-          candidate = 1 - prev;
-        } else {
-          // 3パターン以上なら、別のインデックスにずらす
-          var shift = 1 + Math.floor(rng() * (len - 1));
-          candidate = (candidate + shift) % len;
-        }
-      }
-
-      if (len >= 3 && i >= 2 && candidate === prev2) {
-        // ABAB... のような周期パターンを弱めるためのゆるい調整
-        if (rng() < 0.6) {
-          var shift2 = 1 + Math.floor(rng() * (len - 1));
-          candidate  = (candidate + shift2) % len;
-          if (candidate === prev) {
-            candidate = (candidate + 1) % len;
+      // 直近 windowSize 日で使った文章を避ける
+      if (windowSize > 0 && recent.indexOf(candidate) !== -1) {
+        for (var k = 1; k < len; k++) {
+          var c2 = (candidate + k) % len;
+          if (recent.indexOf(c2) === -1) {
+            candidate = c2;
+            break;
           }
-        }
-      }
-
-      // 直近 windowSize 日で使った文章をできるだけ避ける
-      if (len > windowSize) {
-        var guard = 0;
-        while (recent.indexOf(candidate) !== -1 && guard < 8) {
-          var shift3 = 1 + Math.floor(rng() * (len - 1));
-          candidate  = (candidate + shift3) % len;
-          guard++;
         }
       }
 
@@ -379,9 +419,6 @@ function gradeFromScore(score) {
       if (recent.length > windowSize) {
         recent.shift();
       }
-
-      prev2 = prev;
-      prev  = candidate;
     }
 
     MESSAGE_SCHEDULE_CACHE[key] = arr;

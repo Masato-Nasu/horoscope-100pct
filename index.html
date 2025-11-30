@@ -274,20 +274,36 @@
   }
 
   var TEXT_BANK = {
+
     total: {
       a: [
         "追い風を感じやすいタイミング。やりたいことを一つだけ決めて、そこに時間を使ってみてください。ちょっとした行動が、次のきっかけにつながっていきそうです。",
-        "全体的にスムーズに流れやすい日。完璧を目指すよりも、「今日はここまでできれば十分」と自分に言ってあげると、気持ちよく一日を終えられそうです。"
+        "全体的にスムーズに流れやすい日。完璧を目指すよりも、「今日はここまでできれば十分」と自分に言ってあげると、気持ちよく一日を終えられそうです。",
+        "やるべきことと、やりたいことのバランスが取りやすい日。午前中に少しだけ集中して片づけて、午後は自分の楽しみに時間を回してみてください。",
+        "小さな「やってみよう」が実りやすいタイミング。結果よりも、今日一歩踏み出した自分をほめてあげるつもりで動いてみましょう。",
+        "周りとのリズムが自然と合いやすい日。無理に空気を読もうとせず、落ち着いたテンポで関わると、良い連鎖が生まれていきそうです。",
+        "何気ない日常の中に、ふと心が温かくなる瞬間がありそうです。いつもより少しだけ景色を見上げて、今あるものに目を向けてみてください。",
+        "気になっていたことを「ひとつだけ整える」に向いている日。部屋の一角でも、デスク周りでも、小さな片づけが気持ちの軽さにつながります。"
       ],
       b: [
         "大きな山はなくても、日常を整えやすい日。すべてを一度に変えようとせず、身の回りの小さなところから整えていくと、心も落ち着いてきます。",
-        "いつも通りの一日の中にも、小さな楽しみを見つけやすいタイミング。好きな飲み物や音楽をひとつ足して、自分だけのごほうび時間を作ってみてください。"
+        "いつも通りの一日の中にも、小さな楽しみを見つけやすいタイミング。好きな飲み物や音楽をひとつ足して、自分だけのごほうび時間を作ってみてください。",
+        "思っていたほど悪くない流れの日。大成功を目指すより、「今日はここまでできたら十分」とハードルを少し下げてあげると、気持ちよく過ごせそうです。",
+        "人とのやりとりは穏やかに進みやすい日。返事を急がず、一度メモに書き出してから伝えると、誤解が減って安心感が増えそうです。",
+        "少しだけペースを落としても問題ないタイミング。周囲と比べるより、自分なりの心地よいリズムを優先すると、疲れを溜めずに済みます。",
+        "やる気の波がゆるやかに動く日。気乗りしないことは最小限にして、短時間で終わるタスクから片づけると、自然とエンジンが温まってきます。",
+        "大きな判断を保留にしても良い日。今日は情報を集めるところまでにしておき、決断はもう一日様子を見るくらいの感覚で大丈夫です。"
       ],
       c: [
         "少し慎重さが役に立つ日。無理に答えを出そうとせず、「今日は様子を見る」と決めるだけでも、心に余白が生まれます。自分を責めすぎないでくださいね。",
-        "思い通りに進まない場面もあるかもしれませんが、それでも大丈夫。できなかったことより、今日ちゃんとできたことを一つ思い出して、そっと自分をねぎらってあげましょう。"
+        "思い通りに進まない場面もあるかもしれませんが、それでも大丈夫。できなかったことより、今日ちゃんとできたことを一つ思い出して、そっと自分をねぎらってあげましょう。",
+        "気持ちが揺れやすく、集中しづらいと感じるかもしれません。今日は「最低限できればOK」と決めて、あとは早めに心と体を休ませてあげてください。",
+        "周囲のペースに合わせようとすると疲れやすい日。できる範囲を自分の中で決めて、それ以上は抱え込まないとあらかじめ決めておくと楽になります。",
+        "不安やもやもやが出てきたら、頭の中だけで考え続けないことが大切。紙に書き出したり、誰かに軽く話したりして、外に出してあげるだけでも少し楽になりそうです。",
+        "調子がいまひとつでも、それは「休んでいいよ」というサイン。今日は攻めるよりも、体をあたためる・早く寝るなど、自分を守る行動を優先してあげてください。",
+        "うまくいかないことがあっても、すべてがダメになったわけではありません。小さな成功や、誰かの優しさを一つだけ拾い上げて、そこに意識を向けてみましょう。"
       ]
-    },
+    }    },
     love: {
       a: [
         "人との距離が心地よく縮まりやすい日。恋愛に限らず、素直な「ありがとう」や「おつかれさま」が、関係をあたたかくしてくれそうです。",
@@ -347,111 +363,31 @@
   };
 
   
-  function gradeFromScore(score) {
+  
+function gradeFromScore(score) {
     if (score >= 75) return 'a';
     if (score >= 45) return 'b';
     return 'c';
   }
 
-  // メッセージの年間スケジュールをキャッシュ
-  var MESSAGE_SCHEDULE_CACHE = {};
-
-  function isLeapYear(year) {
-    return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-  }
-
-  // その年の何日目か（0 起算）
-  function dayOfYear(date) {
-    var start = new Date(date.getFullYear(), 0, 1);
-    var diff  = date.getTime() - start.getTime();
-    return Math.floor(diff / 86400000);
-  }
-
-  // 誕生日 × カテゴリ × ランク × 年ごとの「文章スケジュール」を生成
-  
-  function ensureMessageSchedule(birthStr, category, grade, year) {
-    var key = (birthStr || 'none') + '|' + category + '|' + grade + '|' + year;
-    if (MESSAGE_SCHEDULE_CACHE[key]) return MESSAGE_SCHEDULE_CACHE[key];
-
-    var bank = (TEXT_BANK[category] && TEXT_BANK[category][grade]) || [];
-    var len  = bank.length;
-    if (!len) {
-      MESSAGE_SCHEDULE_CACHE[key] = [];
-      return MESSAGE_SCHEDULE_CACHE[key];
-    }
-
-    var daysInYear = isLeapYear(year) ? 366 : 365;
-    var rng        = makeRng(stableSeed('schedule|' + key));
-    var arr        = new Array(daysInYear);
-    var prev       = -1;
-    var prev2      = -1;
-
-    for (var i = 0; i < daysInYear; i++) {
-      var candidate = Math.floor(rng() * len);
-
-      if (len >= 3) {
-        // 3パターン以上ある場合は、できるだけ前日と違うものを優先
-        if (candidate === prev) {
-          var shift = 1 + Math.floor(rng() * (len - 1));
-          candidate = (candidate + shift) % len;
-        }
-      } else if (len === 2) {
-        // パターンが 2つしかない場合:
-        // ・3日連続で同じ文章にならない
-        // ・二日おきに「必ず」同じ文章になる（ABAB...）パターンを避ける
-        if (i === 0) {
-          // 1日目はそのままランダム
-        } else if (i === 1) {
-          // 2日目は「前日と違う方」をやや優先するが、同じになることも許容
-          if (candidate === prev && rng() < 0.7) {
-            candidate = 1 - prev;
-          }
-        } else {
-          // 3日目以降
-          if (prev === prev2) {
-            // 直近2日が同じ (A, A) の場合は、3日目は必ず別の文章 (B) にする
-            candidate = 1 - prev;
-          } else {
-            // 直近2日が A, B のように違う場合は、
-            // 二日おきに同じにならないように「2日前と違う方」を選ぶ
-            candidate = 1 - prev2;
-          }
-        }
-      }
-      // len === 1 の場合は常に同じ文章になる（仕様上やむなし）
-
-      arr[i]  = candidate;
-      prev2   = prev;
-      prev    = candidate;
-    }
-
-    MESSAGE_SCHEDULE_CACHE[key] = arr;
-    return arr;
-  }
-function pickText(category, score, birthStr, date) {
+  // 日付ごと・人ごとに、ある程度ばらけた文章を選ぶ
+  function pickText(category, score, birthStr, date) {
     var g = gradeFromScore(score);
     var bank = (TEXT_BANK[category] && TEXT_BANK[category][g]) || [];
     if (!bank.length) return '';
 
-    // 日付情報がなければ、素直なシード乱数で選ぶ
-    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-      var rng = makeRng(stableSeed('msg|' + (birthStr || '') + '|' + category + '|' + g));
-      return bank[Math.floor(rng() * bank.length)];
+    var dateKey = 'unknown-date';
+    if (date && date instanceof Date && !isNaN(date.getTime())) {
+      // YYYY-MM-DD 形式にそろえる
+      dateKey = date.toISOString().slice(0, 10);
     }
 
-    var year     = date.getFullYear();
-    var schedule = ensureMessageSchedule(birthStr, category, g, year);
-    var idxDay   = dayOfYear(date);
+    // 誕生日 × カテゴリ × ランク × 日付 でシードを決める
+    var seed = stableSeed('msg|' + (birthStr || '') + '|' + category + '|' + g + '|' + dateKey);
+    var rng = makeRng(seed);
 
-    if (idxDay < 0 || idxDay >= schedule.length) {
-      // 念のためのフォールバック。通常ここには来ない想定。
-      var fallbackSeed = 'msg-fallback|' + (birthStr || '') + '|' + category + '|' + g + '|' + date.toISOString().slice(0, 10);
-      var rng2 = makeRng(stableSeed(fallbackSeed));
-      return bank[Math.floor(rng2() * bank.length)];
-    }
-
-    var idx = schedule[idxDay];
-    return bank[idx] || '';
+    var idx = Math.floor(rng() * bank.length);
+    return bank[idx];
   }
 
 function seasonPhrase(date, seedBase) {

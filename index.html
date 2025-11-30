@@ -346,27 +346,28 @@
     }
   };
 
+  
   function gradeFromScore(score) {
     if (score >= 75) return 'a';
     if (score >= 45) return 'b';
     return 'c';
   }
 
-  // --- メッセージのローテーション制御 ---
-  // 年ごと・カテゴリごと・ランクごとに、その年の並びを決めておく。
-  // これにより、同じランクの日が続いても文章が偏りにくくなる。
+  // メッセージの年間スケジュールをキャッシュ
   var MESSAGE_SCHEDULE_CACHE = {};
 
   function isLeapYear(year) {
     return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
   }
 
+  // その年の何日目か（0 起算）
   function dayOfYear(date) {
     var start = new Date(date.getFullYear(), 0, 1);
     var diff  = date.getTime() - start.getTime();
     return Math.floor(diff / 86400000);
   }
 
+  // 誕生日 × カテゴリ × ランク × 年ごとの「文章スケジュール」を生成
   function ensureMessageSchedule(birthStr, category, grade, year) {
     var key = (birthStr || 'none') + '|' + category + '|' + grade + '|' + year;
     if (MESSAGE_SCHEDULE_CACHE[key]) return MESSAGE_SCHEDULE_CACHE[key];
@@ -381,51 +382,65 @@
     var daysInYear = isLeapYear(year) ? 366 : 365;
     var rng        = makeRng(stableSeed('schedule|' + key));
     var arr        = new Array(daysInYear);
-    var prevIdx    = -1;
+    var prev       = -1;
+    var prev2      = -1;
 
     for (var i = 0; i < daysInYear; i++) {
       var candidate = Math.floor(rng() * len);
 
-      // 直前と同じ文章が続かないように、同じだったら少しずらす
-      if (len > 1 && candidate === prevIdx) {
-        var shift = 1 + Math.floor(rng() * (len - 1));
-        candidate = (candidate + shift) % len;
+      // 長く同じ文章が続かないように調整
+      if (len >= 3) {
+        // 3パターン以上ある場合は、できるだけ前日と違うものを選ぶ
+        if (candidate === prev) {
+          var shift = 1 + Math.floor(rng() * (len - 1));
+          candidate = (candidate + shift) % len;
+        }
+      } else if (len === 2) {
+        // パターンが 2つしかない場合:
+        // 3日連続で同じ文章になることだけを禁止（2日連続までは許容）
+        if (prev === prev2 && prev !== -1 && candidate === prev) {
+          candidate = 1 - prev;
+        }
       }
+      // len === 1 の場合は常に同じ文章になる（仕様上やむなし）
 
       arr[i]  = candidate;
-      prevIdx = candidate;
+      prev2   = prev;
+      prev    = candidate;
     }
 
     MESSAGE_SCHEDULE_CACHE[key] = arr;
     return arr;
   }
 
+  // 実際に文章を一つ選ぶ関数
   function pickText(category, score, birthStr, date) {
     var g = gradeFromScore(score);
     var bank = (TEXT_BANK[category] && TEXT_BANK[category][g]) || [];
     if (!bank.length) return '';
 
+    // 日付情報がなければ、素直なシード乱数で選ぶ
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-      // フォールバック：日付が取得できない場合
       var rng = makeRng(stableSeed('msg|' + (birthStr || '') + '|' + category + '|' + g));
       return bank[Math.floor(rng() * bank.length)];
     }
 
-    var year      = date.getFullYear();
-    var schedule  = ensureMessageSchedule(birthStr, category, g, year);
-    var idxDay    = dayOfYear(date);
+    var year     = date.getFullYear();
+    var schedule = ensureMessageSchedule(birthStr, category, g, year);
+    var idxDay   = dayOfYear(date);
 
     if (idxDay < 0 || idxDay >= schedule.length) {
+      // 念のためのフォールバック。通常ここには来ない想定。
       var fallbackSeed = 'msg-fallback|' + (birthStr || '') + '|' + category + '|' + g + '|' + date.toISOString().slice(0, 10);
       var rng2 = makeRng(stableSeed(fallbackSeed));
       return bank[Math.floor(rng2() * bank.length)];
     }
 
-    var idx = schedule[idxDay] % bank.length;
-    return bank[idx];
+    var idx = schedule[idxDay];
+    return bank[idx] || '';
   }
 
-  function seasonPhrase(date, seedBase) {
+function seasonPhrase(date, seedBase) {
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '';
     var month = date.getMonth() + 1;
     var rng = makeRng(stableSeed('season|' + month + '|' + seedBase));

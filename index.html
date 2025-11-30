@@ -352,12 +352,25 @@
     return 'c';
   }
 
-  function pickText(category, score, seedBase) {
+  // 日付 → 通し番号（1970/1/1 からの日数）に変換
+  function dayIndex(date) {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return 0;
+    return Math.floor(date.getTime() / 86400000);
+  }
+
+  // 同じランクが続いても文章がローテーションする pickText
+  function pickText(category, score, birthStr, date) {
     var g = gradeFromScore(score);
     var bank = (TEXT_BANK[category] && TEXT_BANK[category][g]) || [];
     if (!bank.length) return '';
-    var rng = makeRng(stableSeed(category + '|' + g + '|' + seedBase));
-    var idx = Math.floor(rng() * bank.length);
+
+    var dIndex   = dayIndex(date); // 日付ごとに +1 ずつ増える
+    // 誕生日 × カテゴリ × ランクごとに開始位置をずらす
+    var baseSeed = stableSeed('msg|' + (birthStr || '') + '|' + category + '|' + g);
+
+    // 同じ日・同じ人なら同じ文章だが、日付が1日変わると必ず次の文章に進む
+    var idx = (baseSeed + dIndex) % bank.length;
+
     return bank[idx];
   }
 
@@ -809,11 +822,11 @@
       var work   = mapNormToPercent(nWork,   15, 95);
       var health = mapNormToPercent(nHealth, 15, 95);
 
-      var overallText = pickText('total',  total,  seedBase);
-      var loveText    = pickText('love',   love,   seedBase);
-      var moneyText   = pickText('money',  money,  seedBase);
-      var workText    = pickText('work',   work,   seedBase);
-      var healthText  = pickText('health', health, seedBase);
+      var overallText = pickText('total',  total,  birthStr, targetDate);
+      var loveText    = pickText('love',   love,   birthStr, targetDate);
+      var moneyText   = pickText('money',  money,  birthStr, targetDate);
+      var workText    = pickText('work',   work,   birthStr, targetDate);
+      var healthText  = pickText('health', health, birthStr, targetDate);
       var seasonText  = seasonPhrase(targetDate, seedBase);
 
       var html = '';

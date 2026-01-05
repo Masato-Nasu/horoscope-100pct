@@ -166,6 +166,19 @@
         box-shadow: none;
       }
     }
+
+    /* PWA(standalone) のときは端末幅いっぱいに */
+    @media (display-mode: standalone), (display-mode: fullscreen) {
+      body {
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        margin: 0;
+      }
+      .app-card {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 0 20px;
+      }
+    }
   </style>
 
   <!-- Astronomy Engine -->

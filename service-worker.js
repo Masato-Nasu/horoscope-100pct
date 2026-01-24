@@ -1,6 +1,6 @@
 // TANGO-CHO Service Worker (stable updates)
 // Build: v16
-const CACHE_NAME = "tango-cho-cache-v37.7.12-v37";
+const CACHE_NAME = "tango-cho-cache-v37.7.12-v38";
 
 const CORE_ASSETS = [
   "./",
@@ -35,23 +35,6 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-
-  // Allow caching for the Astronomy Engine CDN (needed for 100%星占い互換スコア)
-  if (event.request.url === "https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js") {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match(event.request);
-      if (cached) return cached;
-      try {
-        const res = await fetch(event.request);
-        if (res && res.ok) await cache.put(event.request, res.clone());
-        return res;
-      } catch (err) {
-        return cached || Response.error();
-      }
-    })());
-    return;
-  }
 
   const url = new URL(event.request.url);
   // Only handle same-origin requests (GitHub Pages). Cross-origin (HF/DeepL) pass-through.

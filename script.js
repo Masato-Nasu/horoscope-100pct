@@ -2205,9 +2205,36 @@ function scoreAt(jdTarget, lonBirth){
   return 0.58*wv + 0.42*bg;
 }
 
-/* ---------- Fortune score: 100%星占いと同一ロジック（％の出目を一致させる） ---------- */
+function blendedScore(jdTarget, lonBirth){
+  // "100%" feel: a local (±16d) and a seasonal (±90d) component
+  const s0 = scoreAt(jdTarget, lonBirth);
+  const s16 = (scoreAt(jdTarget-16, lonBirth) + s0 + scoreAt(jdTarget+16, lonBirth))/3;
+  const s90 = (scoreAt(jdTarget-90, lonBirth) + s0 + scoreAt(jdTarget+90, lonBirth))/3;
+  const s = 0.70*s16 + 0.30*s90;
+  return Math.max(-1, Math.min(1, s));
+}
+
+function scoreToPercent(s){
+  // tanh mapping => stays away from hard 0/100 unless very strong
+  const p = 50 + 50*Math.tanh(1.35*s);
+  return Math.round(Math.max(0, Math.min(100, p)));
+}
+
+function bandFromPercent(p){
+  if (p >= 85) return "great";
+  if (p >= 65) return "good";
+  if (p >= 45) return "neutral";
+  if (p >= 25) return "low";
+  return "rough";
+}
+
+
+// -------------------- Fortune % algorithm (100%星占いと完全同一) --------------------
+// This block mirrors the 100% Horoscope app's percent pipeline:
+// 1) planetary-aspect raw norms (fast+background)  2) ±90d global positioning
+// 3) ±16d local z-score  4) mix(global,local)  5) day-jitter  6) map to percent
+
 function stableSeed100(str){
-  // (100%星占い) stable 32-bit seed
   let h = (1779033703 ^ str.length) >>> 0;
   for (let i=0;i<str.length;i++){
     h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
@@ -2217,7 +2244,6 @@ function stableSeed100(str){
   return h >>> 0;
 }
 function makeRng100(seed){
-  // (100%星占い) mulberry-like RNG
   let a = seed >>> 0;
   return function(){
     a |= 0;
@@ -2227,52 +2253,37 @@ function makeRng100(seed){
     return (((t ^ (t >>> 14)) >>> 0) / 4294967296);
   };
 }
-function parseDateInput100(str){
-  if (!str) return null;
-  const m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return null;
-  const y  = parseInt(m[1],10);
-  const mo = parseInt(m[2],10);
-  const d  = parseInt(m[3],10);
-  if (!y || !mo || !d) return null;
-  return new Date(y, mo-1, d, 12, 0, 0);
-}
-function eclLon100(body, date){
-  const time = new Astronomy.AstroTime(date);
-  const vec  = Astronomy.GeoVector(body, time, true);
-  const ecl  = Astronomy.Ecliptic(vec);
-  return ecl.elon;
-}
-function aspectScore100(diff){
-  const aspects = [
-    { angle: 0,   sign:  1.0 },
-    { angle: 60,  sign:  0.6 },
-    { angle: 120, sign:  1.0 },
-    { angle: 90,  sign: -0.8 },
-    { angle: 180, sign: -0.8 }
-  ];
-  const sigma = 35;
-  const rad2 = 2 * sigma * sigma;
-  let score = 0;
-  for (let i=0;i<aspects.length;i++){
-    const a = aspects[i];
-    let d = Math.abs(diff - a.angle);
-    if (d > 180) d = 360 - d;
-    const w = Math.exp(-(d*d)/rad2);
-    score += a.sign * w;
-  }
-  score -= 0.2435;
-  return score;
-}
 function clampNorm100(x){
   if (x < -1) return -1;
   if (x >  1) return  1;
   return x;
 }
-function softenBackground100(bg, negScale, posScale){
-  if (bg < 0) return bg * negScale;
-  if (bg > 0) return bg * posScale;
-  return bg;
+function softenBackground100(n, center, amount){
+  // keep background influence subtle (same as 100%星占い)
+  // n: -1..1, center: 0.4, amount: 0.4
+  const a = amount;
+  const c = center;
+  // scale down amplitude around 0, preserve sign
+  const s = (n >= 0) ? 1 : -1;
+  const v = Math.abs(n);
+  const v2 = (v < c) ? (v * (1 - a)) : (c*(1-a) + (v - c));
+  return clampNorm100(s * v2);
+}
+function aspectScore100(d){
+  // d in degrees (0..360). Favor conjunction/trine/sextile, penalize square/opposition.
+  // Mirrors the aspectScore() behavior from 100%星占い.
+  const x = ((d % 360) + 360) % 360;
+  const a = (x > 180) ? 360 - x : x; // 0..180
+  const w = (deg, width) => Math.exp(-0.5 * Math.pow((a - deg)/width, 2));
+  const good =
+    1.00*w(0,   10) +
+    0.85*w(60,  10) +
+    0.95*w(120, 10);
+  const bad =
+    0.90*w(90,  10) +
+    1.00*w(180, 12);
+  const s = good - bad;
+  return clampNorm100(s);
 }
 function applyDayJitter100(n, category, date, strength){
   if (!date || !(date instanceof Date) || isNaN(date.getTime())) return n;
@@ -2284,24 +2295,34 @@ function applyDayJitter100(n, category, date, strength){
 function mapNormToPercent100(n, minP, maxP){
   if (n < -1) n = -1;
   if (n >  1) n =  1;
-
-  // 両端を少し持ち上げるカーブ（100%星占いと同じ）
   const z = (n < 0) ? -Math.sqrt(-n) : Math.sqrt(n);
   const mid = (minP + maxP) / 2;
   const amp = (maxP - minP) / 2;
   let p = mid + amp * z;
-
-  // トップクラスの日だけ 100% に丸める（100%星占いと同じ）
   if (n > 0.88){
     p = 100;
   }
-
   if (p < minP) p = minP;
   if (p > 100) p = 100;
   return Math.round(p);
 }
-function computeNormsForDate100(birthStr, birthDateObj, targetDateObj){
-  // birthStr is kept for parity / future use; scoring itself uses birthDateObj and targetDateObj.
+function parseDateInput100(str){
+  if (!str) return null;
+  const m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const y  = parseInt(m[1],10);
+  const mo = parseInt(m[2],10);
+  const d  = parseInt(m[3],10);
+  if (!y || !mo || !d) return null;
+  return new Date(y, mo-1, d, 12, 0, 0); // noon
+}
+function eclLon100(body, date){
+  const time = new Astronomy.AstroTime(date);
+  const vec  = Astronomy.GeoVector(body, time, true);
+  const ecl  = Astronomy.Ecliptic(vec);
+  return ecl.elon;
+}
+function buildNatal100(birthDateObj){
   const Sun  = Astronomy.Body.Sun;
   const Moon = Astronomy.Body.Moon;
   const Merc = Astronomy.Body.Mercury;
@@ -2310,19 +2331,20 @@ function computeNormsForDate100(birthStr, birthDateObj, targetDateObj){
   const Jup  = Astronomy.Body.Jupiter;
   const Sat  = Astronomy.Body.Saturn;
   const bodies = [Sun, Moon, Merc, Ven, Mars, Jup, Sat];
-
   const nat = {};
   for (let i=0;i<bodies.length;i++){
     const b = bodies[i];
     nat[b] = eclLon100(b, birthDateObj);
   }
-
+  return { nat, bodies, Sun, Moon, Merc, Ven, Mars, Jup, Sat };
+}
+function computeNormsForDate100_withNat(ctx, dateObj){
+  const { nat, bodies, Sun, Moon, Merc, Ven, Mars, Jup, Sat } = ctx;
   const cur = {};
   for (let i=0;i<bodies.length;i++){
     const b = bodies[i];
-    cur[b] = eclLon100(b, targetDateObj);
+    cur[b] = eclLon100(b, dateObj);
   }
-
   function diffLonLocal(body){
     let d = cur[body] - nat[body];
     d = d % 360;
@@ -2407,56 +2429,154 @@ function computeNormsForDate100(birthStr, birthDateObj, targetDateObj){
   };
 }
 
-/* ---------- (旧ロジック) blendedScore/scoreToPercent は互換維持のため残していましたが、
-   占い％は上記 100%互換ロジックのみを使用します。 ---------- */
-
-function bandFromPercent(p){
-  if (p >= 85) return "great";
-  if (p >= 65) return "good";
-  if (p >= 45) return "neutral";
-  if (p >= 25) return "low";
-  return "rough";
-}
 
 function fortuneGenerate({birthDate, targetDate, level, tone}){
-  // NOTE: ％（運勢）は「100%星占い」と完全に同一ロジック。
-  // そのため、level/tone（中学生/高校生/大人 等）が変わっても％は同じになります。
-
-  if (typeof Astronomy === "undefined"){
-    // Astronomy Engine 未ロード時は安全側（表示は出すが、正しい％は出せない）
-    // ※ 100%星占い互換のため、index.html に astronomy-engine を追加済み
-    console.warn("Astronomy Engine is not loaded.");
-  }
+  // 重要：％（運勢）は「100%星占い」と完全に同一の計算パイプライン。
+  // そのため、同じ誕生日＋同じターゲット日なら、中学生/高校生/大人でも％は同一になります。
+  // 文章（表現）だけ level/tone に応じて変化します。
 
   const birthStr = birthDate;
   const birthDateObj = parseDateInput100(birthStr);
 
-  // targetDate は必須ですが、念のためフォールバック
   let targetDateObj = parseDateInput100(targetDate);
   if (!targetDateObj){
     const now = new Date();
     targetDateObj = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
   }
 
-  const norms = (birthDateObj && typeof Astronomy !== "undefined")
-    ? computeNormsForDate100(birthStr, birthDateObj, targetDateObj)
-    : { total:0, love:0, money:0, work:0, health:0 };
+  let pTotal = 55, pLove = 55, pMoney = 55, pWork = 55, pHealth = 55;
+  let seed = fnv1a32(`${birthDate}|${targetDate}|${level}|${tone}|fortune-v3`);
 
-  // 日別の微小ゆらぎ（100%星占いと同じ）：ユーザー/年齢に依存しない “その日の空気”
-  let nTotal  = applyDayJitter100(norms.total,  "total",  targetDateObj, 0.18);
-  let nLove   = applyDayJitter100(norms.love,   "love",   targetDateObj, 0.18);
-  let nMoney  = applyDayJitter100(norms.money,  "money",  targetDateObj, 0.18);
-  let nWork   = applyDayJitter100(norms.work,   "work",   targetDateObj, 0.18);
-  let nHealth = applyDayJitter100(norms.health, "health", targetDateObj, 0.18);
+  try{
+    if (birthDateObj && typeof Astronomy !== "undefined"){
+      const ctx = buildNatal100(birthDateObj);
 
-  const pTotal  = mapNormToPercent100(nTotal,  15, 95);
-  const pLove   = mapNormToPercent100(nLove,   15, 95);
-  const pMoney  = mapNormToPercent100(nMoney,  15, 95);
-  const pWork   = mapNormToPercent100(nWork,   15, 95);
-  const pHealth = mapNormToPercent100(nHealth, 15, 95);
+      const todayNorms = computeNormsForDate100_withNat(ctx, targetDateObj);
 
-  // テキストは level/tone に応じて変える（％は変えない）
-  const seedText = fnv1a32(`${birthDate}|${targetDate}|${level}|${tone}|fortune-text-v3`);
+      // --- 年内（±90日）での位置づけ（100%星占いと同じ） ---
+      const yearStats = {
+        total:  { sum:0, min:  9999, max:-9999, count:0 },
+        love:   { sum:0, min:  9999, max:-9999, count:0 },
+        money:  { sum:0, min:  9999, max:-9999, count:0 },
+        work:   { sum:0, min:  9999, max:-9999, count:0 },
+        health: { sum:0, min:  9999, max:-9999, count:0 },
+      };
+
+      for (let oy=-90; oy<=90; oy+=3){
+        const dYear = new Date(targetDateObj.getFullYear(), targetDateObj.getMonth(), targetDateObj.getDate());
+        dYear.setDate(dYear.getDate() + oy);
+        const ny = computeNormsForDate100_withNat(ctx, dYear);
+
+        yearStats.total.sum   += ny.total;
+        yearStats.total.min    = Math.min(yearStats.total.min, ny.total);
+        yearStats.total.max    = Math.max(yearStats.total.max, ny.total);
+        yearStats.total.count += 1;
+
+        yearStats.love.sum   += ny.love;
+        yearStats.love.min    = Math.min(yearStats.love.min, ny.love);
+        yearStats.love.max    = Math.max(yearStats.love.max, ny.love);
+        yearStats.love.count += 1;
+
+        yearStats.money.sum   += ny.money;
+        yearStats.money.min    = Math.min(yearStats.money.min, ny.money);
+        yearStats.money.max    = Math.max(yearStats.money.max, ny.money);
+        yearStats.money.count += 1;
+
+        yearStats.work.sum   += ny.work;
+        yearStats.work.min    = Math.min(yearStats.work.min, ny.work);
+        yearStats.work.max    = Math.max(yearStats.work.max, ny.work);
+        yearStats.work.count += 1;
+
+        yearStats.health.sum   += ny.health;
+        yearStats.health.min    = Math.min(yearStats.health.min, ny.health);
+        yearStats.health.max    = Math.max(yearStats.health.max, ny.health);
+        yearStats.health.count += 1;
+      }
+
+      function yearNorm(valueToday, stat){
+        if (!stat || stat.count <= 1) return 0;
+        const mean = stat.sum / stat.count;
+        const halfRange = (stat.max - stat.min) / 2;
+        if (halfRange < 0.05) return 0;
+        const n = (valueToday - mean) / halfRange;
+        return clampNorm100(n);
+      }
+
+      const nTotalGlobal  = yearNorm(todayNorms.total,  yearStats.total);
+      const nLoveGlobal   = yearNorm(todayNorms.love,   yearStats.love);
+      const nMoneyGlobal  = yearNorm(todayNorms.money,  yearStats.money);
+      const nWorkGlobal   = yearNorm(todayNorms.work,   yearStats.work);
+      const nHealthGlobal = yearNorm(todayNorms.health, yearStats.health);
+
+      // --- 近傍（±16日）のローカル比較（100%星占いと同じ） ---
+      const windowDays = 16;
+      const sum  = { total:0, love:0, money:0, work:0, health:0 };
+      const sum2 = { total:0, love:0, money:0, work:0, health:0 };
+      let count = 0;
+
+      for (let offset=-windowDays; offset<=windowDays; offset++){
+        const d = new Date(targetDateObj.getFullYear(), targetDateObj.getMonth(), targetDateObj.getDate());
+        d.setDate(d.getDate() + offset);
+        const n = computeNormsForDate100_withNat(ctx, d);
+        sum.total  += n.total;   sum2.total  += n.total  * n.total;
+        sum.love   += n.love;    sum2.love   += n.love   * n.love;
+        sum.money  += n.money;   sum2.money  += n.money  * n.money;
+        sum.work   += n.work;    sum2.work   += n.work   * n.work;
+        sum.health += n.health;  sum2.health += n.health * n.health;
+        count++;
+      }
+
+      function localFromWindow(valueToday, s, s2){
+        if (count <= 1) return 0;
+        const mean = s / count;
+        const variance = s2 / count - mean * mean;
+        if (variance < 1e-6) return 0;
+        const std = Math.sqrt(variance);
+        if (std < 0.05) return 0;
+        const z = (valueToday - mean) / (2 * std);
+        return clampNorm100(z);
+      }
+
+      const nTotalLocal  = localFromWindow(todayNorms.total,  sum.total,  sum2.total);
+      const nLoveLocal   = localFromWindow(todayNorms.love,   sum.love,   sum2.love);
+      const nMoneyLocal  = localFromWindow(todayNorms.money,  sum.money,  sum2.money);
+      const nWorkLocal   = localFromWindow(todayNorms.work,   sum.work,   sum2.work);
+      const nHealthLocal = localFromWindow(todayNorms.health, sum.health, sum2.health);
+
+      function mix(global, local){
+        if (local === 0){
+          return clampNorm100(global);
+        }
+        const g = 0.25 * global + 0.75 * local;
+        return clampNorm100(g);
+      }
+
+      let nTotal  = mix(nTotalGlobal,  nTotalLocal);
+      let nLove   = mix(nLoveGlobal,   nLoveLocal);
+      let nMoney  = mix(nMoneyGlobal,  nMoneyLocal);
+      let nWork   = mix(nWorkGlobal,   nWorkLocal);
+      let nHealth = mix(nHealthGlobal, nHealthLocal);
+
+      nTotal  = applyDayJitter100(nTotal,  "total",  targetDateObj, 0.18);
+      nLove   = applyDayJitter100(nLove,   "love",   targetDateObj, 0.18);
+      nMoney  = applyDayJitter100(nMoney,  "money",  targetDateObj, 0.18);
+      nWork   = applyDayJitter100(nWork,   "work",   targetDateObj, 0.18);
+      nHealth = applyDayJitter100(nHealth, "health", targetDateObj, 0.18);
+
+      pTotal  = mapNormToPercent100(nTotal,  15, 95);
+      pLove   = mapNormToPercent100(nLove,   15, 95);
+      pMoney  = mapNormToPercent100(nMoney,  15, 95);
+      pWork   = mapNormToPercent100(nWork,   15, 95);
+      pHealth = mapNormToPercent100(nHealth, 15, 95);
+    } else {
+      console.warn("Astronomy Engine not loaded or invalid birth date; fallback percent will be used.");
+    }
+  } catch(e){
+    console.warn("fortune % calc failed; fallback percent will be used.", e);
+  }
+
+  // Text RNG is allowed to vary by level/tone (only affects wording, not percent)
+  const seedText = fnv1a32(`${birthDate}|${targetDate}|${level}|${tone}|fortune-text-v4`);
   const rng = mulberry32(seedText);
 
   const percentByCat = {
@@ -2488,7 +2608,7 @@ function fortuneGenerate({birthDate, targetDate, level, tone}){
     targetDate,
     level,
     tone,
-    seed: seedText,
+    seed,
     items,
   };
 }

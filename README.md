@@ -187,59 +187,6 @@ A評価またはC評価が3日以上続く場合、
 
 ---
 
-## 📲 PWA / キャッシュ更新
-
-このアプリはPWA対応です。
-
-初回アクセス時に Service Worker が登録され、以下のファイルをキャッシュします。
-
-- `index.html`
-- `manifest.json`
-- `sw.js`
-- アイコン類
-- `splash.css` / `splash.js`
-- Astronomy Engine
-
-更新がすぐ反映されない場合は、以下のようにURL末尾に `?clear-sw=1` を付けてアクセスしてください。
-
-```text
-https://masato-nasu.github.io/horoscope-100pct/?clear-sw=1
-```
-
-これにより、Service Worker の登録解除とキャッシュ削除を行い、最新版を読み込み直します。
-
----
-
-## 📁 ファイル構成
-
-```text
-horoscope-100pct/
-├─ index.html              # HTML / CSS / JavaScript / 占いロジック
-├─ README.md               # このファイル
-├─ manifest.json           # PWA設定
-├─ sw.js                   # Service Worker
-├─ splash.css              # 起動画面用CSS
-├─ splash.js               # 起動画面用JS
-├─ favicon.svg             # favicon
-├─ icon-180.png            # iOS向けアイコン
-├─ icon-192.png            # PWAアイコン
-├─ icon-512.png            # PWAアイコン
-├─ screenshot-top.png      # README用スクリーンショット
-└─ screenshot-result.png   # README用スクリーンショット
-```
-
----
-
-## 🛠 更新履歴メモ
-
-- 天体差エンジンによる5分野スコア表示
-- 結果画像保存に対応
-- PWA / Service Worker 対応
-- 良い運勢・慎重な運勢が続きすぎる場合の連続バランス補正を追加
-- Service Worker のキャッシュ名を `horoscope-v2026-streak-balance` に更新
-
----
-
 ## ⚠️ 免責事項
 
 このアプリは **エンターテインメント用途** を目的としたものです。

@@ -1,5 +1,5 @@
 // Cache Name: バージョンを変えると更新されます
-const CACHE_NAME = 'horoscope-v2025-astronomy';
+const CACHE_NAME = 'horoscope-v2026-streak-balance';
 
 // キャッシュするファイル一覧
 const urlsToCache = [

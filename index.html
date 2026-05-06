@@ -251,7 +251,7 @@
 (function () {
   'use strict';
 
-  console.log('Horoscope engine 5.0: planets + local-window + rare100');
+  console.log('Horoscope engine 5.1: planets + local-window + rare100 + streak-balance');
 
   // --- Service Worker 登録 ---
   if ('serviceWorker' in navigator) {
@@ -867,6 +867,63 @@ function seasonPhrase(date, seedBase) {
         };
       }
 
+      // 良い日・慎重な日が長く続きすぎないように、表示上の連続感だけをやわらげる。
+      // 元の天文計算は残しつつ、A/C が3日以上続く流れでは、3日目をB寄りに戻して読み味を整える。
+      function addDays(baseDate, amount) {
+        var d = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 12, 0, 0);
+        d.setDate(d.getDate() + amount);
+        return d;
+      }
+
+      function dateKeyForStreak(date) {
+        return date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate();
+      }
+
+      function estimatePercentForStreak(date, category) {
+        var norms = computeNormsForDate(date);
+        var n = (typeof norms[category] === 'number') ? norms[category] : 0;
+        n = applyDayJitter(n, category, date, 0.18);
+        return mapNormToPercent(n, 15, 95);
+      }
+
+      function softenLongRun(percent, category, birthStrForStreak, date) {
+        var grade = gradeFromScore(percent);
+
+        // 中庸の日はそのまま。強い良運・慎重運だけを対象にする。
+        if (grade !== 'a' && grade !== 'c') {
+          return percent;
+        }
+
+        var streak = 1;
+        for (var back = 1; back <= 8; back++) {
+          var prevDate = addDays(date, -back);
+          var prevGrade = gradeFromScore(estimatePercentForStreak(prevDate, category));
+          if (prevGrade !== grade) {
+            break;
+          }
+          streak++;
+        }
+
+        // 3日以上同じ強弱が続く場合、3日目・6日目・9日目…をB帯に逃がす。
+        // これで「良い良い良い…」「悪い悪い悪い…」の単調さだけを抑える。
+        if (streak >= 3 && ((streak - 3) % 3 === 0)) {
+          var rng = makeRng(stableSeed(
+            'streak-soften|' +
+            (birthStrForStreak || '') + '|' +
+            category + '|' +
+            dateKeyForStreak(date) + '|' +
+            grade
+          ));
+
+          if (grade === 'a') {
+            return Math.min(percent, 68 + Math.floor(rng() * 6)); // 68〜73%
+          }
+          return Math.max(percent, 50 + Math.floor(rng() * 8));   // 50〜57%
+        }
+
+        return percent;
+      }
+
       var todayNorms = computeNormsForDate(targetDate);
 
       // --- 年内（±90日）での位置づけ ---
@@ -984,6 +1041,12 @@ function seasonPhrase(date, seedBase) {
       var money  = mapNormToPercent(nMoney,  15, 95);
       var work   = mapNormToPercent(nWork,   15, 95);
       var health = mapNormToPercent(nHealth, 15, 95);
+
+      total  = softenLongRun(total,  'total',  birthStr, targetDate);
+      love   = softenLongRun(love,   'love',   birthStr, targetDate);
+      money  = softenLongRun(money,  'money',  birthStr, targetDate);
+      work   = softenLongRun(work,   'work',   birthStr, targetDate);
+      health = softenLongRun(health, 'health', birthStr, targetDate);
 
       var overallText = pickText('total',  total,  birthStr,  targetDate);
       var loveText    = pickText('love',   love,   birthStr,  targetDate);

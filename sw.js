@@ -1,4 +1,4 @@
-const CACHE_NAME = 'horoscope-v6-20260807';
+const CACHE_NAME = 'horoscope-v6-20260807b';
 
 const urlsToCache = [
   '/horoscope-100pct/',

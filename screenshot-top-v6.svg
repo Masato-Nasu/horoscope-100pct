@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="520" viewBox="0 0 420 520">
+<style>text{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",sans-serif}.t{fill:#333}.m{fill:#666}.p{fill:#7C4DFF}.b{font-weight:700}</style>
+<rect width="420" height="520" fill="#fff"/>
+<g transform="translate(34 33) rotate(-18)"><ellipse cx="0" cy="0" rx="18" ry="7" fill="none" stroke="#8CC9D8" stroke-width="2"/><circle cx="0" cy="0" r="9" fill="#EBCB75"/><circle cx="-3" cy="-3" r="3" fill="#F7E7AD" opacity=".8"/></g>
+<text x="70" y="43" font-size="25" class="p" text-anchor="start" font-weight="700">100% 星占い</text>
+<rect x="374" y="27" width="30" height="22" rx="11" fill="#F0EAFF"/>
+<text x="389" y="43" font-size="11" class="p" text-anchor="middle">v6</text>
+<text x="16" y="82" font-size="15" class="m" text-anchor="start">生年月日</text>
+<rect x="16" y="92" width="388" height="38" rx="11" fill="#fff" stroke="#DDD5F6" stroke-width="1"/>
+<text x="28" y="117" font-size="16" class="t" text-anchor="start">1978/12/31</text>
+<text x="16" y="150" font-size="15" class="m" text-anchor="start">占いたい日（空欄なら今日）</text>
+<rect x="16" y="160" width="388" height="38" rx="11" fill="#fff" stroke="#DDD5F6" stroke-width="1"/>
+<text x="28" y="185" font-size="16" class="m" text-anchor="start">年/月/日</text>
+<text x="16" y="218" font-size="15" class="m" text-anchor="start">環境を読む場所</text>
+<rect x="16" y="228" width="388" height="38" rx="11" fill="#fff" stroke="#DDD5F6" stroke-width="1"/>
+<text x="28" y="253" font-size="16" class="t" text-anchor="start">東京</text>
+<rect x="16" y="286" width="388" height="52" rx="12" fill="#fff" stroke="#D4C4FF" stroke-width="1"/>
+<text x="210" y="319" font-size="18" class="p" text-anchor="middle" font-weight="700">現在地を使う</text>
+<rect x="16" y="350" width="388" height="50" rx="12" fill="#7C4DFF"/>
+<text x="210" y="382" font-size="18" fill="#fff" text-anchor="middle" font-weight="700">この日の運勢とガイドを見る</text>
+<text x="16" y="414" font-size="13" class="m" text-anchor="start">同じ日の同じ条件では、同じ結果を表示します。</text>
+</svg>

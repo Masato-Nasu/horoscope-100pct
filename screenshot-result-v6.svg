@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="2360" viewBox="0 0 420 2360">
+<style>text{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",sans-serif}.t{fill:#333}.m{fill:#666}.p{fill:#7C4DFF}.b{font-weight:700}</style>
+<rect width="420" height="2360" fill="#fff"/>
+<g transform="translate(34 33) rotate(-18)"><ellipse cx="0" cy="0" rx="18" ry="7" fill="none" stroke="#8CC9D8" stroke-width="2"/><circle cx="0" cy="0" r="9" fill="#EBCB75"/><circle cx="-3" cy="-3" r="3" fill="#F7E7AD" opacity=".8"/></g>
+<text x="70" y="43" font-size="25" class="p" text-anchor="start" font-weight="700">100% 星占い</text>
+<rect x="374" y="27" width="30" height="22" rx="11" fill="#F0EAFF"/>
+<text x="389" y="43" font-size="11" class="p" text-anchor="middle">v6</text>
+<text x="16" y="78" font-size="12" class="m" text-anchor="start">生年月日</text>
+<rect x="16" y="84" width="388" height="30" rx="9" fill="#fff" stroke="#DDD5F6" stroke-width="1"/>
+<text x="27" y="104" font-size="13" class="t" text-anchor="start">1978/12/31</text>
+<text x="16" y="126" font-size="12" class="m" text-anchor="start">占いたい日（空欄なら今日）</text>
+<rect x="16" y="132" width="388" height="30" rx="9" fill="#fff" stroke="#DDD5F6" stroke-width="1"/>
+<text x="27" y="152" font-size="13" class="t" text-anchor="start">2026/08/07</text>
+<text x="16" y="174" font-size="12" class="m" text-anchor="start">環境を読む場所</text>
+<rect x="16" y="180" width="388" height="30" rx="9" fill="#fff" stroke="#DDD5F6" stroke-width="1"/>
+<text x="27" y="200" font-size="13" class="t" text-anchor="start">東京</text>
+<rect x="16" y="222" width="388" height="38" rx="10" fill="#fff" stroke="#D4C4FF" stroke-width="1"/>
+<text x="210" y="247" font-size="14" class="p" text-anchor="middle" font-weight="700">現在地を使う</text>
+<rect x="16" y="268" width="388" height="38" rx="10" fill="#7C4DFF"/>
+<text x="210" y="293" font-size="14" fill="#fff" text-anchor="middle" font-weight="700">この日の運勢とガイドを見る</text>
+<text x="16" y="316" font-size="11" class="m" text-anchor="start">計算完了。同じ条件では同じ結果を再表示します。</text>
+<rect x="12" y="336" width="396" height="210" rx="16" fill="#F7F4FF"/>
+<text x="24" y="369" font-size="16" class="p" text-anchor="start" font-weight="700">今日の運勢</text>
+<text x="390" y="374" font-size="30" class="p" text-anchor="end" font-weight="700">72%</text>
+<rect x="24" y="387" width="130" height="28" rx="14" fill="#fff"/>
+<text x="89" y="406" font-size="12" class="p" text-anchor="middle" font-weight="700">今日のモード：深める</text>
+<text x="24" y="441" font-size="18" class="t" text-anchor="start" font-weight="700">広げるより、一つのテーマに時間を</text>
+<text x="24" y="468" font-size="18" class="t" text-anchor="start" font-weight="700">使うと実りやすい日です。</text>
+<text x="24" y="501" font-size="12" class="m" text-anchor="start">今日のガイド：制作、研究、読み直しなど、途中に</text>
+<text x="24" y="520" font-size="12" class="m" text-anchor="start">なっているものを一段深く進めてみてください。</text>
+<text x="16" y="564" font-size="15" class="p" text-anchor="start" font-weight="700">今日をつくっている4つの要素</text>
+<rect x="12" y="576" width="194" height="102" rx="14" fill="#FAF9FE"/>
+<text x="24" y="598" font-size="11" class="m" text-anchor="start">みんなの星空</text>
+<text x="24" y="624" font-size="14" class="p" text-anchor="start" font-weight="700">山羊座全体：やや追い風</text>
+<text x="24" y="646" font-size="10" class="m" text-anchor="start">同じ太陽星座に共通する今日の基調</text>
+<text x="24" y="661" font-size="10" class="m" text-anchor="start">です。</text>
+<rect x="214" y="576" width="194" height="102" rx="14" fill="#FAF9FE"/>
+<text x="226" y="598" font-size="11" class="m" text-anchor="start">あなたの星</text>
+<text x="226" y="624" font-size="14" class="p" text-anchor="start" font-weight="700">個人の流れ：追い風</text>
+<text x="226" y="646" font-size="10" class="m" text-anchor="start">出生時の星と今日の星の関係です。</text>
+<rect x="12" y="688" width="194" height="102" rx="14" fill="#FAF9FE"/>
+<text x="24" y="710" font-size="11" class="m" text-anchor="start">今日の空</text>
+<text x="24" y="736" font-size="14" class="p" text-anchor="start" font-weight="700">環境：やや負荷あり</text>
+<text x="24" y="758" font-size="10" class="m" text-anchor="start">気圧は比較的安定・快晴・暑さ強め</text>
+<rect x="214" y="688" width="194" height="102" rx="14" fill="#FAF9FE"/>
+<text x="226" y="710" font-size="11" class="m" text-anchor="start">今日の暦</text>
+<text x="226" y="736" font-size="14" class="p" text-anchor="start" font-weight="700">タイミング：動きやすい</text>
+<text x="226" y="758" font-size="10" class="m" text-anchor="start">休日前</text>
+<rect x="12" y="808" width="396" height="610" rx="14" fill="#fff" stroke="#E7E0F8" stroke-width="1"/>
+<text x="24" y="835" font-size="14" class="p" text-anchor="start" font-weight="700">▼ 星の理由を見る</text>
+<text x="24" y="862" font-size="13" class="t" text-anchor="start" font-weight="700">気持ちのリズムが整いやすい</text>
+<text x="24" y="884" font-size="11" class="m" text-anchor="start">今日は「気持ち」と、もともとの「気持ち」が自然につながりやす</text>
+<text x="24" y="901" font-size="11" class="m" text-anchor="start">い配置です。無理に流れを変えるより、すっと進むことを活かす方</text>
+<text x="24" y="918" font-size="11" class="m" text-anchor="start">が向いています。</text>
+<text x="24" y="939" font-size="11" class="t" text-anchor="start" font-weight="700">今日の使い方：</text>
+<text x="102" y="939" font-size="11" class="m" text-anchor="start">自然に集中できること、気持ちよく続けられることを優</text>
+<text x="102" y="956" font-size="11" class="m" text-anchor="start">先してみてください。</text>
+<text x="24" y="977" font-size="10" class="m" text-anchor="start">今日の月 × 出生時の月 ／ トライン 120° ／ オーブ 0.6°</text>
+<line x1="24" y1="1000" x2="396" y2="1000" stroke="#eee"/>
+<text x="24" y="1010" font-size="13" class="t" text-anchor="start" font-weight="700">考えと気持ちが食い違いやすい</text>
+<text x="24" y="1032" font-size="11" class="m" text-anchor="start">今日は「考え・言葉」と「気持ち」が反対方向へ引っ張りやすい配</text>
+<text x="24" y="1049" font-size="11" class="m" text-anchor="start">置です。どちらか一方に決めつけず、少し間を置いてバランスを取</text>
+<text x="24" y="1066" font-size="11" class="m" text-anchor="start">るのが向いています。</text>
+<text x="24" y="1087" font-size="11" class="t" text-anchor="start" font-weight="700">今日の使い方：</text>
+<text x="102" y="1087" font-size="11" class="m" text-anchor="start">すぐに返事や結論を出さず、考えと気持ちの両方を確認</text>
+<text x="102" y="1104" font-size="11" class="m" text-anchor="start">してから決めるのがおすすめです。</text>
+<text x="24" y="1125" font-size="10" class="m" text-anchor="start">今日の水星 × 出生時の月 ／ オポジション 180° ／ オーブ 1.</text>
+<text x="24" y="1140" font-size="10" class="m" text-anchor="start">3°</text>
+<line x1="24" y1="1163" x2="396" y2="1163" stroke="#eee"/>
+<text x="24" y="1173" font-size="13" class="t" text-anchor="start" font-weight="700">行動したいのにブレーキがかかりやすい</text>
+<text x="24" y="1195" font-size="11" class="m" text-anchor="start">今日は「制約・責任」と「行動力」がぶつかりやすい配置です。</text>
+<text x="24" y="1212" font-size="11" class="m" text-anchor="start">力で押し切るより、順序や条件を整える方がうまく使えます。</text>
+<text x="24" y="1233" font-size="11" class="t" text-anchor="start" font-weight="700">今日の使い方：</text>
+<text x="102" y="1233" font-size="11" class="m" text-anchor="start">無理に突破しようとせず、制約を一つずつ確認して、</text>
+<text x="102" y="1250" font-size="11" class="m" text-anchor="start">できる範囲を確実に進めてください。</text>
+<text x="24" y="1271" font-size="10" class="m" text-anchor="start">今日の土星 × 出生時の火星 ／ スクエア 90° ／ オーブ 0.6°</text>
+<rect x="12" y="1436" width="396" height="280" rx="16" fill="#fff" stroke="#E7E0F8" stroke-width="1"/>
+<text x="24" y="1464" font-size="15" class="p" text-anchor="start" font-weight="700">今日の過ごし方を調整する要素</text>
+<text x="24" y="1493" font-size="13" class="t" text-anchor="start" font-weight="700">空からの調整</text>
+<text x="24" y="1515" font-size="11" class="m" text-anchor="start">気圧は比較的安定しているため、空の状態そのものは大きなブレーキ</text>
+<text x="24" y="1532" font-size="11" class="m" text-anchor="start">になりにくい日です。ただし暑さが強いので、移動量を増やすより、</text>
+<text x="24" y="1549" font-size="11" class="m" text-anchor="start">涼しい場所で集中する対象を絞るのがおすすめです。</text>
+<line x1="24" y1="1580" x2="396" y2="1580" stroke="#eee"/>
+<text x="24" y="1605" font-size="13" class="t" text-anchor="start" font-weight="700">暦からの調整</text>
+<text x="24" y="1627" font-size="11" class="m" text-anchor="start">休日前です。今日中に全部終わらせるより、一区切りつけて次へつな</text>
+<text x="24" y="1644" font-size="11" class="m" text-anchor="start">ぐ余白を作る使い方が向いています。</text>
+<rect x="12" y="1736" width="396" height="540" rx="16" fill="#fff" stroke="#E7E0F8" stroke-width="1"/>
+<text x="24" y="1764" font-size="15" class="p" text-anchor="start" font-weight="700">恋愛・仕事・金運・健康</text>
+<text x="24" y="1796" font-size="14" class="t" text-anchor="start" font-weight="700">恋愛</text>
+<text x="390" y="1796" font-size="14" class="p" text-anchor="end" font-weight="700">68%</text>
+<text x="24" y="1819" font-size="11" class="m" text-anchor="start">相手とのやり取りに自然な流れが出やすい日です。結論を急がず、</text>
+<text x="24" y="1836" font-size="11" class="m" text-anchor="start">短い会話や一言の連絡から始めるとよさそうです。</text>
+<line x1="24" y1="1865" x2="396" y2="1865" stroke="#eee"/>
+<text x="24" y="1877" font-size="14" class="t" text-anchor="start" font-weight="700">仕事</text>
+<text x="390" y="1877" font-size="14" class="p" text-anchor="end" font-weight="700">76%</text>
+<text x="24" y="1900" font-size="11" class="m" text-anchor="start">勢いだけで押すより、順序や制約を確認してから進める方が今日の星</text>
+<text x="24" y="1917" font-size="11" class="m" text-anchor="start">を使いやすい日です。暑さが強めなので、長時間続けるより短い集中</text>
+<text x="24" y="1934" font-size="11" class="m" text-anchor="start">を何度か作る方が向いています。</text>
+<line x1="24" y1="1963" x2="396" y2="1963" stroke="#eee"/>
+<text x="24" y="1975" font-size="14" class="t" text-anchor="start" font-weight="700">金運</text>
+<text x="390" y="1975" font-size="14" class="p" text-anchor="end" font-weight="700">61%</text>
+<text x="24" y="1998" font-size="11" class="m" text-anchor="start">必要なものと欲しいものを落ち着いて見分けやすい日です。</text>
+<text x="24" y="2015" font-size="11" class="m" text-anchor="start">小さな購入や今後の使い方を決めるには悪くありません。</text>
+<line x1="24" y1="2044" x2="396" y2="2044" stroke="#eee"/>
+<text x="24" y="2056" font-size="14" class="t" text-anchor="start" font-weight="700">健康</text>
+<text x="390" y="2056" font-size="14" class="p" text-anchor="end" font-weight="700">64%</text>
+<text x="24" y="2079" font-size="11" class="m" text-anchor="start">無理に調子を上げようとせず、普段のペースを保つことで一日のリズ</text>
+<text x="24" y="2096" font-size="11" class="m" text-anchor="start">ムを作りやすそうです。暑さが強いので、こまめに休める予定の組み</text>
+<text x="24" y="2113" font-size="11" class="m" text-anchor="start">方を優先してください。</text>
+<rect x="12" y="2296" width="396" height="45" rx="14" fill="#fff" stroke="#E7E0F8" stroke-width="1"/>
+<text x="24" y="2324" font-size="13" class="p" text-anchor="start" font-weight="700">▶ 計算情報</text>
+</svg>

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#B79DF2">
+<title>100% 星占い v6 Preview</title>
+<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif;margin:0;background:#fff;color:#333;padding:12px 8px 32px}
+.card{max-width:680px;margin:0 auto;background:#fff;border-radius:24px;box-shadow:0 6px 18px rgba(0,0,0,.12);padding:18px 16px 24px}
+.header{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.icon{font-size:38px}.title{font-size:25px;font-weight:650;color:#7C4DFF}.badge{font-size:12px;background:#F0EAFF;color:#6D42D8;padding:4px 8px;border-radius:999px;margin-left:auto}
+.row{margin:10px 0;text-align:left}label{display:block;margin-bottom:4px;color:#555;font-size:15px}
+input,select{width:100%;padding:9px 10px;border:1px solid #DDD5F6;border-radius:12px;font:inherit;background:#fff}
+button{width:100%;border:0;border-radius:12px;padding:12px;margin-top:12px;font-size:18px;font-weight:650;color:white;background:linear-gradient(135deg,#B79DF2,#7C4DFF);cursor:pointer}
+.secondary{background:#fff;color:#7C4DFF;border:1px solid #D4C4FF}
+.status{margin:10px 0 0;font-size:13px;color:#777;line-height:1.5}
+.hero{margin-top:18px;padding:18px 16px;border-radius:18px;background:#F7F4FF}
+.scoreline{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.scorelabel{font-size:18px;color:#6D42D8;font-weight:650}.score{font-size:38px;font-weight:750;color:#7C4DFF}
+.mode{display:inline-block;margin-top:8px;padding:5px 10px;border-radius:999px;background:#fff;color:#6D42D8;font-weight:650}
+.guide{font-size:22px;line-height:1.55;margin:12px 0 4px}.action{font-size:16px;line-height:1.7;color:#555}
+.factor-title{margin:18px 0 8px;text-align:left;font-size:17px;font-weight:700;color:#6D42D8}
+.factor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.factor{padding:13px;border-radius:14px;background:#FAF9FE;text-align:left}
+.factor .k{font-size:13px;color:#777}.factor .v{font-size:18px;color:#5F3BC4;font-weight:700;margin-top:4px}.factor .s{font-size:13px;color:#666;line-height:1.5;margin-top:5px}
+.section{margin-top:14px;border:1px solid #E7E0F8;border-radius:16px;padding:14px;background:#fff;text-align:left}
+.section h3{margin:0 0 10px;font-size:17px;color:#6D42D8}
+.advice{padding:10px 0;border-top:1px solid #EEE}.advice:first-of-type{border-top:0;padding-top:0}
+.advice-title{font-weight:700}.advice-text{margin-top:5px;line-height:1.65;color:#555}
+.category{padding:12px 0;border-top:1px solid #EEE}.category:first-of-type{border-top:0;padding-top:0}
+.category-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.category-name{font-weight:700;font-size:17px}.category-score{font-weight:750;color:#6D42D8;font-size:19px}
+.category-text{margin-top:6px;line-height:1.65;color:#555}
+details{margin-top:12px;border:1px solid #E7E0F8;border-radius:14px;padding:10px 12px;background:#fff;text-align:left}
+summary{cursor:pointer;color:#6D42D8;font-weight:650}
+.reason{margin-top:10px;padding:10px 0;border-top:1px solid #EEE}.reason:first-of-type{border-top:0}
+.reason-title{font-weight:700}.reason-sub{font-size:14px;color:#777;margin-top:3px}.reason-text{margin-top:6px;line-height:1.6;color:#555}
+.meta{font-size:12px;color:#777;line-height:1.7;margin-top:8px}
+.note{font-size:12px;color:#888;line-height:1.6;margin-top:8px}
+@media(max-width:600px){body{padding:0}.card{max-width:none;border-radius:0;box-shadow:none;min-height:100vh}.factor-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header"><div class="icon">🪐</div><div class="title">100% 星占い</div><div class="badge">v6 preview</div></div>
+  <div class="row"><label for="birth">生年月日</label><input id="birth" type="date" value="1978-12-31"></div>
+  <div class="row"><label for="targetDate">占いたい日（空欄なら今日）</label><input id="targetDate" type="date"></div>
+  <div class="row"><label for="place">環境を読む場所</label>
+    <select id="place">
+      <option value="35.6812,139.7671,東京">東京</option>
+      <option value="34.6937,135.5023,大阪">大阪</option>
+      <option value="35.0116,135.7681,京都">京都</option>
+      <option value="43.0618,141.3545,札幌">札幌</option>
+      <option value="33.5904,130.4017,福岡">福岡</option>
+    </select>
+  </div>
+  <button id="geoBtn" class="secondary" type="button">現在地を使う</button>
+  <button id="calcBtn" type="button">この日の運勢とガイドを見る</button>
+  <div class="status" id="status">同じ日の同じ条件では、同じ結果を表示します。</div>
+  <div id="result"></div>
+</div>
+<script>
+(function(){
+'use strict';
+
+var ENGINE_VERSION='6.0-preview.5';
+var ASPECTS=[
+ {name:'コンジャンクション',angle:0,polarity:.55,meaning:'二つの力が重なり、テーマが強く意識されやすい配置です。'},
+ {name:'セクスタイル',angle:60,polarity:.65,meaning:'工夫や働きかけによって、機会を活かしやすい配置です。'},
+ {name:'スクエア',angle:90,polarity:-.72,meaning:'摩擦や課題が表れやすく、調整や具体的な行動を促す配置です。'},
+ {name:'トライン',angle:120,polarity:.82,meaning:'二つの力が自然に流れやすく、無理なく活かしやすい配置です。'},
+ {name:'オポジション',angle:180,polarity:-.58,meaning:'二つの方向が向き合い、バランスや相手側の視点を求める配置です。'}
+];
+var PLANETS=[
+ {key:'Sun',body:Astronomy.Body.Sun,jp:'太陽',w:1.3,verb:'自分らしさ・意志'},
+ {key:'Moon',body:Astronomy.Body.Moon,jp:'月',w:1.2,verb:'感情・反応'},
+ {key:'Mercury',body:Astronomy.Body.Mercury,jp:'水星',w:1.0,verb:'思考・伝達'},
+ {key:'Venus',body:Astronomy.Body.Venus,jp:'金星',w:1.0,verb:'好み・関係・価値'},
+ {key:'Mars',body:Astronomy.Body.Mars,jp:'火星',w:1.05,verb:'行動・推進力'},
+ {key:'Jupiter',body:Astronomy.Body.Jupiter,jp:'木星',w:.95,verb:'拡大・展望'},
+ {key:'Saturn',body:Astronomy.Body.Saturn,jp:'土星',w:.95,verb:'制約・責任・持続'}
+];
+var SIGNS=['牡羊座','牡牛座','双子座','蟹座','獅子座','乙女座','天秤座','蠍座','射手座','山羊座','水瓶座','魚座'];
+
+function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+function round1(n){return Math.round(n*10)/10;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function dateOnly(str){if(!str)return null;var m=str.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return null;return new Date(+m[1],+m[2]-1,+m[3],12,0,0);}
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function addDays(d,n){var x=new Date(d.getFullYear(),d.getMonth(),d.getDate(),12);x.setDate(x.getDate()+n);return x;}
+function isWeekend(d){return d.getDay()===0||d.getDay()===6;}
+function eclLon(body,date){var time=new Astronomy.AstroTime(date);var vec=Astronomy.GeoVector(body,time,true);return Astronomy.Ecliptic(vec).elon;}
+function angleDiff(a,b){var d=Math.abs(a-b)%360;return d>180?360-d:d;}
+function nearestAspect(diff,orbMax){var best=null;ASPECTS.forEach(function(a){var orb=Math.abs(diff-a.angle);if(orb<=orbMax&&(!best||orb<best.orb)){best={name:a.name,angle:a.angle,polarity:a.polarity,meaning:a.meaning,orb:orb};}});return best;}
+function signIndexFromLon(lon){return Math.floor(((lon%360)+360)%360/30);}
+function getChart(date){var c={};PLANETS.forEach(function(p){c[p.key]=eclLon(p.body,date);});return c;}
+
+function personalAspects(natal,transit){
+ var out=[];
+ PLANETS.forEach(function(tp){
+   PLANETS.forEach(function(np){
+     var diff=angleDiff(transit[tp.key],natal[np.key]);
+     var orbMax=(tp.key==='Sun'||tp.key==='Moon'||np.key==='Sun'||np.key==='Moon')?8:6;
+     var a=nearestAspect(diff,orbMax); if(!a)return;
+     var closeness=1-a.orb/orbMax;
+     var importance=(tp.w+np.w)/2;
+     var strength=closeness*importance;
+     out.push({transit:tp,natal:np,aspect:a,strength:strength,impact:a.polarity*strength});
+   });
+ });
+ out.sort(function(a,b){return b.strength-a.strength;});
+ return out;
+}
+function scoreFromAspects(aspects){
+ if(!aspects.length)return 60;
+ var weighted=0,den=0;
+ aspects.slice(0,18).forEach(function(x){var w=.35+x.strength;weighted+=x.impact*w;den+=w;});
+ var n=den?weighted/den:0;
+ return Math.round(clamp(60+n*34,20,98));
+}
+function sunSignLayer(signIdx,transit){
+ var center=signIdx*30+15,rows=[];
+ PLANETS.forEach(function(p){
+   var diff=angleDiff(transit[p.key],center);
+   var max=(p.key==='Sun'||p.key==='Moon')?8:6;
+   var a=nearestAspect(diff,max);
+   if(a){var strength=(1-a.orb/max)*p.w;rows.push({planet:p,aspect:a,strength:strength,impact:a.polarity*strength});}
+ });
+ rows.sort(function(a,b){return b.strength-a.strength;});
+ var sum=0,den=0;
+ rows.forEach(function(x){var w=.5+x.strength;sum+=x.impact*w;den+=w;});
+ return{score:Math.round(clamp(60+(den?sum/den:0)*30,25,95)),rows:rows};
+}
+
+function weatherCodeText(code){
+ if(code===0)return'快晴'; if(code<=3)return'晴れ・曇り'; if(code===45||code===48)return'霧';
+ if(code>=51&&code<=67)return'雨'; if(code>=71&&code<=77)return'雪';
+ if(code>=80&&code<=82)return'にわか雨'; if(code>=95)return'雷雨'; return'変わりやすい天気';
+}
+function weatherScore(w){
+ if(!w)return 60;
+ var s=60,dp=w.pressureDelta6h||0;
+ if(dp<=-6)s-=15; else if(dp<=-3)s-=8; else if(dp>=4)s+=4;
+ if(w.humidity>=85)s-=5; if(w.temp>=32)s-=8; if(w.temp<=3)s-=5; if(w.precip>=2)s-=5;
+ if(w.code===0||w.code===1)s+=4;
+ return Math.round(clamp(s,30,85));
+}
+function weatherCharacter(w){
+ if(!w)return'環境データなし';
+ var bits=[];
+ if(w.pressureDelta6h<=-6)bits.push('気圧が大きく下降');
+ else if(w.pressureDelta6h<=-3)bits.push('気圧が下降');
+ else if(w.pressureDelta6h>=4)bits.push('気圧が上昇');
+ else bits.push('気圧は比較的安定');
+ bits.push(weatherCodeText(w.code));
+ if(w.humidity>=80)bits.push('湿度高め');
+ if(w.temp>=30)bits.push('暑さ強め');
+ return bits.join('・');
+}
+function findLegacyWeather(date,lat,lon){
+ var suffix='|'+ymd(date)+'|'+lat.toFixed(2)+'|'+lon.toFixed(2);
+ for(var i=0;i<localStorage.length;i++){
+   var k=localStorage.key(i);
+   if(k&&k.indexOf('h6-weather|')===0&&k.endsWith(suffix)){
+     try{return JSON.parse(localStorage.getItem(k));}catch(e){}
+   }
+ }
+ return null;
+}
+async function fetchWeather(lat,lon,target){
+ var key='h6-weather-day|'+ymd(target)+'|'+lat.toFixed(2)+'|'+lon.toFixed(2);
+ var cached=localStorage.getItem(key); if(cached)return JSON.parse(cached);
+ var legacy=findLegacyWeather(target,lat,lon); if(legacy){localStorage.setItem(key,JSON.stringify(legacy));return legacy;}
+ var start=ymd(target);
+ var url='https://api.open-meteo.com/v1/forecast?latitude='+encodeURIComponent(lat)+'&longitude='+encodeURIComponent(lon)+'&hourly=temperature_2m,relative_humidity_2m,pressure_msl,precipitation,weather_code&timezone=auto&start_date='+start+'&end_date='+start;
+ var r=await fetch(url); if(!r.ok)throw new Error('weather '+r.status);
+ var j=await r.json(),times=j.hourly.time||[]; if(!times.length)throw new Error('weather empty');
+ var idx=times.findIndex(function(t){return t.endsWith('12:00');}); if(idx<0)idx=Math.floor(times.length/2);
+ var p=j.hourly.pressure_msl||[],before=Math.max(0,idx-6);
+ var snap={capturedAt:new Date().toISOString(),date:start,referenceTime:times[idx]||'',lat:lat,lon:lon,temp:+j.hourly.temperature_2m[idx],humidity:+j.hourly.relative_humidity_2m[idx],pressure:+p[idx],pressureDelta6h:round1((+p[idx])-(+p[before])),precip:+j.hourly.precipitation[idx],code:+j.hourly.weather_code[idx],timezone:j.timezone||''};
+ localStorage.setItem(key,JSON.stringify(snap));
+ return snap;
+}
+async function holidaysForYear(year){
+ var key='h6-holidays|'+year,c=localStorage.getItem(key); if(c)return JSON.parse(c);
+ var r=await fetch('https://holidays-jp.github.io/api/v1/'+year+'/date.json'); if(!r.ok)throw new Error('holiday '+r.status);
+ var j=await r.json(); localStorage.setItem(key,JSON.stringify(j)); return j;
+}
+function calendarLayer(target,holidays){
+ var k=ymd(target),prev=ymd(addDays(target,-1)),next=ymd(addDays(target,1));
+ var isHol=!!holidays[k],prevOff=isWeekend(addDays(target,-1))||!!holidays[prev],nextOff=isWeekend(addDays(target,1))||!!holidays[next],todayOff=isWeekend(target)||isHol;
+ var score=60,label='通常日';
+ if(todayOff){score=68;label=isHol?holidays[k]:'休日';}
+ if(!todayOff&&nextOff){score=72;label='休日前';}
+ if(todayOff&&!nextOff){score=54;label='休日最終日';}
+ if(todayOff&&prevOff&&nextOff){score=70;label='連休中';}
+ return{score:score,label:label,holiday:isHol?holidays[k]:'',todayOff:todayOff,nextOff:nextOff};
+}
+
+function combineScore(personal,sign,weather,calendar){return Math.round(clamp(personal*.60+sign*.20+weather*.15+calendar*.05,0,100));}
+function relevantScore(aspects,keys){
+ var a=aspects.filter(function(x){return keys.indexOf(x.transit.key)>=0||keys.indexOf(x.natal.key)>=0;});
+ return scoreFromAspects(a);
+}
+function categoryScores(env,cal,aspects){
+ return{
+   love:Math.round(relevantScore(aspects,['Venus','Moon','Mars'])*.88+env*.04+cal*.08),
+   work:Math.round(relevantScore(aspects,['Sun','Mercury','Mars','Saturn','Jupiter'])*.75+env*.15+cal*.10),
+   money:Math.round(relevantScore(aspects,['Venus','Jupiter','Saturn'])*.88+env*.04+cal*.08),
+   health:Math.round(relevantScore(aspects,['Sun','Moon','Mars','Saturn'])*.55+env*.35+cal*.10)
+ };
+}
+function modeFrom(finalScore,aspects,cal,w){
+ var positive=aspects.filter(function(x){return x.impact>.25;}).length;
+ var hard=aspects.filter(function(x){return x.impact<-.25;}).length;
+ if(finalScore>=78&&positive>=2)return'進める';
+ if(cal&&cal.label==='休日前'&&finalScore>=68)return'つながる';
+ if(w&&w.pressureDelta6h<=-5)return finalScore>=62?'整える':'守る';
+ if(hard>=2)return finalScore>=60?'深める':'守る';
+ if(finalScore>=67)return'深める';
+ return'整える';
+}
+var GUIDE={
+ '進める':['外へ働きかける抵抗が比較的小さい日です。','公開する、提案する、連絡するなど、温めていたものを一つ外へ出してみてください。'],
+ 'つながる':['人とのやり取りから流れが生まれやすい日です。','一人で抱えず、相談・共有・声かけのどれかを一つ行ってみてください。'],
+ '深める':['広げるより、一つのテーマに時間を使うと実りやすい日です。','制作、研究、読み直しなど、途中になっているものを一段深く進めてみてください。'],
+ '整える':['勢いより、順序や環境を整えることで流れを使いやすい日です。','修正、準備、片づけなど、次の一歩を軽くする作業を優先してください。'],
+ '守る':['前進量を減らすこと自体が、その日の流れを活かす選択になります。','予定を一つ減らし、判断を急がず、回復できる余白を残してください。']
+};
+
+function labelTrend(score,kind){
+ if(kind==='sky'){
+   if(score>=68)return'動きやすい';
+   if(score>=58)return'おおむね安定';
+   if(score>=48)return'やや負荷あり';
+   return'負荷あり';
+ }
+ if(kind==='calendar'){
+   if(score>=68)return'動きやすい';
+   if(score>=58)return'通常';
+   return'余白を意識';
+ }
+ if(score>=72)return'追い風';
+ if(score>=62)return'やや追い風';
+ if(score>=52)return'中立';
+ if(score>=42)return'やや慎重';
+ return'慎重';
+}
+function planetPairText(x){return'今日の'+x.transit.jp+' × 出生時の'+x.natal.jp;}
+function planetTheme(p){
+ var m={Sun:'自分らしさ',Moon:'気持ち',Mercury:'考え・言葉',Venus:'好み・人間関係',Mars:'行動力',Jupiter:'広がり・可能性',Saturn:'制約・責任'};
+ return m[p.key]||p.verb;
+}
+function aspectPlainTitle(x){
+ var a=planetTheme(x.transit),b=planetTheme(x.natal),name=x.aspect.name;
+ if(x.transit.key==='Moon'&&x.natal.key==='Moon'&&name==='トライン')return'気持ちのリズムが整いやすい';
+ if(((x.transit.key==='Mercury'&&x.natal.key==='Moon')||(x.transit.key==='Moon'&&x.natal.key==='Mercury'))&&name==='オポジション')return'考えと気持ちが食い違いやすい';
+ if(((x.transit.key==='Saturn'&&x.natal.key==='Mars')||(x.transit.key==='Mars'&&x.natal.key==='Saturn'))&&name==='スクエア')return'行動したいのにブレーキがかかりやすい';
+ if(name==='トライン')return a+'と'+b+'が自然に噛み合いやすい';
+ if(name==='セクスタイル')return a+'と'+b+'を工夫して活かしやすい';
+ if(name==='コンジャンクション')return a+'と'+b+'が強く表れやすい';
+ if(name==='スクエア')return a+'と'+b+'がぶつかりやすい';
+ return a+'と'+b+'が引っ張り合いやすい';
+}
+function aspectPlainMeaning(x){
+ var a=planetTheme(x.transit),b=planetTheme(x.natal),name=x.aspect.name;
+ if(name==='トライン')return'今日は「'+a+'」と、もともとの「'+b+'」が自然につながりやすい配置です。無理に流れを変えるより、すっと進むことを活かす方が向いています。';
+ if(name==='セクスタイル')return'今日は「'+a+'」と「'+b+'」の間に使えるきっかけがあります。待つより、小さく働きかけることで流れを活かしやすくなります。';
+ if(name==='コンジャンクション')return'今日は「'+a+'」と「'+b+'」が同じ場所で重なり、このテーマが普段より強く出やすい配置です。';
+ if(name==='スクエア')return'今日は「'+a+'」と「'+b+'」がぶつかりやすい配置です。力で押し切るより、順序や条件を整える方がうまく使えます。';
+ return'今日は「'+a+'」と「'+b+'」が反対方向へ引っ張りやすい配置です。どちらか一方に決めつけず、少し間を置いてバランスを取るのが向いています。';
+}
+function aspectPlainGuide(x){
+ var name=x.aspect.name;
+ if(x.transit.key==='Moon'&&x.natal.key==='Moon'&&name==='トライン')return'自然に集中できること、気持ちよく続けられることを優先してみてください。';
+ if(((x.transit.key==='Mercury'&&x.natal.key==='Moon')||(x.transit.key==='Moon'&&x.natal.key==='Mercury'))&&name==='オポジション')return'すぐに返事や結論を出さず、考えと気持ちの両方を一度確認してから決めるのがおすすめです。';
+ if(((x.transit.key==='Saturn'&&x.natal.key==='Mars')||(x.transit.key==='Mars'&&x.natal.key==='Saturn'))&&name==='スクエア')return'無理に突破しようとせず、制約を一つずつ確認して、できる範囲を確実に進めてください。';
+ if(name==='トライン')return'自然に進むことを一つ選び、余計な力を加えず進めてみてください。';
+ if(name==='セクスタイル')return'小さな連絡、着手、提案など、自分から一歩だけ動かしてみてください。';
+ if(name==='コンジャンクション')return'このテーマを今日の主役と考え、広げすぎず一つに集中すると使いやすいです。';
+ if(name==='スクエア')return'急いで突破するより、詰まっている条件を一つ整理してから動くのがおすすめです。';
+ return'即断を避け、両方の立場や気持ちを確認してから次の一手を決めてください。';
+}
+function topAspectFor(aspects,keys){
+ return aspects.find(function(x){return keys.indexOf(x.transit.key)>=0||keys.indexOf(x.natal.key)>=0;})||aspects[0]||null;
+}
+function aspectAction(x,positiveText,hardText){
+ if(!x)return'星の強い偏りが少ないため、普段のペースを基準にするとよさそうです。';
+ return x.aspect.polarity>=0?positiveText:hardText;
+}
+function skyAdvice(w,mode){
+ if(!w)return'空のデータが取れなかったため、今日は星と暦を中心にガイドしています。';
+ var parts=[];
+ if(w.pressureDelta6h<=-6)parts.push('気圧の下がり方が大きいので、予定を詰めるより余白を残す方が今日の流れを使いやすそうです。');
+ else if(w.pressureDelta6h<=-3)parts.push('気圧は下降傾向です。長く粘るより、短い区切りを作って進める方が合っています。');
+ else parts.push('気圧は比較的安定しているため、空の状態そのものは大きなブレーキになりにくい日です。');
+ if(w.temp>=32)parts.push('ただし暑さが強いので、移動量を増やすより、涼しい場所で集中する対象を絞るのがおすすめです。');
+ else if(w.temp>=30)parts.push('暑さは強めです。外向きの予定を増やしすぎず、休憩を挟める組み方が向いています。');
+ else if(w.precip>=2)parts.push('雨の影響があるので、外へ広げるより室内で完結することを優先すると動きやすいでしょう。');
+ else if(mode==='進める')parts.push('動くなら、今日の追い風をそのまま行動量に変えやすい環境です。');
+ return parts.join(' ');
+}
+function calendarAdvice(cal){
+ if(!cal)return'今日は普段の生活リズムを基準にしてください。';
+ if(cal.label==='休日前')return'休日前です。今日中に全部終わらせるより、一区切りつけて次へつなぐ余白を作る使い方が向いています。';
+ if(cal.label==='休日最終日')return'休日の終わりです。新しいことを増やすより、明日の負担を減らす準備を優先するとよさそうです。';
+ if(cal.label==='連休中')return'連休の途中です。時間の余白があるぶん、一つのテーマを普段より深く進めやすい日です。';
+ if(cal.todayOff)return'休日です。量をこなすより、自分のペースで集中できることを選ぶと流れを使いやすそうです。';
+ return'通常日です。大きく予定を変えるより、普段のリズムの中で今日の星を使うのが自然です。';
+}
+function categoryText(name,score,aspects,w,cal){
+ var x;
+ if(name==='恋愛'){
+   x=topAspectFor(aspects,['Venus','Moon','Mars']);
+   return aspectAction(x,
+     '相手とのやり取りに自然な流れが出やすい日です。結論を急がず、短い会話や一言の連絡から始めるとよさそうです。',
+     '気持ちと反応が少し噛み合いにくい場面がありそうです。相手の言葉をすぐ結論にせず、一度受け取ってから返すのがおすすめです。');
+ }
+ if(name==='仕事'){
+   x=topAspectFor(aspects,['Sun','Mercury','Mars','Saturn','Jupiter']);
+   var base=aspectAction(x,
+     '考えたことを形にしやすい流れがあります。広げすぎず、一つの仕事を見えるところまで進めると手応えにつながりそうです。',
+     '勢いだけで押すより、順序や制約を確認してから進める方が今日の星を使いやすい日です。');
+   if(w&&w.temp>=30)base+=' 暑さが強めなので、長時間続けるより短い集中を何度か作る方が向いています。';
+   return base;
+ }
+ if(name==='金運'){
+   x=topAspectFor(aspects,['Venus','Jupiter','Saturn']);
+   return aspectAction(x,
+     '必要なものと欲しいものを落ち着いて見分けやすい日です。小さな購入や今後の使い方を決めるには悪くありません。',
+     '勢いで決めるより、一度保留して比較する方が合う日です。大きな判断は条件をもう一度確認してからにしましょう。');
+ }
+ x=topAspectFor(aspects,['Sun','Moon','Mars','Saturn']);
+ var t=aspectAction(x,
+   '無理に調子を上げようとせず、普段のペースを保つことで一日のリズムを作りやすそうです。',
+   '頑張る量を増やすより、予定に余白を残す方が一日のリズムを保ちやすそうです。');
+ if(w&&w.temp>=32)t+=' 暑さが強いので、こまめに休める予定の組み方を優先してください。';
+ else if(w&&w.pressureDelta6h<=-3)t+=' 気圧は下降傾向なので、長く粘るより区切りを作る方がよさそうです。';
+ return t;
+}
+function fmtCaptured(iso){
+ if(!iso)return'取得時刻なし';
+ var d=new Date(iso); if(isNaN(d.getTime()))return iso;
+ return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+function render(data){
+ var g=GUIDE[data.mode],html='';
+ html+='<div class="hero"><div class="scoreline"><div class="scorelabel">今日の運勢</div><div class="score">'+data.final+'%</div></div><div class="mode">今日のモード：'+esc(data.mode)+'</div><div class="guide">'+esc(g[0])+'</div><div class="action"><strong>今日のガイド：</strong>'+esc(g[1])+'</div></div>';
+
+ html+='<div class="factor-title">今日をつくっている4つの要素</div><div class="factor-grid">';
+ html+='<div class="factor"><div class="k">みんなの星空</div><div class="v">'+esc(data.signName)+'全体：'+labelTrend(data.signScore,'star')+'</div><div class="s">同じ太陽星座に共通する今日の基調です。</div></div>';
+ html+='<div class="factor"><div class="k">あなたの星</div><div class="v">個人の流れ：'+labelTrend(data.personal,'star')+'</div><div class="s">出生時の星と今日の星の関係です。</div></div>';
+ html+='<div class="factor"><div class="k">今日の空</div><div class="v">環境：'+labelTrend(data.envScore,'sky')+'</div><div class="s">'+esc(data.weatherText)+'</div></div>';
+ html+='<div class="factor"><div class="k">今日の暦</div><div class="v">タイミング：'+labelTrend(data.cal.score,'calendar')+'</div><div class="s">'+esc(data.cal.label)+'</div></div></div>';
+
+ html+='<details open><summary>星の理由を見る</summary>';
+ data.top.forEach(function(x){
+   html+='<div class="reason"><div class="reason-title">'+esc(aspectPlainTitle(x))+'</div><div class="reason-text">'+esc(aspectPlainMeaning(x))+'</div><div class="reason-text"><strong>今日の使い方：</strong>'+esc(aspectPlainGuide(x))+'</div><div class="reason-sub">'+esc(planetPairText(x))+' ／ '+esc(x.aspect.name)+' '+x.aspect.angle+'° ／ オーブ '+round1(x.aspect.orb)+'°'+(x.aspect.orb<=3?' ／ 強い配置':'')+'</div></div>';
+ });
+ if(!data.top.length)html+='<div class="reason-text">今日は主要5アスペクトのうち、強く表示する配置が少ない日です。</div>';
+ html+='</details>';
+
+ html+='<div class="section"><h3>今日の過ごし方を調整する要素</h3>';
+ html+='<div class="advice"><div class="advice-title">空からの調整</div><div class="advice-text">'+esc(skyAdvice(data.w,data.mode))+'</div></div>';
+ html+='<div class="advice"><div class="advice-title">暦からの調整</div><div class="advice-text">'+esc(calendarAdvice(data.cal))+'</div></div>';
+ html+='</div>';
+
+ html+='<div class="section"><h3>恋愛・仕事・金運・健康</h3>';
+ [['恋愛','love'],['仕事','work'],['金運','money'],['健康','health']].forEach(function(pair){
+   html+='<div class="category"><div class="category-head"><div class="category-name">'+pair[0]+'</div><div class="category-score">'+data.cats[pair[1]]+'%</div></div><div class="category-text">'+esc(categoryText(pair[0],data.cats[pair[1]],data.topAll,data.w,data.cal))+'</div></div>';
+ });
+ html+='</div>';
+
+ html+='<details><summary>計算情報</summary><div class="meta">';
+ html+='太陽星座：'+esc(data.signName)+' ／ 場所：'+esc(data.placeName)+'<br>';
+ if(data.w){
+   html+='気象基準：12:00 ／ '+round1(data.w.pressure)+' hPa ／ 6時間変化 '+(data.w.pressureDelta6h>=0?'+':'')+round1(data.w.pressureDelta6h)+' hPa ／ '+round1(data.w.temp)+'℃ ／ 湿度 '+Math.round(data.w.humidity)+'%<br>';
+   html+='気象データ取得：'+esc(fmtCaptured(data.w.capturedAt))+'<br>';
+ }else{
+   html+='気象データ：取得なし<br>';
+ }
+ html+='計算方式：Horoscope Engine '+ENGINE_VERSION+'<br>';
+ html+='同じ日の同じ条件では、最初に取得した環境と同じ計算規則を使用します。';
+ html+='</div><div class="note">この結果は、その日の過ごし方を考えるための占星術的なガイドです。</div></details>';
+
+ document.getElementById('result').innerHTML=html;
+}
+
+var selected={lat:35.6812,lon:139.7671,name:'東京'};
+document.getElementById('place').addEventListener('change',function(){
+ var p=this.value.split(','); selected={lat:+p[0],lon:+p[1],name:p[2]};
+});
+document.getElementById('geoBtn').addEventListener('click',function(){
+ var st=document.getElementById('status');
+ if(!navigator.geolocation){st.textContent='このブラウザでは位置情報を利用できません。';return;}
+ st.textContent='現在地を取得しています…';
+ navigator.geolocation.getCurrentPosition(function(pos){
+   selected={lat:pos.coords.latitude,lon:pos.coords.longitude,name:'現在地'};
+   st.textContent='現在地を使用します。';
+ },function(){st.textContent='位置情報を取得できませんでした。選択中の都市を使用します。';},{enableHighAccuracy:false,timeout:10000,maximumAge:600000});
+});
+document.getElementById('calcBtn').addEventListener('click',async function(){
+ var st=document.getElementById('status');
+ try{
+   var birth=dateOnly(document.getElementById('birth').value); if(!birth)throw new Error('生年月日を入力してください。');
+   var target=dateOnly(document.getElementById('targetDate').value);
+   if(!target){var n=new Date();target=new Date(n.getFullYear(),n.getMonth(),n.getDate(),12);}
+   st.textContent='星・空・暦を読み合わせています…';
+   var natal=getChart(birth),transit=getChart(target);
+   var aspects=personalAspects(natal,transit),personal=scoreFromAspects(aspects);
+   var signIdx=signIndexFromLon(natal.Sun),sign=sunSignLayer(signIdx,transit);
+   var holidays={}; try{holidays=await holidaysForYear(target.getFullYear());}catch(e){holidays={};}
+   var cal=calendarLayer(target,holidays);
+   var w=null; try{w=await fetchWeather(selected.lat,selected.lon,target);}catch(e){console.warn(e);}
+   var envScore=weatherScore(w);
+   var final=combineScore(personal,sign.score,envScore,cal.score);
+   var mode=modeFrom(final,aspects,cal,w);
+   var cats=categoryScores(envScore,cal.score,aspects);
+   render({
+     final:final,personal:personal,signScore:sign.score,envScore:envScore,cal:cal,w:w,
+     weatherText:weatherCharacter(w),top:aspects.slice(0,3),topAll:aspects,mode:mode,cats:cats,
+     signName:SIGNS[signIdx],placeName:selected.name
+   });
+   st.textContent='計算完了。同じ条件では同じ結果を再表示します。';
+ }catch(e){
+   console.error(e); st.textContent=e.message||'計算中にエラーが発生しました。';
+ }
+});
+})();
+</script>
+</body>
+</html>

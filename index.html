@@ -48,7 +48,7 @@ summary{cursor:pointer;color:#6D42D8;font-weight:650}
 <body>
 <div class="card">
   <div class="header"><div class="icon">🪐</div><div class="title">100% 星占い</div><div class="badge">v6</div></div>
-  <div class="row"><label for="birth">生年月日</label><input id="birth" type="date" value="1978-12-31"></div>
+  <div class="row"><label for="birth">生年月日（次回から自動入力）</label><input id="birth" type="date" autocomplete="bday"></div>
   <div class="row"><label for="targetDate">占いたい日（空欄なら今日）</label><input id="targetDate" type="date"></div>
   <div class="row"><label for="place">環境を読む場所</label>
     <select id="place">
@@ -64,6 +64,22 @@ summary{cursor:pointer;color:#6D42D8;font-weight:650}
   <div class="status" id="status">同じ日の同じ条件では、同じ結果を表示します。</div>
   <div id="result"></div>
 </div>
+<script>
+(function(){
+  var key='horoscope-v6-birthdate';
+  var input=document.getElementById('birth');
+  try{
+    var saved=localStorage.getItem(key);
+    if(saved&&/^\d{4}-\d{2}-\d{2}$/.test(saved))input.value=saved;
+  }catch(e){}
+  input.addEventListener('input',function(){
+    try{
+      if(/^\d{4}-\d{2}-\d{2}$/.test(input.value))localStorage.setItem(key,input.value);
+      else if(!input.value)localStorage.removeItem(key);
+    }catch(e){}
+  });
+})();
+</script>
 <script src="v6-core.js"></script>
 <script src="v6-guide.js"></script>
 <script src="v6-app.js"></script>

@@ -1,1 +1,0 @@
-v6 preview is developed separately before merging into the production index.

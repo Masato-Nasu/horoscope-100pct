@@ -1,4 +1,4 @@
-const CACHE_NAME = 'horoscope-v7-daily1';
+const CACHE_NAME = 'horoscope-v7-daily2';
 
 const urlsToCache = [
   '/horoscope-100pct/',

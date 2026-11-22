@@ -1,4 +1,4 @@
-const CACHE_NAME = 'horoscope-v6-20260807b';
+const CACHE_NAME = 'horoscope-v7-daily1';
 
 const urlsToCache = [
   '/horoscope-100pct/',
@@ -9,8 +9,8 @@ const urlsToCache = [
   '/horoscope-100pct/icon-192.png',
   '/horoscope-100pct/icon-512.png',
   '/horoscope-100pct/v6-core.js',
-  '/horoscope-100pct/v6-guide.js',
-  '/horoscope-100pct/v6-app.js',
+  '/horoscope-100pct/reading.js',
+  '/horoscope-100pct/daily.js',
   'https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js'
 ];
 
@@ -22,7 +22,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => Promise.all(
-      cacheNames.map((cacheName) => cacheName === CACHE_NAME ? null : caches.delete(cacheName))
+      cacheNames.map((cacheName) => cacheName.startsWith('horoscope-v') && cacheName !== CACHE_NAME ? caches.delete(cacheName) : null)
     )).then(() => self.clients.claim())
   );
 });

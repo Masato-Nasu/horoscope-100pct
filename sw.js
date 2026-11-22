@@ -1,4 +1,4 @@
-const CACHE_NAME = 'horoscope-v7-daily2';
+const CACHE_NAME = 'horoscope-v7-daily3';
 
 const urlsToCache = [
   '/horoscope-100pct/',
@@ -10,13 +10,13 @@ const urlsToCache = [
   '/horoscope-100pct/icon-512.png',
   '/horoscope-100pct/v6-core.js',
   '/horoscope-100pct/reading.js',
-  '/horoscope-100pct/daily.js',
+  '/horoscope-100pct/daily.js?v=notes3',
   'https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js'
 ];
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache)));
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache.map(url => new Request(url, {cache: "reload"})))));
 });
 
 self.addEventListener('activate', (event) => {
@@ -28,7 +28,15 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => response || fetch(event.request))
-  );
+  if (event.request.method !== 'GET') return;
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request, {cache: 'reload'}).catch(async () => {
+      const cache = await caches.open(CACHE_NAME);
+      return await cache.match('/horoscope-100pct/index.html') || Response.error();
+    }));
+    return;
+  }
+  event.respondWith(caches.open(CACHE_NAME).then(async cache =>
+    await cache.match(event.request) || fetch(event.request)
+  ));
 });

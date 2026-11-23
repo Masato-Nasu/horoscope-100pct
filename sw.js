@@ -1,4 +1,4 @@
-const CACHE_NAME = 'horoscope-v7-daily3';
+const CACHE_NAME = 'horoscope-v7-daily4';
 
 const urlsToCache = [
   '/horoscope-100pct/',
@@ -10,7 +10,7 @@ const urlsToCache = [
   '/horoscope-100pct/icon-512.png',
   '/horoscope-100pct/v6-core.js',
   '/horoscope-100pct/reading.js',
-  '/horoscope-100pct/daily.js?v=notes3',
+  '/horoscope-100pct/daily.js?v=startup4',
   'https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js'
 ];
 

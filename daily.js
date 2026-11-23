@@ -52,4 +52,5 @@ el('birth').value=saved?.birth||readStore(oldKey)||'';
 el('time').value=saved?.time||'';el('zone').value=saved?.zone||'Asia/Tokyo';
 el('day').value=today();
 if(saved?.birth)show();
+else el('profile').hidden=false;
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
